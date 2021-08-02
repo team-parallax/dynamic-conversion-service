@@ -1,10 +1,24 @@
 {
   "name": "root",
   "private": true,
+  "scripts": {
+    "git:commit": "yarn git-cz",
+    "release": "standard-version"
+  },
   "devDependencies": {
+    "cz-conventional-changelog": "^3.3.0",
     "lerna": "^4.0.0"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   },
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "commitizen": "^4.2.4",
+    "standard-version": "^9.3.1"
+  }
 }
