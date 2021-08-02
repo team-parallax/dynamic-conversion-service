@@ -25,6 +25,7 @@ workflow:
 
 
 before_script:
+  - cd packages/conversion-service
   - yarn install --cache .yarn --prefer-offline
 
 build docker:
