@@ -1,0 +1,14 @@
+cache:
+  paths:
+    - .yarn/
+
+stages:
+  - prepare
+  - test
+  - build
+  - review
+  - deliver
+  - release
+
+include:
+  local: packages/conversion-service/.gitlab-ci.yml
