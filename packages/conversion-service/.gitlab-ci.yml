@@ -167,7 +167,6 @@ release job:
     - job: "code quality"
     - job: "test unit conversion-service"
     - job: "test integration"
-    - job: "docker latest tag"
   script:
     - echo "create gitlab-release for ${CI_COMMIT_TAG}"
   stage: release
