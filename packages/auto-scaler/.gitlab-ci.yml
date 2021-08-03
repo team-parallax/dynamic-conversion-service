@@ -1,15 +1,9 @@
-cache:
-  paths:
-    - .yarn/
+default:
+  interruptible: true
 
 stages:
   - prepare
   - test
-  - build
-  - review
-  - deliver
-  - release
-
 
 # Workflow rules for MR-Pipelines taken from docs at docs.gitlab.com:
 # https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
@@ -19,6 +13,16 @@ workflow:
       when: never
     - if: $CI_COMMIT_BRANCH || $CI_COMMIT_TAG
 
-include:
-  - local: packages/conversion-service/.gitlab-ci.yml
-  - local: packages/auto-scaler/.gitlab-ci.yml
+.auto-scaler-before-script: &auto-scaler-before-script
+  before_script:
+    - cd packages/auto-scaler
+    - yarn install --cache .yarn --prefer-offline
+
+typecheck auto-scaler:
+  stage: prepare
+  <<: *auto-scaler-before-script
+  script:
+    - yarn test:types
+  rules:
+    - changes:
+        - packages/auto-scaler/*

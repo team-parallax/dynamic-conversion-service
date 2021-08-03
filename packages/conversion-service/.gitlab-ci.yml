@@ -14,7 +14,6 @@ stages:
   - deliver
   - release
 
-
 # Workflow rules for MR-Pipelines taken from docs at docs.gitlab.com:
 # https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
 workflow:
@@ -23,10 +22,10 @@ workflow:
       when: never
     - if: $CI_COMMIT_BRANCH || $CI_COMMIT_TAG
 
-
-before_script:
-  - cd packages/conversion-service
-  - yarn install --cache .yarn --prefer-offline
+.conversion-service-before-script: &conversion-service-before-script
+  before_script:
+    - cd packages/conversion-service
+    - yarn install --cache .yarn --prefer-offline
 
 build docker:
   stage: build
@@ -50,6 +49,8 @@ build docker:
     - docker push ${IMAGE_BASE_NAME}:${CI_COMMIT_TAG}
   rules:
     - if: $CI_COMMIT_TAG
+      changes:
+        - packages/conversion-service/*
 
 docker latest tag:
   stage: deliver
@@ -61,18 +62,22 @@ docker latest tag:
     - docker push ${IMAGE_BASE_NAME}:latest
   rules:
     - if: $CI_COMMIT_TAG
+      changes:
+      - packages/conversion-service/*
 
 lint code:
   stage: prepare
+  <<: *conversion-service-before-script
   script:
     - yarn lint
   rules:
     - changes:
-        - src/**/*.ts
+        - packages/conversion-service/src/**/*.ts
       when: always
 
 test unit:
   stage: test
+  <<: *conversion-service-before-script
   script:
     - |
       mkdir -p ./output/ ./input/
@@ -90,6 +95,8 @@ test unit:
     - changes:
         - src/**/*.ts
       when: always
+    - changes:
+      - packages/conversion-service/*
 
 test integration:
   extends: "test unit"
@@ -100,15 +107,21 @@ test integration:
       - artifacts/test/integration/junit.xml
     reports:
       junit: artifacts/test/integration/junit.xml
+  rules:
+    - changes:
+      - packages/conversion-service/*
 
-prepare typecheck:
+typecheck conversion-service:
   stage: prepare
+  <<: *conversion-service-before-script
   script:
     - yarn test:types
   rules:
     - changes:
         - src/**/*.ts
       when: always
+    - changes:
+      - packages/conversion-service/*
 
 code quality:
   allow_failure: true
@@ -118,7 +131,7 @@ code quality:
   stage: review
   needs:
     - job: "lint code"
-    - job: "prepare typecheck"
+    - job: "typecheck conversion-service"
   variables:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://localhost:2375
