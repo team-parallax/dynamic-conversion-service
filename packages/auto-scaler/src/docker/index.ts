@@ -13,16 +13,21 @@ export class DockerService {
 			socketPath
 		})
 	}
-	createContainer = async () : Promise<void> => {
+	createContainer = async () : Promise<IContainerInfo> => {
 		const {
 			imageId, containerLabel
 		} = this.config
-		await this.docker.container.create({
+		const con = await this.docker.container.create({
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			Image: imageId,
 			// eslint-disable-next-line @typescript-eslint/naming-convention
-			Labels: [containerLabel]
+			label: [containerLabel]
 		})
+		const startedContainer = await con.start()
+		return {
+			containerId: startedContainer.id,
+			containerLabel
+		}
 	}
 	getRunningContainerInfo = async () : Promise<IContainerInfo[]> => {
 		const {

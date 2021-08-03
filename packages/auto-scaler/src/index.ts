@@ -1,5 +1,6 @@
 import { DockerService } from "./docker"
 import { IAutoScalerConfiguration } from "./config"
+import { IContainerInfo } from "./docker/interface"
 import { IContainerStatus } from "./interface"
 export class AutoScaler {
 	private readonly config: IAutoScalerConfiguration
@@ -11,8 +12,19 @@ export class AutoScaler {
 		} = this.config
 		this.dockerService = new DockerService(dockerConfig)
 	}
-	public applyConfigurationState = async () : Promise<void> => {
-		// TODO: implement
+	public applyConfigurationState = async (
+		status: IContainerStatus) : Promise<IContainerInfo[] | undefined> => {
+		const {
+			containersToStart
+		} = status
+		if (!containersToStart) {
+			return undefined
+		}
+		const promises = []
+		for (let i = 0; i < containersToStart; i++) {
+			promises.push(this.dockerService.createContainer())
+		}
+		return await Promise.all(promises)
 	}
 	public checkContainerStatus = async (
 		pendingRequests: number
