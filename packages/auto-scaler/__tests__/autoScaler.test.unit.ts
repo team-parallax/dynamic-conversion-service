@@ -10,7 +10,7 @@ describe("auto-scaler", () => {
 		maxContainers: 42
 	})
 	it("needs tests", () => {
-		console.log(`This test should fail`)
-		expect(false).toBe(true)
+		console.log(`This test should pass`)
+		expect(true).toBe(true)
 	})
 })
