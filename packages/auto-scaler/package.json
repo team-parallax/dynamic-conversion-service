@@ -26,9 +26,12 @@
     "url": "git@gitlab.internal.team-parallax.com:belwue/dynamic-conversion-service.git"
   },
   "scripts": {
-    "test": "echo \"Error: run tests from root\" && exit 1",
     "lint": "yarn eslint src --ext .ts",
     "lint:fix": "yarn eslint src --ext .ts --fix",
+    "test": "yarn jest --config ./jest.config.js --detectOpenHandles",
+    "test:integration": "yarn jest integration --config ./jest.config.js --detectOpenHandles",
+    "test:unit": "yarn jest unit --config ./jest.config.js --detectOpenHandles",
+    "test:unit:coverage": "yarn test:unit --coverage --reporters=default --reporters=jest-junit",
     "test:types": "yarn tsc --noEmit"
   },
   "dependencies": {
