@@ -13,6 +13,17 @@ export class DockerService {
 			socketPath
 		})
 	}
+	createContainer = async () : Promise<void> => {
+		const {
+			imageId, containerLabel
+		} = this.config
+		await this.docker.container.create({
+			// eslint-disable-next-line @typescript-eslint/naming-convention
+			Image: imageId,
+			// eslint-disable-next-line @typescript-eslint/naming-convention
+			Labels: [containerLabel]
+		})
+	}
 	getRunningContainerInfo = async () : Promise<IContainerInfo[]> => {
 		const {
 			containerLabel
@@ -22,19 +33,11 @@ export class DockerService {
 		})
 		return runningContainers.map(c => ({
 			containerId: c.id,
-			containerLabel // Redundant
+			// Redundant
+			containerLabel
 		}))
 	}
-	createContainer = async () => {
-		const {
-			imageId, containerLabel
-		} = this.config
-		await this.docker.container.create({
-			Image: imageId,
-			Labels: [containerLabel]
-		})
-	}
-	killContainer = async (id: string) => {
+	killContainer = async (id: string) : Promise<void> => {
 		const containers = await this.docker.container.list({
 			id
 		})
