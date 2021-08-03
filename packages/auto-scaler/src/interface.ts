@@ -1,5 +1,5 @@
 export interface IContainerStatus {
-    containersToStart: number,
+    containersToStart?: number,
     pendingRequests: number,
     runningContainers: number
 }

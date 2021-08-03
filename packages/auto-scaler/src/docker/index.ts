@@ -31,20 +31,20 @@ export class DockerService {
 		const runningContainers = await this.docker.container.list({
 			label: containerLabel
 		})
-		return runningContainers.map(c => ({
-			containerId: c.id,
+		return runningContainers.map(container => ({
+			containerId: container.id,
 			// Redundant
 			containerLabel
 		}))
 	}
-	killContainer = async (id: string) : Promise<void> => {
+	killContainer = async (containerId: string) : Promise<void> => {
 		const containers = await this.docker.container.list({
-			id
+			id: containerId
 		})
 		if (containers.length !== 1) {
 			throw new Error("found none or more than 1 containers with the given id")
 		}
-		const container = containers[0]
+		const [container] = containers
 		await container.kill()
 	}
 }

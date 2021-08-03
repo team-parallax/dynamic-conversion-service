@@ -11,6 +11,9 @@ export class AutoScaler {
 		} = this.config
 		this.docker = new DockerService(docker)
 	}
+	public applyConfigurationState = async () : Promise<void> => {
+		// TODO: implement
+	}
 	public checkContainerStatus = async (
 		pendingRequests: number
 	) : Promise<IContainerStatus | undefined> => {
@@ -37,8 +40,5 @@ export class AutoScaler {
 			// TODO: error handling
 		}
 		return undefined
-	}
-	public applyConfigurationState = async () => {
-		// TODO: implement
 	}
 }
