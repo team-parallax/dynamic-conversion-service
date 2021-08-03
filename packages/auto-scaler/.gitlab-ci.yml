@@ -44,7 +44,5 @@ test unit auto-scaler:
     when: always
   rules:
     - changes:
-        - src/**/*.ts
+        - packages/auto-scaler/*
       when: always
-    - changes:
-      - packages/auto-scaler/*
