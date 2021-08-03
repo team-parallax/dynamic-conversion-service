@@ -1,4 +1,4 @@
-import { EConversionStatus } from "Service/conversion/enum"
+import { EConversionStatus } from "../../service/conversion/enum"
 import {
 	TConversionFormats,
 	TConversionOptions
