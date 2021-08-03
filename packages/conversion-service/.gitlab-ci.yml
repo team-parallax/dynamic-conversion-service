@@ -14,7 +14,6 @@ stages:
   - deliver
   - release
 
-
 # Workflow rules for MR-Pipelines taken from docs at docs.gitlab.com:
 # https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
 workflow:
@@ -50,6 +49,8 @@ build docker:
     - docker push ${IMAGE_BASE_NAME}:${CI_COMMIT_TAG}
   rules:
     - if: $CI_COMMIT_TAG
+    - changes:
+        - packages/conversion-service/*
 
 docker latest tag:
   stage: deliver
@@ -61,6 +62,8 @@ docker latest tag:
     - docker push ${IMAGE_BASE_NAME}:latest
   rules:
     - if: $CI_COMMIT_TAG
+    - changes:
+      - packages/conversion-service/*
 
 lint code:
   stage: prepare
@@ -70,6 +73,8 @@ lint code:
     - changes:
         - src/**/*.ts
       when: always
+    - changes:
+      - packages/conversion-service/*
 
 test unit:
   stage: test
@@ -90,6 +95,8 @@ test unit:
     - changes:
         - src/**/*.ts
       when: always
+    - changes:
+      - packages/conversion-service/*
 
 test integration:
   extends: "test unit"
@@ -100,6 +107,9 @@ test integration:
       - artifacts/test/integration/junit.xml
     reports:
       junit: artifacts/test/integration/junit.xml
+  rules:
+    - changes:
+      - packages/conversion-service/*
 
 prepare typecheck:
   stage: prepare
@@ -109,6 +119,8 @@ prepare typecheck:
     - changes:
         - src/**/*.ts
       when: always
+    - changes:
+      - packages/conversion-service/*
 
 code quality:
   allow_failure: true

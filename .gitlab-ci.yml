@@ -11,4 +11,5 @@ stages:
   - release
 
 include:
-  local: packages/conversion-service/.gitlab-ci.yml
+  - local: packages/conversion-service/.gitlab-ci.yml
+  - local: packages/auto-scaler/.gitlab-ci.yml
