@@ -13,12 +13,14 @@ workflow:
       when: never
     - if: $CI_COMMIT_BRANCH || $CI_COMMIT_TAG
 
-before_script:
-  - cd packages/auto-scaler
-  - yarn install --cache .yarn --prefer-offline
+.auto-scaler-before-script: &auto-scaler-before-script
+  before_script:
+    - cd packages/auto-scaler
+    - yarn install --cache .yarn --prefer-offline
 
-typecheck:
+typecheck auto-scaler:
   stage: prepare
+  <<: *auto-scaler-before-script
   script:
     - yarn test:types
   rules:

@@ -22,10 +22,10 @@ workflow:
       when: never
     - if: $CI_COMMIT_BRANCH || $CI_COMMIT_TAG
 
-
-before_script:
-  - cd packages/conversion-service
-  - yarn install --cache .yarn --prefer-offline
+.conversion-service-before-script: &conversion-service-before-script
+  before_script:
+    - cd packages/conversion-service
+    - yarn install --cache .yarn --prefer-offline
 
 build docker:
   stage: build
@@ -67,6 +67,7 @@ docker latest tag:
 
 lint code:
   stage: prepare
+  <<: *conversion-service-before-script
   script:
     - yarn lint
   rules:
@@ -78,6 +79,7 @@ lint code:
 
 test unit:
   stage: test
+  <<: *conversion-service-before-script
   script:
     - |
       mkdir -p ./output/ ./input/
@@ -111,8 +113,9 @@ test integration:
     - changes:
       - packages/conversion-service/*
 
-prepare typecheck:
+typecheck conversion-service:
   stage: prepare
+  <<: *conversion-service-before-script
   script:
     - yarn test:types
   rules:
