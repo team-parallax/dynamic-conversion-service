@@ -1,5 +1,7 @@
+import { IContainerInfo } from "./docker/interface"
 export interface IContainerStatus {
-    containersToStart?: number,
+    containersToKill: number,
+    containersToStart: number,
     pendingRequests: number,
-    runningContainers: number
+    runningContainers: IContainerInfo[]
 }

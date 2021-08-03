@@ -41,14 +41,16 @@ export class DockerService {
 			containerLabel
 		}))
 	}
-	killContainer = async (containerId: string) : Promise<void> => {
+	removeContainer = async (containerId: string) : Promise<IContainerInfo> => {
 		const containers = await this.docker.container.list({
-			id: containerId
+			// eslint-disable-next-line @typescript-eslint/naming-convention
+			Id: containerId
 		})
-		if (containers.length !== 1) {
-			throw new Error("found none or more than 1 containers with the given id")
-		}
 		const [container] = containers
-		await container.kill()
+		await container.delete()
+		return {
+			containerId: container.id,
+			containerLabel: this.config.containerLabel
+		}
 	}
 }

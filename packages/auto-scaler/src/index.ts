@@ -12,46 +12,55 @@ export class AutoScaler {
 		} = this.config
 		this.dockerService = new DockerService(dockerConfig)
 	}
-	public applyConfigurationState = async (
-		status: IContainerStatus) : Promise<IContainerInfo[] | undefined> => {
+	public applyConfigurationState = async (status: IContainerStatus)
+	: Promise<IContainerInfo[]> => {
 		const {
+			containersToKill,
 			containersToStart
 		} = status
-		if (!containersToStart) {
-			return undefined
+		if (containersToStart !== 0 && containersToKill !== 0) {
+			throw new Error("invalid status: cannot start and kill containers in one call")
 		}
 		const promises = []
-		for (let i = 0; i < containersToStart; i++) {
-			promises.push(this.dockerService.createContainer())
+		if (containersToStart) {
+			for (let i = 0; i < containersToStart; i++) {
+				promises.push(this.dockerService.createContainer())
+			}
 		}
+		// Else if (containersToKill) {
+		// 	For (let i = 0; i < containersToKill; i++) {
+		// 		Promises.push(this.dockerService.removeContainer( which ones ?))
+		// 	}
+		// }
 		return await Promise.all(promises)
 	}
 	public checkContainerStatus = async (
 		pendingRequests: number
-	) : Promise<IContainerStatus | undefined> => {
-		try {
-			const containerInfo = await this.dockerService.getRunningContainerInfo()
-			const containerCount = containerInfo.length
-			const {
-				containerStartThreshold,
-				maxContainers
-			} = this.config
-			const hasFreeContainers = containerCount < maxContainers
-			const shouldStartContainer = pendingRequests >= containerStartThreshold
-			let containersToStart = 0
-			if (hasFreeContainers && shouldStartContainer) {
-				// Determine number of containers to start
-				containersToStart = maxContainers - containerCount
-			}
-			return {
-				containersToStart,
-				pendingRequests,
-				runningContainers: containerCount
-			}
+	) : Promise<IContainerStatus> => {
+		const containerInfo = await this.dockerService.getRunningContainerInfo()
+		const containerCount = containerInfo.length
+		const {
+			containerStartThreshold,
+			maxContainers
+		} = this.config
+		const hasFreeContainers = containerCount < maxContainers
+		const shouldStartContainer = pendingRequests >= containerStartThreshold
+		let containersToStart = 0
+		if (hasFreeContainers && shouldStartContainer) {
+			// Determine number of containers to start
+			containersToStart = maxContainers - containerCount
 		}
-		catch (error) {
-			// TODO: error handling
+		let containersToKill = 0
+		// This doesn't make sense so far
+		// Since we need to know which containers we can remove
+		if (pendingRequests < containerCount) {
+			containersToKill = containerCount - pendingRequests
 		}
-		return undefined
+		return {
+			containersToKill,
+			containersToStart,
+			pendingRequests,
+			runningContainers: containerInfo
+		}
 	}
 }
