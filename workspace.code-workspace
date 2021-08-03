@@ -6,6 +6,9 @@
 		{
 			"path": "./packages/conversion-service"
 		},
+		{
+			"path": "./packages/auto-scaler"
+		}
 	],
 	"settings": {
 		"editor.renderWhitespace": "all",
