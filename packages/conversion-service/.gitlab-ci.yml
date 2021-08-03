@@ -30,7 +30,7 @@ workflow:
 build docker:
   stage: build
   needs:
-    - job: "test unit"
+    - job: "test unit conversion-service"
     - job: "test integration"
   services:
     - docker:19.03.5-dind
@@ -65,17 +65,7 @@ docker latest tag:
       changes:
       - packages/conversion-service/*
 
-lint code:
-  stage: prepare
-  <<: *conversion-service-before-script
-  script:
-    - yarn lint
-  rules:
-    - changes:
-        - packages/conversion-service/src/**/*.ts
-      when: always
-
-test unit:
+test unit conversion-service:
   stage: test
   <<: *conversion-service-before-script
   script:
@@ -99,7 +89,7 @@ test unit:
       - packages/conversion-service/*
 
 test integration:
-  extends: "test unit"
+  extends: "test unit conversion-service"
   script:
     - yarn test:integration --ci
   artifacts:
@@ -186,7 +176,7 @@ release job:
     - job: "prepare release"
       artifacts: true
     - job: "code quality"
-    - job: "test unit"
+    - job: "test unit conversion-service"
     - job: "test integration"
     - job: "docker latest tag"
   script:
