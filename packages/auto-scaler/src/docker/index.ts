@@ -33,7 +33,6 @@ export class DockerService {
 		})
 		return runningContainers.map(container => ({
 			containerId: container.id,
-			// Redundant
 			containerLabel
 		}))
 	}

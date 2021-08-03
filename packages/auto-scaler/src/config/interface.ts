@@ -9,7 +9,7 @@ export interface IAutoScalerConfiguration {
     /**
      * The docker configuration.
      */
-    docker: IDockerConfiguration,
+    dockerConfig: IDockerConfiguration,
      /**
       * Maximum number of containers which are allowed to run.
       */
