@@ -119,6 +119,7 @@ export class Api {
 		for (const directory of directories) {
 			promises.push(createDirectoryIfNotPresent(path.join(basePath, directory)))
 		}
+		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		Promise.all(promises)
 			.then(res => this.logger.log(res))
 			.catch(console.error)
