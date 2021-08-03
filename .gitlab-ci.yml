@@ -27,7 +27,7 @@ lint code:
     - yarn lerna run lint
   rules:
     - changes:
-        - packages/**/*.ts
+        - packages/*
       when: always
 
 include:
