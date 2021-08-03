@@ -26,7 +26,6 @@
 		"test:types": "yarn tsc --noEmit",
 		"tsoa:create:host": "tsoa spec --host $HOST && tsoa routes",
 		"tsoa:create:local": "tsoa spec --host 'localhost:3000' && tsoa routes",
-		"prepare": "husky install"
 	},
 	"dependencies": {
 		"cors": "^2.8.5",

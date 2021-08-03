@@ -4,6 +4,7 @@
   "scripts": {
     "git:commit": "yarn git-cz",
     "lint": "yarn lerna run lint",
+    "prepare": "husky install",
     "typecheck": "yarn lerna run test:types",
     "release": "standard-version"
   },
