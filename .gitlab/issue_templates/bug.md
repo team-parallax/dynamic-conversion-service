@@ -32,3 +32,12 @@ Describe what you expected to happen when performing the previous action.
 Here you can and should (!!) add screenshots or other further information 
 that you did not yet provide somewhere before.
 -->
+
+<!-- Please add the following actions as they are needed -->
+<!-- In case you don't know the correct milestone just assign backlog -->
+/milestone %Backlog
+/label ~"bug"
+<!-- Please always ensure to provide an estimate of how long you think
+     the work will need from start to merge
+-->
+/estimate

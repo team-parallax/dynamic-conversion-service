@@ -34,6 +34,10 @@ As the author of the Merge Request I confirm that I have self-reviewed the MR fo
 
 ## Other
 
+**Maintainer opt-in**:
+
+- [ ] This MR requires further documentation
+
 <!--
 Further information about the merge request.
 
@@ -42,3 +46,12 @@ For example:
 
 close #23 re #45
 -->
+
+<!-- Please add the following actions as they are needed -->
+<!-- In case you don't know the correct milestone just assign backlog -->
+/milestone %Backlog
+/label ~"feature-request" ~"review-requested"
+<!-- Please always ensure to provide an estimate of how long you think
+     the work will need from start to merge
+-->
+/estimate
