@@ -19,11 +19,14 @@ const autoScaler = new AutoScaler(
 )
 // pass pending request count
 const status = autoScaler.checkContainerStatus(10)
-const {
-    containersToStart,
-    pendingRequests,
-    runningContainers
-} = status
-// TODO : autoScaler.applyConfigurationState
+// e.g.
+// status : {
+//     containersToKill: 0,
+//     containersToStart: 7,
+//     pendingRequests: 10,
+//     runningContainers: [3] -> 3 running containers
+// }
+// starts 7 containers
+autoScaler.applyConfigurationState(status)
 
 ```
