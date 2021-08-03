@@ -1,11 +1,32 @@
 # `auto-scaler`
+Dynamically start and stop docker-containers based on the number of pending requests.
 
-> TODO: description
-
-## Usage
+## Preliminary Usage
 
 ```
-const autoScaler = require('auto-scaler');
+import AutoScaler from '.'
 
-// TODO: DEMONSTRATE API
+const autoScaler = new AutoScaler(
+    {
+        containerStartThreshold: 10,
+        maxContainers: 50,
+        dockerConfig: {
+            containerLabel: 'someLabel',
+            imageId: 'someImageId',
+            socketPath: 'socketPath'
+        }
+    }
+)
+
+// pass pending request count
+const status = autoScaler.checkContainerStatus(10)
+
+const {
+    containersToStart,
+    pendingRequests,
+    runningContainers
+} = status
+
+// TODO : autoScaler.applyConfigurationState
+
 ```
