@@ -27,6 +27,18 @@ workflow:
     - cd packages/conversion-service
     - yarn install --cache .yarn --prefer-offline
 
+typecheck conversion-service:
+  stage: prepare
+  <<: *conversion-service-before-script
+  script:
+    - yarn test:types
+  rules:
+    - changes:
+        - src/**/*.ts
+      when: always
+    - changes:
+      - packages/conversion-service/*
+
 build docker:
   stage: build
   needs:
@@ -47,23 +59,12 @@ build docker:
   script:
     - docker build -t ${IMAGE_BASE_NAME}:${CI_COMMIT_TAG} -f ./Dockerfile .
     - docker push ${IMAGE_BASE_NAME}:${CI_COMMIT_TAG}
-  rules:
-    - if: $CI_COMMIT_TAG
-      changes:
-        - packages/conversion-service/*
-
-docker latest tag:
-  stage: deliver
-  extends: "build docker"
-  needs:
-    - job: "build docker"
-  script:
     - docker build -t ${IMAGE_BASE_NAME}:latest -f ./Dockerfile .
     - docker push ${IMAGE_BASE_NAME}:latest
   rules:
     - if: $CI_COMMIT_TAG
       changes:
-      - packages/conversion-service/*
+        - packages/conversion-service/*
 
 test unit conversion-service:
   stage: test
@@ -83,10 +84,10 @@ test unit conversion-service:
     when: always
   rules:
     - changes:
+      - packages/conversion-service/*
+    - changes:
         - src/**/*.ts
       when: always
-    - changes:
-      - packages/conversion-service/*
 
 test integration:
   extends: "test unit conversion-service"
@@ -98,18 +99,6 @@ test integration:
     reports:
       junit: artifacts/test/integration/junit.xml
   rules:
-    - changes:
-      - packages/conversion-service/*
-
-typecheck conversion-service:
-  stage: prepare
-  <<: *conversion-service-before-script
-  script:
-    - yarn test:types
-  rules:
-    - changes:
-        - src/**/*.ts
-      when: always
     - changes:
       - packages/conversion-service/*
 
