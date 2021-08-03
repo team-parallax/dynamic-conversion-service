@@ -21,7 +21,8 @@ export class AutoScaler {
 			const containerInfo = await this.docker.getRunningContainerInfo()
 			const containerCount = containerInfo.length
 			const {
-				maxContainers, containerStartThreshold
+				containerStartThreshold,
+				maxContainers
 			} = this.config
 			const hasFreeContainers = containerCount < maxContainers
 			const shouldStartContainer = pendingRequests >= containerStartThreshold
