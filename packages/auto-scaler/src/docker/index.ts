@@ -47,6 +47,9 @@ export class DockerService {
 			label: this.config.containerLabel
 			// Filtering by container id does not work as expected
 		})
+		if (containers.length < 1) {
+			throw new Error("cannot remove container when no container is running")
+		}
 		const [container] = containers.filter(container => container.id === containerId)
 		const stoppedContainer = await container.stop()
 		await stoppedContainer.delete({
