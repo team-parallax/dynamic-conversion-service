@@ -15,10 +15,10 @@ export class AutoScaler {
 	public applyConfigurationState = async (status: IContainerStatus, idleContainerIds?: string[])
 	: Promise<IContainerInfo[]> => {
 		const {
-			containersToRemove: containersToKill,
+			containersToRemove,
 			containersToStart
 		} = status
-		if (containersToStart !== 0 && containersToKill !== 0) {
+		if (containersToStart !== 0 && containersToRemove !== 0) {
 			throw new Error("invalid status: cannot start and kill containers in one call")
 		}
 		const promises = []
@@ -27,8 +27,8 @@ export class AutoScaler {
 				promises.push(this.dockerService.createContainer())
 			}
 		}
-		if (containersToKill && idleContainerIds) {
-			const idleContainersToKill = idleContainerIds.slice(0, containersToKill)
+		if (containersToRemove && idleContainerIds) {
+			const idleContainersToKill = idleContainerIds.slice(0, containersToRemove)
 			idleContainersToKill.forEach(idleContainer =>
 				promises.push(this.dockerService.removeContainer(idleContainer)))
 		}
