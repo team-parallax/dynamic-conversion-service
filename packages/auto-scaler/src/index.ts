@@ -15,7 +15,7 @@ export class AutoScaler {
 	public applyConfigurationState = async (status: IContainerStatus, idleContainerIds?: string[])
 	: Promise<IContainerInfo[]> => {
 		const {
-			containersToKill,
+			containersToRemove: containersToKill,
 			containersToStart
 		} = status
 		if (containersToStart !== 0 && containersToKill !== 0) {
@@ -50,14 +50,14 @@ export class AutoScaler {
 			// Determine number of containers to start
 			containersToStart = maxContainers - containerCount
 		}
-		let containersToKill = 0
+		let containersToRemove = 0
 		// This doesn't make sense so far
 		// Since we need to know which containers we can remove
 		if (pendingRequests < containerCount) {
-			containersToKill = containerCount - pendingRequests
+			containersToRemove = containerCount - pendingRequests
 		}
 		return {
-			containersToKill,
+			containersToRemove,
 			containersToStart,
 			pendingRequests,
 			runningContainers: containerInfo

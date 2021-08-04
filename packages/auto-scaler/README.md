@@ -21,7 +21,7 @@ const autoScaler = new AutoScaler(
 const status = autoScaler.checkContainerStatus(10)
 // e.g.
 // status : {
-//     containersToKill: 0,
+//     containersToRemove: 0,
 //     containersToStart: 7,
 //     pendingRequests: 10,
 //     runningContainers: [3] -> 3 running containers
@@ -32,7 +32,7 @@ autoScaler.applyConfigurationState(status)
 // you need to pass them to applyConfigurationState
 // e.g.
 // status : {
-//     containersToKill: 3,
+//     containersToRemove: 3,
 //     containersToStart: 0,
 //     pendingRequests: 0,
 //     runningContainers: [3] -> 3 running containers

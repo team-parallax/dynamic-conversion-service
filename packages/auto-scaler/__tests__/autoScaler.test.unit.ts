@@ -21,7 +21,7 @@ describe("auto-scaler should pass all tests", () => {
 		it("should start 3 containers", async (): Promise<void> => {
 			/* Arrange */
 			const tempStatus: IContainerStatus = {
-				containersToKill: 0,
+				containersToRemove: 0,
 				containersToStart: 3,
 				pendingRequests,
 				runningContainers: []
@@ -35,7 +35,7 @@ describe("auto-scaler should pass all tests", () => {
 		it("should start 0 containers", async (): Promise<void> => {
 			/* Arrange */
 			const tempStatus: IContainerStatus = {
-				containersToKill: 0,
+				containersToRemove: 0,
 				containersToStart: 0,
 				pendingRequests,
 				runningContainers: []
@@ -49,7 +49,7 @@ describe("auto-scaler should pass all tests", () => {
 		it("should start 0 containers on negative target", async (): Promise<void> => {
 			/* Arrange */
 			const tempStatus: IContainerStatus = {
-				containersToKill: 0,
+				containersToRemove: 0,
 				containersToStart: -1,
 				pendingRequests,
 				runningContainers: []
@@ -74,7 +74,7 @@ describe("auto-scaler should pass all tests", () => {
 	it("should remove 3 containers without error", async () => {
 		/* Arrange */
 		const tempStatus: IContainerStatus = {
-			containersToKill: 3,
+			containersToRemove: 3,
 			containersToStart: 0,
 			pendingRequests,
 			runningContainers: []
