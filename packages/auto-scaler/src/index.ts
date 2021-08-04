@@ -12,7 +12,7 @@ export class AutoScaler {
 		} = this.config
 		this.dockerService = new DockerService(dockerConfig)
 	}
-	public applyConfigurationState = async (status: IContainerStatus)
+	public applyConfigurationState = async (status: IContainerStatus, idleContainerIds?: string[])
 	: Promise<IContainerInfo[]> => {
 		const {
 			containersToKill,
@@ -27,11 +27,11 @@ export class AutoScaler {
 				promises.push(this.dockerService.createContainer())
 			}
 		}
-		// Else if (containersToKill) {
-		// 	For (let i = 0; i < containersToKill; i++) {
-		// 		Promises.push(this.dockerService.removeContainer( which ones ?))
-		// 	}
-		// }
+		if (containersToKill && idleContainerIds) {
+			const idleContainersToKill = idleContainerIds.slice(0, containersToKill)
+			idleContainersToKill.forEach(idleContainer =>
+				promises.push(this.dockerService.removeContainer(idleContainer)))
+		}
 		return await Promise.all(promises)
 	}
 	public checkContainerStatus = async (

@@ -44,10 +44,14 @@ export class DockerService {
 	removeContainer = async (containerId: string) : Promise<IContainerInfo> => {
 		const containers = await this.docker.container.list({
 			// eslint-disable-next-line @typescript-eslint/naming-convention
-			Id: containerId
+			label: this.config.containerLabel
+			// Filtering by container id does not work as expected
 		})
-		const [container] = containers
-		await container.delete()
+		const [container] = containers.filter(container => container.id === containerId)
+		const stoppedContainer = await container.stop()
+		await stoppedContainer.delete({
+			force: true
+		})
 		return {
 			containerId: container.id,
 			containerLabel: this.config.containerLabel
