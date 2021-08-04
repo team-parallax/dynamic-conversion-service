@@ -61,4 +61,34 @@ describe("auto-scaler should pass all tests", () => {
 			expect(containers.length).toEqual(targetContainerCount)
 		})
 	})
+	let containerIds: string[] = []
+	it("should report 3 running containers after starting 3 containers", async () : Promise<void> => {
+		/* Arrange */
+		const expectedNumberOfContainers = 3
+		/* Act */
+		const status = await autoScaler.checkContainerStatus(pendingRequests)
+		containerIds = status.runningContainers.map(container => container.containerId)
+		/* Assert */
+		expect(status.runningContainers.length).toEqual(expectedNumberOfContainers)
+	})
+	it("should remove 3 containers without error", async () => {
+		/* Arrange */
+		const tempStatus: IContainerStatus = {
+			containersToKill: 3,
+			containersToStart: 0,
+			pendingRequests,
+			runningContainers: []
+		}
+		const expectedRemovedContainerCount = 3
+		/* Act */
+		const containers = await autoScaler.applyConfigurationState(tempStatus, containerIds)
+		/* Assert */
+		expect(containers.length).toEqual(expectedRemovedContainerCount)
+	})
+	it("should report 0 running containers after removing all", async () : Promise<void> => {
+		/* ActAssert */
+		const status = await autoScaler.checkContainerStatus(pendingRequests)
+		/* Assert */
+		expect(status.runningContainers.length).toEqual(0)
+	})
 })
