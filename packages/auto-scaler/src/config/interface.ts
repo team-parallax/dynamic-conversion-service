@@ -1,7 +1,8 @@
 export interface IAutoScalerConfiguration {
     containerStartThreshold: number,
     dockerConfig: IDockerConfiguration,
-    maxContainers: number
+    maxContainers: number,
+    minContainers: number
 }
 export interface IDockerConfiguration {
     containerLabel: string,

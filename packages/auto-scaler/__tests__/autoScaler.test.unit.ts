@@ -8,7 +8,8 @@ describe("auto-scaler should pass all tests", () => {
 			imageId: "bash",
 			socketPath: "/var/run/docker.sock"
 		},
-		maxContainers: 10
+		maxContainers: 10,
+		minContainers: 0
 	})
 	const pendingRequests = 10
 	// Remove any existing containers

@@ -9,6 +9,7 @@ import AutoScaler from '.'
 const autoScaler = new AutoScaler(
     {
         containerStartThreshold: 10,
+        minContainers: 5,
         maxContainers: 50,
         dockerConfig: {
             containerLabel: "someLabel",
