@@ -19,6 +19,8 @@ export class DockerService {
 		} = this.config
 		const con = await this.docker.container.create({
 			// eslint-disable-next-line @typescript-eslint/naming-convention
+			Cmd: ["sleep", "infinity"],
+			// eslint-disable-next-line @typescript-eslint/naming-convention
 			Image: imageId,
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			label: [containerLabel]
