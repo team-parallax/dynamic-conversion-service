@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "./packages/auto-scaler"
+		},
+		{
+			"path": "./packages/redis"
 		}
 	],
 	"settings": {

@@ -33,3 +33,4 @@ lint code:
 include:
   - local: packages/conversion-service/.gitlab-ci.yml
   - local: packages/auto-scaler/.gitlab-ci.yml
+  - local: packages/redis/.gitlab-ci.yml

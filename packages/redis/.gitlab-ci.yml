@@ -1,0 +1,50 @@
+default:
+  interruptible: true
+
+stages:
+  - prepare
+  - test
+
+# Workflow rules for MR-Pipelines taken from docs at docs.gitlab.com:
+# https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"
+      when: never
+    - if: $CI_COMMIT_BRANCH || $CI_COMMIT_TAG
+
+.redis-before-script: &redis-before-script
+  before_script:
+    - cd packages/redis
+    - yarn install --cache .yarn --prefer-offline
+
+typecheck redis:
+  stage: prepare
+  <<: *redis-before-script
+  script:
+    - yarn test:types
+  rules:
+    - changes:
+        - packages/redis/*
+
+test unit redis:
+  stage: test
+  <<: *redis-before-script
+  script:
+    - |
+      yarn test:unit:coverage --ci
+  coverage: /All files[^|]*\|[^|]*\s+([\d\.]+)/
+  artifacts:
+    expire_in: 7 days
+    paths:
+      - artifacts/test/unit/junit.xml
+    reports:
+      junit: artifacts/test/unit/junit.xml
+    untracked: false
+    when: always
+  rules:
+    - changes:
+        - src/**/*.ts
+      when: always
+    - changes:
+      - packages/redis/*

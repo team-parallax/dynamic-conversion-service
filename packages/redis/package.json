@@ -1,26 +1,17 @@
 {
-  "name": "auto-scaler",
+  "name": "redis",
   "version": "0.0.0",
-  "description": "A utility service to start/stop docker containers on a host system",
+  "description": "A redis message queue implementation",
   "keywords": [
-    "docker",
+    "redis",
     "nodejs",
-    "scale"
+    "typescript",
+    "docker"
   ],
   "author": "\"\"Sven Patrick Meier\"\" <\"\"sven.patrick.meier@team-parallax.com\"\">",
   "homepage": "",
   "license": "MIT",
   "main": "src/index.ts",
-  "directories": {
-    "test": "__tests__"
-  },
-  "publishConfig": {
-    "registry": "https://registry.yarnpkg.com"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git@gitlab.internal.team-parallax.com:belwue/dynamic-conversion-service.git"
-  },
   "scripts": {
     "lint": "yarn eslint src --ext .ts",
     "lint:fix": "yarn eslint src --ext .ts --fix",
@@ -30,14 +21,11 @@
     "test:unit:coverage": "yarn test:unit --coverage --reporters=default --reporters=jest-junit",
     "test:types": "yarn tsc --noEmit"
   },
-  "dependencies": {
-    "dotenv": "^10.0.0",
-    "node-docker-api": "^1.1.22",
-    "ts-node": "^10.1.0",
-    "typescript": "^4.3.5"
+  "directories": {
+    "test": "__tests__"
   },
-  "devDependencies": {
-    "source-map-support": "^0.5.16",
-    "typescript-ioc": "^3.2.2"
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.internal.team-parallax.com:belwue/dynamic-conversion-service.git"
   }
 }
