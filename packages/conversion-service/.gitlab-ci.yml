@@ -43,6 +43,8 @@ build docker:
   stage: build
   needs:
     - job: "test unit conversion-service"
+    - job: "test unit auto-scaler"
+    - job: "test unit redis"
     - job: "test integration conversion-service"
   services:
     - docker:19.03.5-dind
