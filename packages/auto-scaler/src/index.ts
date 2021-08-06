@@ -59,29 +59,65 @@ export class AutoScaler {
 		pendingRequests: number
 	) : Promise<IContainerStatus> => {
 		const containerInfo = await this.dockerService.getRunningContainerInfo()
-		const containerCount = containerInfo.length
+		const runningContainers = containerInfo.length
 		const {
 			containerStartThreshold,
-			maxContainers
+			maxContainers,
+			minContainers
 		} = this.config
-		const hasFreeContainers = containerCount < maxContainers
-		const shouldStartContainer = pendingRequests >= containerStartThreshold
-		let containersToStart = 0
-		if (hasFreeContainers && shouldStartContainer) {
-			// Determine number of containers to start
-			containersToStart = maxContainers - containerCount
-		}
-		let containersToRemove = 0
-		// This doesn't make sense so far
-		// Since we need to know which containers we can remove
-		if (pendingRequests < containerCount) {
-			containersToRemove = containerCount - pendingRequests
-		}
+		const {
+			start, remove
+		} = this.computeState(
+			runningContainers,
+			pendingRequests,
+			containerStartThreshold,
+			maxContainers,
+			minContainers
+		)
 		return {
-			containersToRemove,
-			containersToStart,
+			containersToRemove: remove,
+			containersToStart: start,
 			pendingRequests,
 			runningContainers: containerInfo
+		}
+	}
+	private readonly computeState = (
+		runningContainers: number,
+		pendingRequests: number,
+		tasksPerContainer: number,
+		maxContainers: number,
+		minContainers: number
+	): {remove:number, start: number} => {
+		let start = 0
+		let remove = 0
+		const pendingTasksPerContainer = Math.ceil(pendingRequests / runningContainers)
+		// If we exceed the task per container threshold
+		if (pendingTasksPerContainer > tasksPerContainer) {
+			// Compute required amount of containers for tasks not being
+			// Handled by running containers
+			const remainingTasks = pendingRequests - tasksPerContainer * runningContainers
+			start = Math.ceil(remainingTasks / tasksPerContainer)
+			if (start + runningContainers > maxContainers) {
+				// Do not exceed upper threshold
+				start = maxContainers - runningContainers
+			}
+		}
+		else if (pendingTasksPerContainer < tasksPerContainer) {
+			// Tasks we actually need for all requests
+			const requiredContainers = pendingRequests - tasksPerContainer * runningContainers
+			// Containers we can remove
+			remove = runningContainers - requiredContainers
+			if (runningContainers - remove < minContainers) {
+				// Min : 5
+				// E.g. 10 - 7 < 3
+				// 7 -= (7 - 5 = 2) = 5
+				// Do not exceed lower threshold
+				remove -= remove - minContainers
+			}
+		}
+		return {
+			remove,
+			start
 		}
 	}
 }
