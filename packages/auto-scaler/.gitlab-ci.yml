@@ -29,6 +29,8 @@ typecheck auto-scaler:
 
 test unit auto-scaler:
   stage: test
+  needs:
+    - job: "typecheck auto-scaler"
   <<: *auto-scaler-before-script
   script:
     - |
