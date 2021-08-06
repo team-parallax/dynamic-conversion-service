@@ -1,17 +1,21 @@
 import { Docker } from "node-docker-api"
 import { IContainerInfo } from "./interface"
 import { IDockerConfiguration } from "../config"
+import winston from "winston"
 export class DockerService {
 	private readonly config: IDockerConfiguration
 	private readonly docker: Docker
-	constructor(config: IDockerConfiguration) {
+	private readonly logger: winston.Logger
+	constructor(config: IDockerConfiguration, logger: winston.Logger) {
 		this.config = config
+		this.logger = logger
 		const {
 			socketPath
 		} = this.config
 		this.docker = new Docker({
 			socketPath
 		})
+		this.logger.info(`created DockerService using ${socketPath}`)
 	}
 	createContainer = async () : Promise<IContainerInfo> => {
 		const {
@@ -26,6 +30,7 @@ export class DockerService {
 			label: [containerLabel]
 		})
 		const startedContainer = await con.start()
+		this.logger.info(`created container: ${startedContainer.id}/${containerLabel}`)
 		return {
 			containerId: startedContainer.id,
 			containerLabel
@@ -57,6 +62,7 @@ export class DockerService {
 		await stoppedContainer.delete({
 			force: true
 		})
+		this.logger.info(`removed container: ${container.id}/${this.config.containerLabel}`)
 		return {
 			containerId: container.id,
 			containerLabel: this.config.containerLabel

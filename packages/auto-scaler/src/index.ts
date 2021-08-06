@@ -2,15 +2,29 @@ import { DockerService } from "./docker"
 import { IAutoScalerConfiguration } from "./config"
 import { IContainerInfo } from "./docker/interface"
 import { IContainerStatus } from "./interface"
+import winston from "winston"
 export class AutoScaler {
 	private readonly config: IAutoScalerConfiguration
 	private readonly dockerService: DockerService
+	private readonly logger: winston.Logger
 	constructor(config: IAutoScalerConfiguration) {
 		this.config = config
 		const {
 			dockerConfig
 		} = this.config
-		this.dockerService = new DockerService(dockerConfig)
+		this.logger = winston.createLogger({
+			defaultMeta: {
+				service: "auto-scaler"
+			},
+			format: winston.format.simple(),
+			level: "info",
+			transports: [
+				new winston.transports.Console({
+					format: winston.format.simple()
+				})
+			]
+		})
+		this.dockerService = new DockerService(dockerConfig, this.logger)
 	}
 	public applyConfigurationState = async (status: IContainerStatus, idleContainerIds?: string[])
 	: Promise<IContainerInfo[]> => {
@@ -21,18 +35,20 @@ export class AutoScaler {
 		if (containersToStart !== 0 && containersToRemove !== 0) {
 			throw new Error("invalid status: cannot start and kill containers in one call")
 		}
-		const promises = []
+		const createPromises: Promise<IContainerInfo>[] = []
 		if (containersToStart) {
 			for (let i = 0; i < containersToStart; i++) {
-				promises.push(this.dockerService.createContainer())
+				createPromises.push(this.dockerService.createContainer())
 			}
 		}
+		const removePromises: Promise<IContainerInfo>[] = []
 		if (containersToRemove && idleContainerIds) {
 			const idleContainersToKill = idleContainerIds.slice(0, containersToRemove)
 			idleContainersToKill.forEach(idleContainer =>
-				promises.push(this.dockerService.removeContainer(idleContainer)))
+				removePromises.push(this.dockerService.removeContainer(idleContainer)))
 		}
-		return await Promise.all(promises)
+		this.logger.info(`creating ${createPromises.length}/removing ${removePromises.length} containers`)
+		return await Promise.all([...createPromises, ...removePromises])
 	}
 	public checkContainerStatus = async (
 		pendingRequests: number
