@@ -29,6 +29,8 @@ typecheck redis:
 
 test unit redis:
   stage: test
+  needs:
+    - job: "typecheck redis"
   <<: *redis-before-script
   script:
     - |

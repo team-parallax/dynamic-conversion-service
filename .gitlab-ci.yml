@@ -70,6 +70,7 @@ code quality:
     - job: "typecheck conversion-service"
     - job: "typecheck auto-scaler"
     - job: "typecheck redis"
+    - job: "prepare release"
   variables:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://localhost:2375
@@ -104,10 +105,6 @@ release job:
     - job: "prepare release"
       artifacts: true
     - job: "build docker"
-    - job: "test unit conversion-service"
-    - job: "test unit auto-scaler"
-    - job: "test unit redis"
-    - job: "test integration conversion-service"
     - job: "code quality"
   script:
     - echo "create gitlab-release for ${CI_COMMIT_TAG}"
