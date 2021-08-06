@@ -11,6 +11,30 @@ describe("auto-scaler should pass all tests", () => {
 		maxContainers: 10
 	})
 	const pendingRequests = 10
+	// Remove any existing containers
+	beforeAll(async () => {
+		const initialStatus = await autoScaler.checkContainerStatus(pendingRequests)
+		const ids = initialStatus.runningContainers
+			.map(runningContainers => runningContainers.containerId)
+		await autoScaler.applyConfigurationState({
+			containersToRemove: ids.length,
+			containersToStart: 0,
+			pendingRequests: 0,
+			runningContainers: []
+		}, ids)
+	})
+	// Remove any containers missed by the tests
+	afterAll(async () => {
+		const afterStatus = await autoScaler.checkContainerStatus(pendingRequests)
+		const ids = afterStatus.runningContainers
+			.map(runningContainers => runningContainers.containerId)
+		await autoScaler.applyConfigurationState({
+			containersToRemove: ids.length,
+			containersToStart: 0,
+			pendingRequests: 0,
+			runningContainers: []
+		}, ids)
+	})
 	it("should report 0 running containers on start", async () : Promise<void> => {
 		/* ActAssert */
 		const status = await autoScaler.checkContainerStatus(pendingRequests)
