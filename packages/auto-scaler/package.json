@@ -12,12 +12,8 @@
   "license": "MIT",
   "main": "src/index.ts",
   "directories": {
-    "lib": "lib",
     "test": "__tests__"
   },
-  "files": [
-    "lib"
-  ],
   "publishConfig": {
     "registry": "https://registry.yarnpkg.com"
   },
