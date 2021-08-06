@@ -1,0 +1,38 @@
+{
+  "name": "redis",
+  "version": "0.0.0",
+  "description": "A redis message queue implementation",
+  "keywords": [
+    "redis",
+    "nodejs",
+    "typescript",
+    "docker"
+  ],
+  "author": "\"\"Sven Patrick Meier\"\" <\"\"sven.patrick.meier@team-parallax.com\"\">",
+  "homepage": "",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "scripts": {
+    "lint": "yarn eslint src --ext .ts",
+    "lint:fix": "yarn eslint src --ext .ts --fix",
+    "test": "yarn jest --config ./jest.config.js --detectOpenHandles",
+    "test:integration": "yarn jest integration --config ./jest.config.js --detectOpenHandles",
+    "test:unit": "yarn jest unit --config ./jest.config.js --detectOpenHandles",
+    "test:unit:coverage": "yarn test:unit --coverage --reporters=default --reporters=jest-junit",
+    "test:types": "yarn tsc --noEmit"
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.yarnpkg.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.internal.team-parallax.com:belwue/dynamic-conversion-service.git"
+  }
+}
