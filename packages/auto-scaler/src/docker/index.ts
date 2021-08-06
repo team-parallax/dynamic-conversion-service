@@ -1,10 +1,13 @@
 import { Docker } from "node-docker-api"
 import { IContainerInfo } from "./interface"
 import { IDockerConfiguration } from "../config"
+import { Stream } from "stream"
+import { promisifyStream } from "./util"
 import winston from "winston"
 export class DockerService {
 	private readonly config: IDockerConfiguration
 	private readonly docker: Docker
+	private hasImage: boolean = false
 	private readonly logger: winston.Logger
 	constructor(config: IDockerConfiguration, logger: winston.Logger) {
 		this.config = config
@@ -17,10 +20,22 @@ export class DockerService {
 		})
 		this.logger.info(`created DockerService using ${socketPath}`)
 	}
+	checkImage = async (imageId:string): Promise<void> => {
+		const stream = await this.docker.image.create({}, {
+			fromImage: imageId,
+			tag: "latest"
+		}) as Stream
+		await promisifyStream(stream)
+		this.logger.info(`pulled image: ${imageId}`)
+	}
 	createContainer = async () : Promise<IContainerInfo> => {
 		const {
 			imageId, containerLabel
 		} = this.config
+		if (!this.hasImage) {
+			await this.checkImage(this.config.imageId)
+			this.hasImage = true
+		}
 		const con = await this.docker.container.create({
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			Cmd: ["sleep", "infinity"],
