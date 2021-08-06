@@ -48,7 +48,7 @@ build docker:
     - docker:19.03.5-dind
   before_script:
     - echo -n "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USER} --password-stdin ${REGISTRY}
-    - packages/conversion-service
+    - cd packages/conversion-service
   image: docker:19.03.5-dind
   variables:
     DOCKER_DRIVER: overlay2
