@@ -43,7 +43,7 @@ build docker:
   stage: build
   needs:
     - job: "test unit conversion-service"
-    - job: "test integration"
+    - job: "test integration conversion-service"
   services:
     - docker:19.03.5-dind
   before_script:
