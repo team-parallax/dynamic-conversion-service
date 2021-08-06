@@ -1,4 +1,5 @@
 import { AutoScaler } from "../src/index"
+import { IContainerStatus } from "../src/interface"
 describe("auto-scaler", () => {
 	const autoScaler = new AutoScaler({
 		containerStartThreshold: 2,

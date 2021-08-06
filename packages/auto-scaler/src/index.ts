@@ -26,8 +26,10 @@ export class AutoScaler {
 		})
 		this.dockerService = new DockerService(dockerConfig, this.logger)
 	}
-	public applyConfigurationState = async (status: IContainerStatus, idleContainerIds?: string[])
-	: Promise<IContainerInfo[]> => {
+	public applyConfigurationState = async (
+		status: IContainerStatus,
+		idleContainerIds?: string[]
+	): Promise<IContainerInfo[]> => {
 		const {
 			containersToRemove,
 			containersToStart
