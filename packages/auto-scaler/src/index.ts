@@ -35,20 +35,25 @@ export class AutoScaler {
 		if (containersToStart !== 0 && containersToRemove !== 0) {
 			throw new Error("invalid status: cannot start and kill containers in one call")
 		}
-		const createPromises: Promise<IContainerInfo>[] = []
+		const containerInfos: IContainerInfo[] = []
+		this.logger.info(`creating ${containersToStart}/removing ${containersToRemove} containers`)
 		if (containersToStart) {
 			for (let i = 0; i < containersToStart; i++) {
-				createPromises.push(this.dockerService.createContainer())
+				// eslint-disable-next-line no-await-in-loop
+				const containerInfo = await this.dockerService.createContainer()
+				containerInfos.push(containerInfo)
 			}
 		}
-		const removePromises: Promise<IContainerInfo>[] = []
 		if (containersToRemove && idleContainerIds) {
-			const idleContainersToKill = idleContainerIds.slice(0, containersToRemove)
-			idleContainersToKill.forEach(idleContainer =>
-				removePromises.push(this.dockerService.removeContainer(idleContainer)))
+			const idleContainersToRemove = idleContainerIds.slice(0, containersToRemove)
+			for (let i = 0; i < idleContainersToRemove.length; i++) {
+				// eslint-disable-next-line no-await-in-loop
+				const containerInfo = await this.dockerService
+					.removeContainer(idleContainersToRemove[i])
+				containerInfos.push(containerInfo)
+			}
 		}
-		this.logger.info(`creating ${createPromises.length}/removing ${removePromises.length} containers`)
-		return await Promise.all([...createPromises, ...removePromises])
+		return containerInfos
 	}
 	public checkContainerStatus = async (
 		pendingRequests: number
