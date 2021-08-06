@@ -37,7 +37,7 @@ describe("auto-scaler should pass all tests", () => {
 		}, ids)
 	})
 	it("should report 0 running containers on start", async () : Promise<void> => {
-		/* ActAssert */
+		/* Act */
 		const status = await autoScaler.checkContainerStatus(pendingRequests)
 		/* Assert */
 		expect(status.runningContainers.length).toEqual(0)
