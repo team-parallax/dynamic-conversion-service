@@ -98,6 +98,7 @@ test integration:
       - artifacts/test/integration/junit.xml
     reports:
       junit: artifacts/test/integration/junit.xml
+  retry: 2
   rules:
     - changes:
       - packages/conversion-service/*
