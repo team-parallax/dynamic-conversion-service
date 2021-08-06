@@ -48,8 +48,9 @@ export class AutoScaler {
 			const idleContainersToRemove = idleContainerIds.slice(0, containersToRemove)
 			for (let i = 0; i < idleContainersToRemove.length; i++) {
 				// eslint-disable-next-line no-await-in-loop
-				const containerInfo = await this.dockerService
-					.removeContainer(idleContainersToRemove[i])
+				const containerInfo = await this.dockerService.removeContainer(
+					idleContainersToRemove[i]
+				)
 				containerInfos.push(containerInfo)
 			}
 		}

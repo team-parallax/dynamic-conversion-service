@@ -1,6 +1,5 @@
 import { AutoScaler } from "../src/index"
-import { IContainerStatus } from "../src/interface"
-describe("auto-scaler should pass all tests", () => {
+describe("auto-scaler", () => {
 	const autoScaler = new AutoScaler({
 		containerStartThreshold: 2,
 		dockerConfig: {
@@ -15,8 +14,8 @@ describe("auto-scaler should pass all tests", () => {
 	// Remove any existing containers
 	beforeAll(async () => {
 		const initialStatus = await autoScaler.checkContainerStatus(pendingRequests)
-		const ids = initialStatus.runningContainers
-			.map(runningContainers => runningContainers.containerId)
+		const ids = initialStatus?.runningContainers
+			.map(runningContainers => runningContainers.containerId) ?? []
 		await autoScaler.applyConfigurationState({
 			containersToRemove: ids.length,
 			containersToStart: 0,

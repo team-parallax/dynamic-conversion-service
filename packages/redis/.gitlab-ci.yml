@@ -13,25 +13,25 @@ workflow:
       when: never
     - if: $CI_COMMIT_BRANCH || $CI_COMMIT_TAG
 
-.auto-scaler-before-script: &auto-scaler-before-script
+.redis-before-script: &redis-before-script
   before_script:
-    - cd packages/auto-scaler
+    - cd packages/redis
     - yarn install --cache .yarn --prefer-offline
 
-typecheck auto-scaler:
+typecheck redis:
   stage: prepare
-  <<: *auto-scaler-before-script
+  <<: *redis-before-script
   script:
     - yarn test:types
   rules:
     - changes:
-        - packages/auto-scaler/*
+        - packages/redis/*
 
-test unit auto-scaler:
+test unit redis:
   stage: test
   needs:
-    - job: "typecheck auto-scaler"
-  <<: *auto-scaler-before-script
+    - job: "typecheck redis"
+  <<: *redis-before-script
   script:
     - |
       yarn test:unit:coverage --ci
@@ -49,4 +49,4 @@ test unit auto-scaler:
         - src/**/*.ts
       when: always
     - changes:
-      - packages/auto-scaler/*
+      - packages/redis/*

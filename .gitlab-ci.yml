@@ -19,6 +19,13 @@ workflow:
       when: never
     - if: $CI_COMMIT_BRANCH || $CI_COMMIT_TAG
 
+
+include:
+  - local: packages/conversion-service/.gitlab-ci.yml
+  - local: packages/auto-scaler/.gitlab-ci.yml
+  - local: packages/redis/.gitlab-ci.yml
+
+### Prepare - Stage
 lint code:
   stage: prepare
   before_script:
@@ -27,9 +34,83 @@ lint code:
     - yarn lerna run lint
   rules:
     - changes:
-        - packages/**/*.ts
+        - packages/*
       when: always
 
-include:
-  - local: packages/conversion-service/.gitlab-ci.yml
-  - local: packages/auto-scaler/.gitlab-ci.yml
+
+# The steps below originally come from here, but the release_job step
+# should wait for the docker build before creating a release
+# https://gitlab.com/uulmhack/pipelines/auto-create-release/-/blob/master/.gitlab-ci.yml
+prepare release:
+  image: alpine:3.13
+  stage: prepare
+  before_script:
+    - apk add --no-cache git
+  script:
+    - |
+      echo "Generate diff from last release for the latest release"
+      git diff --unified=0 HEAD~1 ./CHANGELOG.md | tail -n +6 | sed -e "s/^+//" > ./latestChanges.md
+  artifacts:
+    paths:
+      - ./latestChanges.md
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      exists:
+        - CHANGELOG.md
+
+### Review Stage
+code quality:
+  allow_failure: true
+  image: docker:stable
+  services:
+    - docker:stable-dind
+  stage: review
+  needs:
+    - job: "lint code"
+    - job: "typecheck conversion-service"
+    - job: "typecheck auto-scaler"
+    - job: "typecheck redis"
+    - job: "prepare release"
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: tcp://localhost:2375
+    REPORT_FORMAT: json
+    SOURCE_CODE: ${PWD}/src/
+  before_script: []
+  script:
+    - echo "Generate Gitlab Code Quality Report"
+    - |
+      docker run \
+        --env SOURCE_CODE="${PWD}" \
+        --volume "${PWD}":/code \
+        --volume /var/run/docker.sock:/var/run/docker.sock \
+        "registry.gitlab.com/gitlab-org/ci-cd/codequality:0.85.24" /code
+  artifacts:
+    paths:
+      - gl-code-quality-report.json
+    reports:
+      codequality: gl-code-quality-report.json
+  rules:
+    - if: '$CODE_QUALITY_DISABLED'
+      when: never
+    - changes:
+        - src/**/*.ts
+      when: always
+
+### Release Stage 
+release job:
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  before_script: []
+  needs:
+    - job: "prepare release"
+      artifacts: true
+    - job: "build docker"
+    - job: "code quality"
+  script:
+    - echo "create gitlab-release for ${CI_COMMIT_TAG}"
+  stage: release
+  release:
+    tag_name: $CI_COMMIT_TAG
+    description: "./latestChanges.md"
+  rules:
+    - if: $CI_COMMIT_TAG

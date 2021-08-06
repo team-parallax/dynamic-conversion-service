@@ -3,8 +3,8 @@ Dynamically start and stop docker-containers based on the number of pending requ
 
 ## Preliminary Usage
 
-```
-import AutoScaler from '.'
+```typescript
+import AutoScaler from "."
 
 const autoScaler = new AutoScaler(
     {

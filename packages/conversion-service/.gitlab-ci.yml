@@ -27,15 +27,30 @@ workflow:
     - cd packages/conversion-service
     - yarn install --cache .yarn --prefer-offline
 
+typecheck conversion-service:
+  stage: prepare
+  <<: *conversion-service-before-script
+  script:
+    - yarn test:types
+  rules:
+    - changes:
+        - src/**/*.ts
+      when: always
+    - changes:
+      - packages/conversion-service/*
+
 build docker:
   stage: build
   needs:
     - job: "test unit conversion-service"
-    - job: "test integration"
+    - job: "test unit auto-scaler"
+    - job: "test unit redis"
+    - job: "test integration conversion-service"
   services:
     - docker:19.03.5-dind
   before_script:
     - echo -n "${DOCKER_PASSWORD}" | docker login -u ${DOCKER_USER} --password-stdin ${REGISTRY}
+    - cd packages/conversion-service
   image: docker:19.03.5-dind
   variables:
     DOCKER_DRIVER: overlay2
@@ -47,26 +62,15 @@ build docker:
   script:
     - docker build -t ${IMAGE_BASE_NAME}:${CI_COMMIT_TAG} -f ./Dockerfile .
     - docker push ${IMAGE_BASE_NAME}:${CI_COMMIT_TAG}
-  rules:
-    - if: $CI_COMMIT_TAG
-      changes:
-        - packages/conversion-service/*
-
-docker latest tag:
-  stage: deliver
-  extends: "build docker"
-  needs:
-    - job: "build docker"
-  script:
     - docker build -t ${IMAGE_BASE_NAME}:latest -f ./Dockerfile .
     - docker push ${IMAGE_BASE_NAME}:latest
   rules:
     - if: $CI_COMMIT_TAG
-      changes:
-      - packages/conversion-service/*
 
 test unit conversion-service:
   stage: test
+  needs: 
+  - job: "typecheck conversion-service"
   <<: *conversion-service-before-script
   script:
     - |
@@ -83,13 +87,15 @@ test unit conversion-service:
     when: always
   rules:
     - changes:
+      - packages/conversion-service/*
+    - changes:
         - src/**/*.ts
       when: always
-    - changes:
-      - packages/conversion-service/*
 
-test integration:
+test integration conversion-service:
   extends: "test unit conversion-service"
+  needs:
+    - job: "typecheck conversion-service"
   script:
     - yarn test:integration --ci
   artifacts:
@@ -97,93 +103,7 @@ test integration:
       - artifacts/test/integration/junit.xml
     reports:
       junit: artifacts/test/integration/junit.xml
+  retry: 2
   rules:
     - changes:
       - packages/conversion-service/*
-
-typecheck conversion-service:
-  stage: prepare
-  <<: *conversion-service-before-script
-  script:
-    - yarn test:types
-  rules:
-    - changes:
-        - src/**/*.ts
-      when: always
-    - changes:
-      - packages/conversion-service/*
-
-code quality:
-  allow_failure: true
-  image: docker:stable
-  services:
-    - docker:stable-dind
-  stage: review
-  needs:
-    - job: "lint code"
-    - job: "typecheck conversion-service"
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_HOST: tcp://localhost:2375
-    REPORT_FORMAT: json
-    SOURCE_CODE: ${PWD}/src/
-  before_script: []
-  script:
-    - echo "Generate Gitlab Code Quality Report"
-    - |
-      docker run \
-        --env SOURCE_CODE="${PWD}" \
-        --volume "${PWD}":/code \
-        --volume /var/run/docker.sock:/var/run/docker.sock \
-        "registry.gitlab.com/gitlab-org/ci-cd/codequality:0.85.24" /code
-  artifacts:
-    paths:
-      - gl-code-quality-report.json
-    reports:
-      codequality: gl-code-quality-report.json
-  rules:
-    - if: '$CODE_QUALITY_DISABLED'
-      when: never
-    - changes:
-        - src/**/*.ts
-      when: always
-
-# The steps below originally come from here, but the release_job step
-# should wait for the docker build before creating a release
-# https://gitlab.com/uulmhack/pipelines/auto-create-release/-/blob/master/.gitlab-ci.yml
-prepare release:
-  image: alpine:3.13
-  stage: prepare
-  before_script:
-    - apk add --no-cache git
-  script:
-    - |
-      echo "Generate diff from last release for the latest release"
-      git diff --unified=0 HEAD~1 ./CHANGELOG.md | tail -n +6 | sed -e "s/^+//" > ./latestChanges.md
-  artifacts:
-    paths:
-      - ./latestChanges.md
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      exists:
-        - CHANGELOG.md
-
-release job:
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
-  before_script: []
-  needs:
-    - job: "build docker"
-    - job: "prepare release"
-      artifacts: true
-    - job: "code quality"
-    - job: "test unit conversion-service"
-    - job: "test integration"
-    - job: "docker latest tag"
-  script:
-    - echo "create gitlab-release for ${CI_COMMIT_TAG}"
-  stage: release
-  release:
-    tag_name: $CI_COMMIT_TAG
-    description: "./latestChanges.md"
-  rules:
-    - if: $CI_COMMIT_TAG
