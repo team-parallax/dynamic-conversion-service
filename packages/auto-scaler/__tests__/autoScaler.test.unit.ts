@@ -12,6 +12,7 @@ describe("auto-scaler should pass all tests", () => {
 		minContainers: 0
 	})
 	const pendingRequests = 10
+	let containerIds: string[] = []
 	// Remove any existing containers
 	beforeAll(async () => {
 		const initialStatus = await autoScaler.checkContainerStatus(pendingRequests)
@@ -84,7 +85,6 @@ describe("auto-scaler should pass all tests", () => {
 		/* Assert */
 		expect(containers.length).toEqual(targetContainerCount)
 	})
-	let containerIds: string[] = []
 	it("should report 3 running containers after starting 3 containers", async () : Promise<void> => {
 		/* Arrange */
 		const expectedNumberOfContainers = 3
@@ -114,9 +114,9 @@ describe("auto-scaler should pass all tests", () => {
 		/* Assert */
 		expect(status.runningContainers.length).toEqual(0)
 	})
-	containerIds = []
 	it("should start 10 containers", async (): Promise<void> => {
 		/* Arrange */
+		containerIds = []
 		const tempStatus: IContainerStatus = {
 			containersToRemove: 0,
 			containersToStart: 10,
@@ -129,9 +129,9 @@ describe("auto-scaler should pass all tests", () => {
 		/* Assert */
 		expect(containers.length).toEqual(targetContainerCount)
 	})
-	containerIds = []
 	it("should report 10 running containers after starting 10 containers", async () : Promise<void> => {
 		/* Arrange */
+		containerIds = []
 		const expectedNumberOfContainers = 10
 		/* Act */
 		const status = await autoScaler.checkContainerStatus(pendingRequests)
@@ -153,9 +153,9 @@ describe("auto-scaler should pass all tests", () => {
 		/* Assert */
 		expect(containers.length).toEqual(expectedRemovedContainerCount)
 	})
-	containerIds = []
 	it("should report 5 running containers after removing 5 containers", async () : Promise<void> => {
 		/* Arrange */
+		containerIds = []
 		const expectedNumberOfContainers = 5
 		/* Act */
 		const status = await autoScaler.checkContainerStatus(pendingRequests)
@@ -177,9 +177,9 @@ describe("auto-scaler should pass all tests", () => {
 		/* Assert */
 		expect(containers.length).toEqual(expectedRemovedContainerCount)
 	})
-	containerIds = []
 	it("should report 0 running containers after removing 0 containers", async () : Promise<void> => {
 		/* Arrange */
+		containerIds = []
 		const expectedNumberOfContainers = 0
 		/* Act */
 		const status = await autoScaler.checkContainerStatus(pendingRequests)
