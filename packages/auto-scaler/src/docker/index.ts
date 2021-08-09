@@ -20,10 +20,11 @@ export class DockerService {
 		})
 		this.logger.info(`created DockerService using ${socketPath}`)
 	}
-	checkImage = async (imageId:string): Promise<void> => {
+	checkImage = async (imageId:string, tag?:string): Promise<void> => {
+		const targetTag = tag ?? "latest"
 		const stream = await this.docker.image.create({}, {
 			fromImage: imageId,
-			tag: "latest"
+			tag: targetTag
 		}) as Stream
 		await promisifyStream(stream)
 		this.logger.info(`pulled image: ${imageId}`)
