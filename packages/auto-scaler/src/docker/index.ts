@@ -37,7 +37,7 @@ export class DockerService {
 			await this.checkImage(this.config.imageId)
 			this.hasImage = true
 		}
-		const con = await this.docker.container.create({
+		const newContainer = await this.docker.container.create({
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			Cmd: ["sleep", "infinity"],
 			// eslint-disable-next-line @typescript-eslint/naming-convention
@@ -45,7 +45,7 @@ export class DockerService {
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			label: [containerLabel]
 		})
-		const startedContainer = await con.start()
+		const startedContainer = await newContainer.start()
 		this.logger.info(`created container: ${startedContainer.id}/${containerLabel}`)
 		return {
 			containerId: startedContainer.id,
