@@ -30,6 +30,8 @@ typecheck auto-scaler:
 test unit auto-scaler:
   stage: test
   <<: *auto-scaler-before-script
+  variables:
+    IS_CI: 1
   script:
     - |
       yarn test:unit:coverage --ci
