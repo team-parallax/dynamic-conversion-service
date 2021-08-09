@@ -4,5 +4,5 @@ import { resolve } from "path"
 dotenvConfig({
 	path: resolve("./template.env")
 })
-const maxTestTime = 100000
+const maxTestTime = 30000
 jest.setTimeout(maxTestTime)

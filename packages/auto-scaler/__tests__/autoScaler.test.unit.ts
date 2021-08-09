@@ -1,6 +1,9 @@
+import "jest"
 import { AutoScaler } from "../src/index"
 import { IContainerStatus } from "../src/interface"
+const dockerTestTimeout = 100000
 describe("auto-scaler should pass all tests", () => {
+	jest.setTimeout(dockerTestTimeout)
 	const autoScaler = new AutoScaler({
 		containerStartThreshold: 2,
 		dockerConfig: {
