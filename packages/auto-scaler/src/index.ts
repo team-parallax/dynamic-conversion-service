@@ -108,10 +108,12 @@ export class AutoScaler {
 			// Containers we can remove
 			remove = runningContainers - requiredContainers
 			if (runningContainers - remove < minContainers) {
-				// Min : 5
-				// E.g. 10 - 7 < 3
-				// 7 -= (7 - 5 = 2) = 5
-				// Do not exceed lower threshold
+				/*
+				Min : 5
+				E.g. 10 - 7 < 3
+				7 -= (7 - 5 = 2) = 5
+				Do not exceed lower threshold
+				*/
 				remove -= remove - minContainers
 			}
 		}
