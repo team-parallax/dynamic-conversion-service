@@ -81,13 +81,27 @@ export class AutoScaler {
 			runningContainers: containerInfo
 		}
 	}
-	private readonly computeContainerScaleAmount = (
+	public readonly computeContainerScaleAmount = (
 		runningContainers: number,
 		pendingRequests: number,
 		tasksPerContainer: number,
 		maxContainers: number,
 		minContainers: number
 	): IComputedScalingResult => {
+		// Nothing to do here
+		if (pendingRequests === 0) {
+			return {
+				remove: 0,
+				start: 0
+			}
+		}
+		// Early exit and avoid division by zero
+		if (runningContainers === 0) {
+			return {
+				remove: 0,
+				start: Math.ceil(pendingRequests / tasksPerContainer)
+			}
+		}
 		let start = 0
 		let remove = 0
 		const pendingTasksPerContainer = Math.ceil(pendingRequests / runningContainers)
@@ -104,7 +118,10 @@ export class AutoScaler {
 		}
 		else if (pendingTasksPerContainer < tasksPerContainer) {
 			// Tasks we actually need for all requests
-			const requiredContainers = pendingRequests - tasksPerContainer * runningContainers
+			const requiredContainers = Math.max(
+				pendingRequests - tasksPerContainer * runningContainers,
+				0
+			)
 			// Containers we can remove
 			remove = runningContainers - requiredContainers
 			remove = Math.max(
