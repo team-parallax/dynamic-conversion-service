@@ -1,6 +1,7 @@
 import { Docker } from "node-docker-api"
 import { IContainerInfo } from "./interface"
 import { IDockerConfiguration } from "../config"
+import { InvalidDockerConnectionOptions } from "./execption"
 import { Stream } from "stream"
 import { promisifyStream } from "./util"
 import winston from "winston"
@@ -11,13 +12,26 @@ export class DockerService {
 	private readonly logger: winston.Logger
 	constructor(config: IDockerConfiguration, logger: winston.Logger) {
 		this.config = config
-		this.logger = logger
 		const {
-			socketPath
+			socketPath, host, port
 		} = this.config
-		this.docker = new Docker({
-			socketPath
-		})
+		const useSocket = socketPath && (!host && !port)
+		const useHostPort = host && port && !socketPath
+		if (useSocket) {
+			this.docker = new Docker({
+				socketPath
+			})
+		}
+		else if (useHostPort) {
+			this.docker = new Docker({
+				host,
+				port
+			})
+		}
+		else {
+			throw new InvalidDockerConnectionOptions()
+		}
+		this.logger = logger
 		this.logger.info(`created DockerService using ${socketPath}`)
 	}
 	checkImage = async (imageId:string, tag?:string): Promise<void> => {

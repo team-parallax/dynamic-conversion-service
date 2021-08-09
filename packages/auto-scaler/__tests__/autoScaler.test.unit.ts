@@ -1,16 +1,25 @@
 import "jest"
 import { AutoScaler } from "../src/index"
 import { IContainerStatus } from "../src/interface"
+import { IDockerConfiguration } from "../src/config"
 const dockerTestTimeout = 100000
 describe("auto-scaler should pass all tests", () => {
 	jest.setTimeout(dockerTestTimeout)
+	// Base Config
+	const dockerConfig: IDockerConfiguration = {
+		containerLabel: "conversion-service",
+		imageId: "bash"
+	}
+	if (process.env.IS_CI) {
+		dockerConfig.host = "tcp://localhost"
+		dockerConfig.port = 2375
+	}
+	else {
+		dockerConfig.socketPath = "/var/run/docker.sock"
+	}
 	const autoScaler = new AutoScaler({
 		containerStartThreshold: 2,
-		dockerConfig: {
-			containerLabel: "conversion-service",
-			imageId: "bash",
-			socketPath: "/var/run/docker.sock"
-		},
+		dockerConfig,
 		maxContainers: 10,
 		minContainers: 0
 	})
