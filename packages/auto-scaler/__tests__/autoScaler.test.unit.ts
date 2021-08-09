@@ -40,6 +40,85 @@ describe("auto-scaler should pass all tests", () => {
 			runningContainers: []
 		}, ids)
 	})
+	describe("the state computation should work", () => {
+		let runningContainers = 10
+		let pendingRequests = 0
+		const tasksPerContainer = 5
+		const maxContainers = 50
+		const minContainers = 5
+		it("should report 0|0 with 0 pending requests", () => {
+			const result = autoScaler.computeContainerScaleAmount(
+				runningContainers,
+				pendingRequests,
+				tasksPerContainer,
+				maxContainers,
+				minContainers
+			)
+			expect(result.remove).toEqual(0)
+			expect(result.start).toEqual(0)
+		})
+		it("should start max amount on high request count", () => {
+			// eslint-disable-next-line @typescript-eslint/no-magic-numbers
+			pendingRequests = 10000
+			const result = autoScaler.computeContainerScaleAmount(
+				runningContainers,
+				pendingRequests,
+				tasksPerContainer,
+				maxContainers,
+				minContainers
+			)
+			expect(result.remove).toEqual(0)
+			expect(result.start).toEqual(maxContainers - runningContainers)
+		})
+		it("should start 2 containers", () => {
+			const testPendingRequests = 10
+			pendingRequests = testPendingRequests
+			runningContainers = 0
+			const result = autoScaler.computeContainerScaleAmount(
+				runningContainers,
+				pendingRequests,
+				tasksPerContainer,
+				maxContainers,
+				minContainers
+			)
+			const expectedStart = 2
+			expect(result.remove).toEqual(0)
+			expect(result.start).toEqual(expectedStart)
+		})
+		it("should start 3 containers", () => {
+			const testPendingRequests = 65
+			pendingRequests = testPendingRequests
+			const testRunningContainers = 10
+			runningContainers = testRunningContainers
+			const result = autoScaler.computeContainerScaleAmount(
+				runningContainers,
+				pendingRequests,
+				tasksPerContainer,
+				maxContainers,
+				minContainers
+			)
+			expect(result.remove).toEqual(0)
+			// eslint-disable-next-line @typescript-eslint/no-magic-numbers
+			expect(result.start).toEqual(3)
+		})
+		it("should remove 5 containers", () => {
+			const testPendingRequests = 5
+			pendingRequests = testPendingRequests
+			const testRunningContainers = 10
+			runningContainers = testRunningContainers
+			// We only need 1 container but minimum is 5
+			const result = autoScaler.computeContainerScaleAmount(
+				runningContainers,
+				pendingRequests,
+				tasksPerContainer,
+				maxContainers,
+				minContainers
+			)
+			const expectedRemove = 5
+			expect(result.remove).toEqual(expectedRemove)
+			expect(result.start).toEqual(0)
+		})
+	})
 	it("should report 0 running containers on start", async () : Promise<void> => {
 		/* Act */
 		const status = await autoScaler.checkContainerStatus(pendingRequests)
