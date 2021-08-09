@@ -5,3 +5,7 @@ export interface IContainerStatus {
     pendingRequests: number,
     runningContainers: IContainerInfo[]
 }
+export interface IComputedScalingResult {
+    remove: number,
+    start: number
+}

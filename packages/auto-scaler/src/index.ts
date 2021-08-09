@@ -1,7 +1,7 @@
 import { DockerService } from "./docker"
 import { IAutoScalerConfiguration } from "./config"
+import { IComputedScalingResult, IContainerStatus } from "./interface"
 import { IContainerInfo } from "./docker/interface"
-import { IContainerStatus } from "./interface"
 import winston from "winston"
 export class AutoScaler {
 	private readonly config: IAutoScalerConfiguration
@@ -67,7 +67,7 @@ export class AutoScaler {
 		} = this.config
 		const {
 			start, remove
-		} = this.computeState(
+		} = this.computeContainerScaleAmount(
 			runningContainers,
 			pendingRequests,
 			containerStartThreshold,
@@ -81,13 +81,13 @@ export class AutoScaler {
 			runningContainers: containerInfo
 		}
 	}
-	private readonly computeState = (
+	private readonly computeContainerScaleAmount = (
 		runningContainers: number,
 		pendingRequests: number,
 		tasksPerContainer: number,
 		maxContainers: number,
 		minContainers: number
-	): {remove:number, start: number} => {
+	): IComputedScalingResult => {
 		let start = 0
 		let remove = 0
 		const pendingTasksPerContainer = Math.ceil(pendingRequests / runningContainers)
