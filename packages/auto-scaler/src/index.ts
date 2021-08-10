@@ -110,8 +110,10 @@ export class AutoScaler {
 		const pendingTasksPerContainer = Math.ceil(pendingRequests / runningContainers)
 		// If we exceed the task per container threshold
 		if (pendingTasksPerContainer > tasksPerContainer) {
-			// Compute required amount of containers for tasks not being
-			// Handled by running containers
+			/*
+			 * Compute required amount of containers for tasks not being
+			 * Handled by running containers
+			 */
 			const remainingTasks = pendingRequests - tasksPerContainer * runningContainers
 			start = Math.ceil(remainingTasks / tasksPerContainer)
 			if (start + runningContainers > maxContainers) {
