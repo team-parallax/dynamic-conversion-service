@@ -1,5 +1,11 @@
+import { IContainerInfo } from "./docker/interface"
 export interface IContainerStatus {
-    containersToStart?: number,
+    containersToRemove: number,
+    containersToStart: number,
     pendingRequests: number,
-    runningContainers: number
+    runningContainers: IContainerInfo[]
+}
+export interface IComputedScalingResult {
+    remove: number,
+    start: number
 }
