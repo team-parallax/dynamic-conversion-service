@@ -37,7 +37,7 @@ typecheck conversion-service:
         - src/**/*.ts
       when: always
     - changes:
-      - packages/conversion-service/*
+      - packages/conversion-service/**/*.ts
 
 build docker:
   stage: build
@@ -87,9 +87,7 @@ test unit conversion-service:
     when: always
   rules:
     - changes:
-      - packages/conversion-service/*
-    - changes:
-        - src/**/*.ts
+        - packages/conversion-service/**/*.ts
       when: always
 
 test integration conversion-service:
@@ -106,4 +104,5 @@ test integration conversion-service:
   retry: 2
   rules:
     - changes:
-      - packages/conversion-service/*
+        - packages/conversion-service/**/*.ts
+      when: always

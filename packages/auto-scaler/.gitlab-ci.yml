@@ -25,7 +25,8 @@ typecheck auto-scaler:
     - yarn test:types
   rules:
     - changes:
-        - packages/auto-scaler/*
+        - packages/auto-scaler/**/*.ts
+      when: always
 
 test unit auto-scaler:
   stage: test
@@ -52,4 +53,5 @@ test unit auto-scaler:
         - src/**/*.ts
       when: always
     - changes:
-      - packages/auto-scaler/*
+        - packages/auto-scaler/**/*.ts
+      when: always
