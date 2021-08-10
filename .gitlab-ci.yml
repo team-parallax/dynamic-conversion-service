@@ -34,8 +34,9 @@ lint code:
     - yarn lerna run lint
   rules:
     - changes:
-        - packages/*
+        - packages/**/*.ts
       when: always
+
 
 
 # The steps below originally come from here, but the release_job step
@@ -67,10 +68,6 @@ code quality:
   stage: review
   needs:
     - job: "lint code"
-    - job: "typecheck conversion-service"
-    - job: "typecheck auto-scaler"
-    - job: "typecheck redis"
-    - job: "prepare release"
   variables:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://localhost:2375
