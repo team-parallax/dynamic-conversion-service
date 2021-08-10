@@ -32,6 +32,8 @@ test unit auto-scaler:
   needs:
     - job: "typecheck auto-scaler"
   <<: *auto-scaler-before-script
+  variables:
+    IS_CI: 1
   script:
     - |
       yarn test:unit:coverage --ci
@@ -44,6 +46,7 @@ test unit auto-scaler:
       junit: artifacts/test/unit/junit.xml
     untracked: false
     when: always
+  allow_failure: true
   rules:
     - changes:
         - src/**/*.ts

@@ -1,7 +1,7 @@
 import { DockerService } from "./docker"
 import { IAutoScalerConfiguration } from "./config"
+import { IComputedScalingResult, IContainerStatus } from "./interface"
 import { IContainerInfo } from "./docker/interface"
-import { IContainerStatus } from "./interface"
 import winston from "winston"
 export class AutoScaler {
 	private readonly config: IAutoScalerConfiguration
@@ -70,7 +70,7 @@ export class AutoScaler {
 		} = this.config
 		const {
 			start, remove
-		} = this.computeState(
+		} = this.computeContainerScaleAmount(
 			runningContainers,
 			pendingRequests,
 			containerStartThreshold,
@@ -84,13 +84,27 @@ export class AutoScaler {
 			runningContainers: containerInfo
 		}
 	}
-	private readonly computeState = (
+	public readonly computeContainerScaleAmount = (
 		runningContainers: number,
 		pendingRequests: number,
 		tasksPerContainer: number,
 		maxContainers: number,
 		minContainers: number
-	): {remove:number, start: number} => {
+	): IComputedScalingResult => {
+		// Nothing to do here
+		if (pendingRequests === 0) {
+			return {
+				remove: 0,
+				start: 0
+			}
+		}
+		// Early exit and avoid division by zero
+		if (runningContainers === 0) {
+			return {
+				remove: 0,
+				start: Math.ceil(pendingRequests / tasksPerContainer)
+			}
+		}
 		let start = 0
 		let remove = 0
 		const pendingTasksPerContainer = Math.ceil(pendingRequests / runningContainers)
@@ -107,16 +121,16 @@ export class AutoScaler {
 		}
 		else if (pendingTasksPerContainer < tasksPerContainer) {
 			// Tasks we actually need for all requests
-			const requiredContainers = pendingRequests - tasksPerContainer * runningContainers
+			const requiredContainers = Math.max(
+				pendingRequests - tasksPerContainer * runningContainers,
+				0
+			)
 			// Containers we can remove
 			remove = runningContainers - requiredContainers
-			if (runningContainers - remove < minContainers) {
-				// Min : 5
-				// E.g. 10 - 7 < 3
-				// 7 -= (7 - 5 = 2) = 5
-				// Do not exceed lower threshold
-				remove -= remove - minContainers
-			}
+			remove = Math.max(
+				runningContainers - remove,
+				runningContainers - requiredContainers - minContainers
+			)
 		}
 		return {
 			remove,

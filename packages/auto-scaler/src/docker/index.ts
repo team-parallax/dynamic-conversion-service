@@ -1,6 +1,7 @@
 import { Docker } from "node-docker-api"
 import { IContainerInfo } from "./interface"
 import { IDockerConfiguration } from "../config"
+import { InvalidDockerConnectionOptions } from "./execption"
 import { Stream } from "stream"
 import { promisifyStream } from "./util"
 import winston from "winston"
@@ -11,19 +12,33 @@ export class DockerService {
 	private readonly logger: winston.Logger
 	constructor(config: IDockerConfiguration, logger: winston.Logger) {
 		this.config = config
-		this.logger = logger
 		const {
-			socketPath
+			socketPath, host, port
 		} = this.config
-		this.docker = new Docker({
-			socketPath
-		})
+		const useSocket = socketPath && (!host && !port)
+		const useHostPort = host && port && !socketPath
+		if (useSocket) {
+			this.docker = new Docker({
+				socketPath
+			})
+		}
+		else if (useHostPort) {
+			this.docker = new Docker({
+				host,
+				port
+			})
+		}
+		else {
+			throw new InvalidDockerConnectionOptions()
+		}
+		this.logger = logger
 		this.logger.info(`created DockerService using ${socketPath}`)
 	}
-	checkImage = async (imageId:string): Promise<void> => {
+	checkImage = async (imageId:string, tag?:string): Promise<void> => {
+		const targetTag = tag ?? "latest"
 		const stream = await this.docker.image.create({}, {
 			fromImage: imageId,
-			tag: "latest"
+			tag: targetTag
 		}) as Stream
 		await promisifyStream(stream)
 		this.logger.info(`pulled image: ${imageId}`)
@@ -36,7 +51,7 @@ export class DockerService {
 			await this.checkImage(this.config.imageId)
 			this.hasImage = true
 		}
-		const con = await this.docker.container.create({
+		const newContainer = await this.docker.container.create({
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			Cmd: ["sleep", "infinity"],
 			// eslint-disable-next-line @typescript-eslint/naming-convention
@@ -44,7 +59,7 @@ export class DockerService {
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			label: [containerLabel]
 		})
-		const startedContainer = await con.start()
+		const startedContainer = await newContainer.start()
 		this.logger.info(`created container: ${startedContainer.id}/${containerLabel}`)
 		return {
 			containerId: startedContainer.id,

@@ -6,6 +6,8 @@ export interface IAutoScalerConfiguration {
 }
 export interface IDockerConfiguration {
     containerLabel: string,
+    host?: string,
     imageId: string,
-    socketPath: string
+    port?: number,
+    socketPath?: string
 }
