@@ -3,6 +3,7 @@ cache:
     - .yarn/
 
 stages:
+  - lint
   - prepare
   - test
   - build
@@ -24,10 +25,11 @@ include:
   - local: packages/conversion-service/.gitlab-ci.yml
   - local: packages/auto-scaler/.gitlab-ci.yml
   - local: packages/redis/.gitlab-ci.yml
+  - local: packages/logger/.gitlab-ci.yml
 
 ### Prepare - Stage
 lint code:
-  stage: prepare
+  stage: lint
   before_script:
     - yarn install --cache .yarn --prefer-offline
   script:
@@ -36,8 +38,6 @@ lint code:
     - changes:
         - packages/**/*.ts
       when: always
-
-
 
 # The steps below originally come from here, but the release_job step
 # should wait for the docker build before creating a release
