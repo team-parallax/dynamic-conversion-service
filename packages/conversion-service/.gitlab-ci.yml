@@ -9,6 +9,7 @@ cache:
 stages:
   - prepare
   - test
+  - test integration
   - build
   - review
   - deliver
@@ -41,11 +42,6 @@ typecheck conversion-service:
 
 build docker:
   stage: build
-  needs:
-    - job: "test unit conversion-service"
-    - job: "test unit auto-scaler"
-    - job: "test unit redis"
-    - job: "test integration conversion-service"
   services:
     - docker:19.03.5-dind
   before_script:
@@ -92,8 +88,9 @@ test unit conversion-service:
 
 test integration conversion-service:
   extends: "test unit conversion-service"
+  stage: "test integration"
   needs:
-    - job: "typecheck conversion-service"
+    - job: "test unit conversion-service"
   script:
     - yarn test:integration --ci
   artifacts:

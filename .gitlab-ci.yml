@@ -6,9 +6,9 @@ stages:
   - lint
   - prepare
   - test
+  - test integration
   - build
   - review
-  - deliver
   - release
 
 
