@@ -12,30 +12,30 @@ export class RedisService {
 		this.logger = new Logger("redis-service")
 		this.redisWrapper = new RedisWrapper(this.config.redisConfig, this.logger)
 	}
-	public readonly initialize = async () : Promise<void> => {
+	public readonly initialize = async (): Promise<void> => {
 		await this.redisWrapper.init()
 		this.isInitialized = true
 		this.logger.info("successfully initialized redis-service")
 	}
-	public readonly popMessage = async () : Promise<string> => {
+	public readonly popMessage = async (): Promise<string> => {
 		if (!this.isInitialized) {
 			this.logger.error(`using 'popMessage' before initializing`)
 			throw new RedisNotInitializedError()
 		}
 		return await this.redisWrapper.popMessage()
 	}
-	public readonly quit = async () : Promise<void> => {
+	public readonly quit = async (): Promise<void> => {
 		await this.redisWrapper.quit()
 		this.logger.info("successfully terminated redis-service")
 	}
-	public readonly receive = async () :Promise<string> => {
+	public readonly receive = async (): Promise<string> => {
 		if (!this.isInitialized) {
 			this.logger.error(`using 'receive' before initializing`)
 			throw new RedisNotInitializedError()
 		}
 		return await this.redisWrapper.receiveMessage()
 	}
-	public readonly send = async (message:string) :Promise<void> => {
+	public readonly send = async (message: string): Promise<void> => {
 		if (!this.isInitialized) {
 			this.logger.error(`using 'send' before initializing`)
 			throw new RedisNotInitializedError()
