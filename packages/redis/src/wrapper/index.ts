@@ -29,7 +29,7 @@ export class RedisWrapper {
 				qname: this.config.queue
 			}, (err, resp) => {
 				if (err) {
-					return reject(err)
+					return reject("failed to pop message")
 				}
 				if (resp === {}) {
 					return resolve("")
@@ -56,7 +56,7 @@ export class RedisWrapper {
 				qname: this.config.queue
 			}, (err, resp) => {
 				if (err) {
-					return reject(err)
+					return reject("failed to receive message")
 				}
 				if (resp === {}) {
 					return resolve("")
@@ -74,7 +74,7 @@ export class RedisWrapper {
 				qname: this.config.queue
 			}, (err, resp) => {
 				if (err) {
-					return reject(err)
+					return reject("failed to send message")
 				}
 				if (resp) {
 					return resolve()
@@ -89,7 +89,7 @@ export class RedisWrapper {
 				qname: queue
 			}, (err, resp) => {
 				if (err) {
-					return reject(err)
+					return reject(`failed to create queue: ${queue}`)
 				}
 				if (resp === 1) {
 					return resolve()
@@ -104,7 +104,7 @@ export class RedisWrapper {
 				qname: queue
 			}, (err, resp) => {
 				if (err) {
-					return reject(err)
+					return reject(`failed to delete queue: ${queue}`)
 				}
 				if (resp === 1) {
 					return resolve()
@@ -117,7 +117,7 @@ export class RedisWrapper {
 		return new Promise((resolve, reject) => {
 			this.rsmq.listQueues((err, queues) => {
 				if (err) {
-					return reject(err)
+					return reject("failed to list queues")
 				}
 				return resolve(queues)
 			})
