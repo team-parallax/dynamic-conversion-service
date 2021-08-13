@@ -10,6 +10,9 @@ export class RedisService {
 	public readonly initialize = async () : Promise<void> => {
 		await this.redisWrapper.init()
 	}
+	public readonly popMessage = async () : Promise<string> => {
+		return await this.redisWrapper.popMessage()
+	}
 	public readonly quit = async () : Promise<void> => {
 		await this.redisWrapper.quit()
 	}

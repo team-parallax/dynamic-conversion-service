@@ -23,6 +23,23 @@ export class RedisWrapper {
 			await this.createQueue(queue)
 		}
 	}
+	readonly popMessage = async ():Promise<string> => {
+		return new Promise((resolve, reject) => {
+			this.rsmq.popMessage({
+				qname: this.config.queue
+			}, (err, resp) => {
+				if (err) {
+					return reject(err)
+				}
+				if (resp === {}) {
+					return resolve("")
+				}
+				else {
+					return resolve((resp as QueueMessage).message)
+				}
+			})
+		})
+	}
 	readonly quit = async () :Promise<void> => {
 		const runningQueues = await this.getQueues()
 		const {
