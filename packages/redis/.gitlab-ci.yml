@@ -28,6 +28,8 @@ typecheck redis:
         - packages/redis/*
 
 test unit redis:
+  services:
+  - redis:6.2.5-alpine
   stage: test
   needs:
     - job: "typecheck redis"
