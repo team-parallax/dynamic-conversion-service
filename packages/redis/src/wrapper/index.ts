@@ -1,5 +1,13 @@
 import { IRedisConfiguration } from "../config"
 import { Logger } from "~/../packages/logger"
+import {
+	RedisWrapperPopError,
+	RedisWrapperQueueCreateError,
+	RedisWrapperQueueDeleteError,
+	RedisWrapperQueueListError,
+	RedisWrapperReceiveError,
+	RedisWrapperSendError
+} from "./exception"
 import RedisSMQ, { QueueMessage } from "rsmq"
 export class RedisWrapper {
 	private readonly config: IRedisConfiguration
@@ -26,14 +34,14 @@ export class RedisWrapper {
 			await this.createQueue(queue)
 		}
 	}
-	readonly popMessage = async ():Promise<string> => {
+	readonly popMessage = async (): Promise<string> => {
 		return new Promise((resolve, reject) => {
 			this.rsmq.popMessage({
 				qname: this.config.queue
 			}, (err, resp) => {
 				if (err) {
 					this.logger.error(err)
-					return reject("failed to pop message")
+					return reject(new RedisWrapperPopError())
 				}
 				if (resp === {}) {
 					return resolve("")
@@ -44,7 +52,7 @@ export class RedisWrapper {
 			})
 		})
 	}
-	readonly quit = async () :Promise<void> => {
+	readonly quit = async (): Promise<void> => {
 		const runningQueues = await this.getQueues()
 		const {
 			queue
@@ -61,7 +69,7 @@ export class RedisWrapper {
 			}, (err, resp) => {
 				if (err) {
 					this.logger.error(err)
-					return reject("failed to receive message")
+					return reject(new RedisWrapperReceiveError())
 				}
 				if (resp === {}) {
 					return resolve("")
@@ -72,7 +80,7 @@ export class RedisWrapper {
 			})
 		})
 	}
-	readonly sendMessage = async (message:string):Promise<void> => {
+	readonly sendMessage = async (message: string): Promise<void> => {
 		return new Promise((resolve, reject) => {
 			this.rsmq.sendMessage({
 				message,
@@ -80,7 +88,7 @@ export class RedisWrapper {
 			}, (err, resp) => {
 				if (err) {
 					this.logger.error(err)
-					return reject("failed to send message")
+					return reject(new RedisWrapperSendError())
 				}
 				if (resp) {
 					return resolve()
@@ -89,14 +97,14 @@ export class RedisWrapper {
 			})
 		})
 	}
-	private readonly createQueue = async (queue:string) : Promise<void> => {
+	private readonly createQueue = async (queue: string): Promise<void> => {
 		return new Promise((resolve, reject) => {
 			this.rsmq.createQueue({
 				qname: queue
 			}, (err, resp) => {
 				if (err) {
 					this.logger.error(err)
-					return reject(`failed to create queue: ${queue}`)
+					return reject(new RedisWrapperQueueCreateError(queue))
 				}
 				if (resp === 1) {
 					this.logger.info(`created queue : ${queue}`)
@@ -106,14 +114,14 @@ export class RedisWrapper {
 			})
 		})
 	}
-	private readonly deleteQueue = async (queue:string) : Promise<void> => {
+	private readonly deleteQueue = async (queue: string): Promise<void> => {
 		return new Promise((resolve, reject) => {
 			this.rsmq.deleteQueue({
 				qname: queue
 			}, (err, resp) => {
 				if (err) {
 					this.logger.error(err)
-					return reject(`failed to delete queue: ${queue}`)
+					return reject(new RedisWrapperQueueDeleteError(queue))
 				}
 				if (resp === 1) {
 					this.logger.info(`deleted queue : ${queue}`)
@@ -123,12 +131,12 @@ export class RedisWrapper {
 			})
 		})
 	}
-	private readonly getQueues = async () : Promise<string[]> => {
+	private readonly getQueues = async (): Promise<string[]> => {
 		return new Promise((resolve, reject) => {
 			this.rsmq.listQueues((err, queues) => {
 				if (err) {
 					this.logger.error(err)
-					return reject("failed to list queues")
+					return reject(new RedisWrapperQueueListError())
 				}
 				return resolve(queues)
 			})
