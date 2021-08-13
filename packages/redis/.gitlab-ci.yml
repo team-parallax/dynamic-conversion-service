@@ -25,7 +25,7 @@ typecheck redis:
     - yarn test:types
   rules:
     - changes:
-        - packages/redis/*
+        - packages/redis/**/*.ts
 
 test unit redis:
   services:
@@ -48,7 +48,4 @@ test unit redis:
     when: always
   rules:
     - changes:
-        - src/**/*.ts
-      when: always
-    - changes:
-      - packages/redis/*
+      - packages/redis/**/*.ts
