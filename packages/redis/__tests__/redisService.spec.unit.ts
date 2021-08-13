@@ -62,7 +62,7 @@ describe("redis-service should pass all tests", () => {
 		expect(failed).toBe(false)
 		expect(message).toBeUndefined()
 	})
-	it("should send 2 messages", async () => {
+	it("should send two messages", async () => {
 		let failed = false
 		try {
 			await redis.send("test-message-1")
@@ -73,7 +73,7 @@ describe("redis-service should pass all tests", () => {
 		}
 		expect(failed).toBe(false)
 	})
-	it("should receive only 2 messages", async () => {
+	it("should receive only two messages", async () => {
 		let failed = false
 		let message1 = ""
 		let message2 = ""
@@ -91,7 +91,7 @@ describe("redis-service should pass all tests", () => {
 		expect(message2).toEqual("test-message-2")
 		expect(message3).toBeUndefined()
 	})
-	it("should send 1 message", async () => {
+	it("should send one message", async () => {
 		let failed = false
 		try {
 			await redis.send("test-message-1")
@@ -101,7 +101,7 @@ describe("redis-service should pass all tests", () => {
 		}
 		expect(failed).toBe(false)
 	})
-	it("2nd instance should not receive a message", async () => {
+	it("second instance should not receive a message", async () => {
 		let failed = false
 		let message1 = ""
 		let message2 = ""
@@ -116,7 +116,7 @@ describe("redis-service should pass all tests", () => {
 		expect(message1).toEqual("test-message-1")
 		expect(message2).toBeUndefined()
 	})
-	it("should send 2 messages", async () => {
+	it("should send two messages again", async () => {
 		let failed = false
 		try {
 			await redis2.send("test-message-1")
@@ -127,7 +127,7 @@ describe("redis-service should pass all tests", () => {
 		}
 		expect(failed).toBe(false)
 	})
-	it("2nd instance should receive a message", async () => {
+	it("second instance should receive a message", async () => {
 		let failed = false
 		let message1 = ""
 		let message2 = ""
