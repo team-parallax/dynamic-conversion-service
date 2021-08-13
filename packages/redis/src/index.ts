@@ -1,5 +1,5 @@
 import { IRedisServiceConfiguration } from "./config"
-import { RedisWrapper } from "./redis"
+import { RedisWrapper } from "./wrapper"
 export class RedisService {
 	private readonly config: IRedisServiceConfiguration
 	private readonly redisWrapper: RedisWrapper
