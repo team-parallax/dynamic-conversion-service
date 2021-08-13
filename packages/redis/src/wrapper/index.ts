@@ -1,9 +1,12 @@
 import { IRedisConfiguration } from "../config"
+import { Logger } from "~/../packages/logger"
 import RedisSMQ, { QueueMessage } from "rsmq"
 export class RedisWrapper {
 	private readonly config: IRedisConfiguration
+	private readonly logger: Logger
 	private readonly rsmq : RedisSMQ
-	constructor(config: IRedisConfiguration) {
+	constructor(config: IRedisConfiguration, logger: Logger) {
+		this.logger = logger
 		this.config = config
 		const {
 			host, port, namespace
@@ -29,6 +32,7 @@ export class RedisWrapper {
 				qname: this.config.queue
 			}, (err, resp) => {
 				if (err) {
+					this.logger.error(err)
 					return reject("failed to pop message")
 				}
 				if (resp === {}) {
@@ -56,6 +60,7 @@ export class RedisWrapper {
 				qname: this.config.queue
 			}, (err, resp) => {
 				if (err) {
+					this.logger.error(err)
 					return reject("failed to receive message")
 				}
 				if (resp === {}) {
@@ -74,6 +79,7 @@ export class RedisWrapper {
 				qname: this.config.queue
 			}, (err, resp) => {
 				if (err) {
+					this.logger.error(err)
 					return reject("failed to send message")
 				}
 				if (resp) {
@@ -89,9 +95,11 @@ export class RedisWrapper {
 				qname: queue
 			}, (err, resp) => {
 				if (err) {
+					this.logger.error(err)
 					return reject(`failed to create queue: ${queue}`)
 				}
 				if (resp === 1) {
+					this.logger.info(`created queue : ${queue}`)
 					return resolve()
 				}
 				return reject()
@@ -104,9 +112,11 @@ export class RedisWrapper {
 				qname: queue
 			}, (err, resp) => {
 				if (err) {
+					this.logger.error(err)
 					return reject(`failed to delete queue: ${queue}`)
 				}
 				if (resp === 1) {
+					this.logger.info(`deleted queue : ${queue}`)
 					return resolve()
 				}
 				return reject()
@@ -117,6 +127,7 @@ export class RedisWrapper {
 		return new Promise((resolve, reject) => {
 			this.rsmq.listQueues((err, queues) => {
 				if (err) {
+					this.logger.error(err)
 					return reject("failed to list queues")
 				}
 				return resolve(queues)
