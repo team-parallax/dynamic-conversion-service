@@ -45,10 +45,10 @@ export class DockerService {
 	}
 	createContainer = async () : Promise<IContainerInfo> => {
 		const {
-			imageId, containerLabel
+			imageId, containerLabel, tag
 		} = this.config
 		if (!this.hasImage) {
-			await this.checkImage(this.config.imageId)
+			await this.checkImage(imageId, tag)
 			this.hasImage = true
 		}
 		const newContainer = await this.docker.container.create({
