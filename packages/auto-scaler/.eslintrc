@@ -1,11 +1,11 @@
 {
-    "extends": [
-        "../../.eslintrc.json"
-    ],
-    "parserOptions": {
-        "project": "./tsconfig.json"
-    },
-    "rules": {
-        "import-alias/import-alias": 0
-    }
+	"extends": [
+		"../../.eslintrc.json"
+	],
+	"parserOptions": {
+		"project": "./tsconfig.json"
+	},
+	"rules": {
+		"import-alias/import-alias": 0
+	}
 }

@@ -1,29 +1,19 @@
 import { DockerService } from "./docker"
+import { ELogLevel } from "../../logger/src/enum"
 import { IAutoScalerConfiguration } from "./config"
 import { IComputedScalingResult, IContainerStatus } from "./interface"
 import { IContainerInfo } from "./docker/interface"
-import winston from "winston"
+import { Logger } from "../../logger/src/index"
 export class AutoScaler {
 	private readonly config: IAutoScalerConfiguration
 	private readonly dockerService: DockerService
-	private readonly logger: winston.Logger
+	private readonly logger: Logger
 	constructor(config: IAutoScalerConfiguration) {
 		this.config = config
 		const {
 			dockerConfig
 		} = this.config
-		this.logger = winston.createLogger({
-			defaultMeta: {
-				service: "auto-scaler"
-			},
-			format: winston.format.simple(),
-			level: "info",
-			transports: [
-				new winston.transports.Console({
-					format: winston.format.simple()
-				})
-			]
-		})
+		this.logger = new Logger("auto-scaler", ELogLevel.info)
 		this.dockerService = new DockerService(dockerConfig, this.logger)
 	}
 	public applyConfigurationState = async (
