@@ -25,9 +25,11 @@ typecheck redis:
     - yarn test:types
   rules:
     - changes:
-        - packages/redis/*
+        - packages/redis/**/*.ts
 
 test unit redis:
+  services:
+  - redis:6.2.5-alpine
   stage: test
   needs:
     - job: "typecheck redis"
@@ -46,7 +48,4 @@ test unit redis:
     when: always
   rules:
     - changes:
-        - src/**/*.ts
-      when: always
-    - changes:
-      - packages/redis/*
+      - packages/redis/**/*.ts

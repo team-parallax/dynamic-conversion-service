@@ -27,5 +27,8 @@
   "repository": {
     "type": "git",
     "url": "git@gitlab.internal.team-parallax.com:belwue/dynamic-conversion-service.git"
+  },
+  "dependencies": {
+    "rsmq": "^0.9.1"
   }
 }
