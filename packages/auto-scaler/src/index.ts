@@ -1,9 +1,9 @@
 import { DockerService } from "./docker"
-import { ELogLevel } from "../../logger/src/enum"
+import { ELogLevel } from "logger/src/enum"
 import { IAutoScalerConfiguration } from "./config"
 import { IComputedScalingResult, IContainerStatus } from "./interface"
 import { IContainerInfo } from "./docker/interface"
-import { Logger } from "../../logger/src/index"
+import { Logger } from "logger/src/index"
 export class AutoScaler {
 	private readonly config: IAutoScalerConfiguration
 	private readonly dockerService: DockerService

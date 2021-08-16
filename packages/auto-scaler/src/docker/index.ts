@@ -2,7 +2,7 @@ import { Docker } from "node-docker-api"
 import { IContainerInfo, IDockerAPIContainer } from "./interface"
 import { IDockerConfiguration } from "../config"
 import { InvalidDockerConnectionOptions } from "./execption"
-import { Logger } from "../../../logger/src"
+import { Logger } from "logger/src"
 import { Stream } from "stream"
 import { promisifyStream } from "./util"
 export class DockerService {
