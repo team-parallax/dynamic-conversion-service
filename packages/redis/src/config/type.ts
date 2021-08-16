@@ -1,7 +1,7 @@
 export type TConfigurationType = "auto-scaler" | "redis-service"
 export type TRequiredAutoScalerConfigurationField =
-	| "MAX_CONTAINERS"
-    | "MIN_CONTAINERS"
+	| "MAX_WORKER_CONTAINERS"
+    | "MIN_WORKER_CONTAINERS"
 	| "TASKS_PER_CONTAINER"
 	| "CONTAINER_LABEL"
 	| "CONTAINER_IMAGE"

@@ -7,21 +7,21 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 		throw new InvalidConfigurationError("auto-scaler", "TASKS_PER_CONTAINER")
 	}
 	if (isNaN(Number(tasksPerContainer))) {
-		throw new InvalidConfigurationError("auto-scaler", "MAX_CONTAINERS", tasksPerContainer)
+		throw new InvalidConfigurationError("auto-scaler", "MAX_WORKER_CONTAINERS", tasksPerContainer)
 	}
-	const maxContainers = process.env.MAX_WORKER_CONTAINER
+	const maxContainers = process.env.MAX_WORKER_CONTAINERS
 	if (!maxContainers) {
-		throw new InvalidConfigurationError("auto-scaler", "MAX_CONTAINERS")
+		throw new InvalidConfigurationError("auto-scaler", "MAX_WORKER_CONTAINERS")
 	}
 	if (isNaN(Number(maxContainers))) {
-		throw new InvalidConfigurationError("auto-scaler", "MAX_CONTAINERS", maxContainers)
+		throw new InvalidConfigurationError("auto-scaler", "MAX_WORKER_CONTAINERS", maxContainers)
 	}
-	const minContainers = process.env.MIN_WORKER_CONTAINER
+	const minContainers = process.env.MIN_WORKER_CONTAINERS
 	if (!minContainers) {
-		throw new InvalidConfigurationError("auto-scaler", "MIN_CONTAINERS")
+		throw new InvalidConfigurationError("auto-scaler", "MIN_WORKER_CONTAINERS")
 	}
 	if (isNaN(Number(minContainers))) {
-		throw new InvalidConfigurationError("auto-scaler", "MAX_CONTAINERS", minContainers)
+		throw new InvalidConfigurationError("auto-scaler", "MIN_WORKER_CONTAINERS", minContainers)
 	}
 	const containerLabel = process.env.CONTAINER_LABEL
 	if (!containerLabel) {
