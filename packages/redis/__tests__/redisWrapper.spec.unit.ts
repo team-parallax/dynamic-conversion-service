@@ -1,22 +1,20 @@
-import { RedisNotInitializedError } from "../src/exception"
-import { RedisService } from "../src"
-describe("redis-service should pass all tests", () => {
-	const redis = new RedisService({
-		redisConfig: {
-			host: "127.0.0.1",
-			namespace: "redis-service-tests",
-			port: 6379,
-			queue: "redis-service-test-queue"
-		}
-	})
-	const redis2 = new RedisService({
-		redisConfig: {
-			host: "127.0.0.1",
-			namespace: "redis-service-tests",
-			port: 6379,
-			queue: "redis-service-test-queue"
-		}
-	})
+import { Logger } from "../../logger/src"
+import { RedisWrapper } from "../src/wrapper"
+import { RedisWrapperNotInitializedError } from "../src/wrapper/exception"
+describe("redis-wrapper should pass all tests", () => {
+	const logger = new Logger("redis-wrapper-test")
+	const redis = new RedisWrapper({
+		host: "127.0.0.1",
+		namespace: "redis-service-tests",
+		port: 6379,
+		queue: "redis-service-test-queue"
+	}, logger)
+	const redis2 = new RedisWrapper({
+		host: "127.0.0.1",
+		namespace: "redis-service-tests",
+		port: 6379,
+		queue: "redis-service-test-queue"
+	}, logger)
 	it("initialization should work", async () => {
 		let failed = false
 		try {
@@ -31,7 +29,7 @@ describe("redis-service should pass all tests", () => {
 	it("should send a message", async () => {
 		let failed = false
 		try {
-			await redis.send("test-message")
+			await redis.sendMessage("test-message")
 		}
 		catch (error) {
 			failed = true
@@ -42,7 +40,7 @@ describe("redis-service should pass all tests", () => {
 		let failed = false
 		let message = ""
 		try {
-			message = await redis.receive()
+			message = await redis.receiveMessage()
 		}
 		catch (error) {
 			failed = true
@@ -54,7 +52,7 @@ describe("redis-service should pass all tests", () => {
 		let failed = false
 		let message = ""
 		try {
-			message = await redis.receive()
+			message = await redis.receiveMessage()
 		}
 		catch (error) {
 			failed = true
@@ -65,8 +63,8 @@ describe("redis-service should pass all tests", () => {
 	it("should send two messages", async () => {
 		let failed = false
 		try {
-			await redis.send("test-message-1")
-			await redis.send("test-message-2")
+			await redis.sendMessage("test-message-1")
+			await redis.sendMessage("test-message-2")
 		}
 		catch (error) {
 			failed = true
@@ -79,9 +77,9 @@ describe("redis-service should pass all tests", () => {
 		let message2 = ""
 		let message3 = ""
 		try {
-			message1 = await redis.receive()
-			message2 = await redis.receive()
-			message3 = await redis.receive()
+			message1 = await redis.receiveMessage()
+			message2 = await redis.receiveMessage()
+			message3 = await redis.receiveMessage()
 		}
 		catch (error) {
 			failed = true
@@ -94,7 +92,7 @@ describe("redis-service should pass all tests", () => {
 	it("should send one message", async () => {
 		let failed = false
 		try {
-			await redis.send("test-message-1")
+			await redis.sendMessage("test-message-1")
 		}
 		catch (error) {
 			failed = true
@@ -106,8 +104,8 @@ describe("redis-service should pass all tests", () => {
 		let message1 = ""
 		let message2 = ""
 		try {
-			message1 = await redis.receive()
-			message2 = await redis2.receive()
+			message1 = await redis.receiveMessage()
+			message2 = await redis2.receiveMessage()
 		}
 		catch (error) {
 			failed = true
@@ -119,8 +117,8 @@ describe("redis-service should pass all tests", () => {
 	it("should send two messages again", async () => {
 		let failed = false
 		try {
-			await redis2.send("test-message-1")
-			await redis.send("test-message-2")
+			await redis2.sendMessage("test-message-1")
+			await redis.sendMessage("test-message-2")
 		}
 		catch (error) {
 			failed = true
@@ -132,8 +130,8 @@ describe("redis-service should pass all tests", () => {
 		let message1 = ""
 		let message2 = ""
 		try {
-			message1 = await redis.receive()
-			message2 = await redis2.receive()
+			message1 = await redis.receiveMessage()
+			message2 = await redis2.receiveMessage()
 		}
 		catch (error) {
 			failed = true
@@ -154,22 +152,20 @@ describe("redis-service should pass all tests", () => {
 		expect(failed).toBe(false)
 	})
 	it("should only run when initialized", async () => {
-		const testRedis = new RedisService({
-			redisConfig: {
-				host: "127.0.0.1",
-				namespace: "redis-service-tests",
-				port: 6379,
-				queue: "redis-service-test-queue"
-			}
-		})
+		const testRedis = new RedisWrapper({
+			host: "127.0.0.1",
+			namespace: "redis-service-tests",
+			port: 6379,
+			queue: "redis-service-test-queue"
+		}, logger)
 		let failed = false
 		let isCorrectError = false
 		try {
-			await testRedis.send("foobar")
+			await testRedis.sendMessage("foobar")
 		}
 		catch (error) {
 			failed = true
-			isCorrectError = error instanceof RedisNotInitializedError
+			isCorrectError = error instanceof RedisWrapperNotInitializedError
 		}
 		expect(failed).toBe(true)
 		expect(isCorrectError).toBe(true)

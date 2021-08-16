@@ -1,6 +1,7 @@
 import { IRedisConfiguration } from "../config"
 import { Logger } from "~/../packages/logger"
 import {
+	RedisWrapperNotInitializedError,
 	RedisWrapperPopError,
 	RedisWrapperQueueCreateError,
 	RedisWrapperQueueDeleteError,
@@ -11,6 +12,7 @@ import {
 import RedisSMQ, { QueueMessage } from "rsmq"
 export class RedisWrapper {
 	private readonly config: IRedisConfiguration
+	private isInitialized: boolean = false
 	private readonly logger: Logger
 	private readonly rsmq : RedisSMQ
 	constructor(config: IRedisConfiguration, logger: Logger) {
@@ -25,7 +27,7 @@ export class RedisWrapper {
 			port
 		})
 	}
-	readonly init = async (): Promise<void> => {
+	readonly initialize = async (): Promise<void> => {
 		const existingQueues = await this.getQueues()
 		const {
 			queue
@@ -33,8 +35,13 @@ export class RedisWrapper {
 		if (!existingQueues.includes(queue)) {
 			await this.createQueue(queue)
 		}
+		this.isInitialized = true
 	}
 	readonly popMessage = async (): Promise<string> => {
+		if (!this.isInitialized) {
+			this.logger.error(`using 'popMessage' before initializing`)
+			throw new RedisWrapperNotInitializedError()
+		}
 		return new Promise((resolve, reject) => {
 			this.rsmq.popMessage({
 				qname: this.config.queue
@@ -63,6 +70,10 @@ export class RedisWrapper {
 		this.rsmq.quit()
 	}
 	readonly receiveMessage = async (): Promise<string> => {
+		if (!this.isInitialized) {
+			this.logger.error(`using 'receive' before initializing`)
+			throw new RedisWrapperNotInitializedError()
+		}
 		return new Promise((resolve, reject) => {
 			this.rsmq.receiveMessage({
 				qname: this.config.queue
@@ -81,6 +92,10 @@ export class RedisWrapper {
 		})
 	}
 	readonly sendMessage = async (message: string): Promise<void> => {
+		if (!this.isInitialized) {
+			this.logger.error(`using 'send' before initializing`)
+			throw new RedisWrapperNotInitializedError()
+		}
 		return new Promise((resolve, reject) => {
 			this.rsmq.sendMessage({
 				message,
