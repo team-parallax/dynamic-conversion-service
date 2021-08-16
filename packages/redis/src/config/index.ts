@@ -2,12 +2,12 @@ import { IAutoScalerConfiguration } from "../../../auto-scaler/src/config"
 import { IRedisServiceConfiguration } from "./interface"
 import { InvalidConfigurationError } from "./exception"
 const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
-	const containerStartThreshold = process.env.TASKS_PER_CONTAINER
-	if (!containerStartThreshold) {
+	const tasksPerContainer = process.env.TASKS_PER_CONTAINER
+	if (!tasksPerContainer) {
 		throw new InvalidConfigurationError("auto-scaler", "TASKS_PER_CONTAINER")
 	}
-	if (isNaN(Number(containerStartThreshold))) {
-		throw new InvalidConfigurationError("auto-scaler", "MAX_CONTAINERS", containerStartThreshold)
+	if (isNaN(Number(tasksPerContainer))) {
+		throw new InvalidConfigurationError("auto-scaler", "MAX_CONTAINERS", tasksPerContainer)
 	}
 	const maxContainers = process.env.MAX_WORKER_CONTAINER
 	if (!maxContainers) {
@@ -38,7 +38,6 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 		? parseInt(process.env.DOCKER_PORT)
 		: undefined
 	return {
-		containerStartThreshold: parseInt(containerStartThreshold),
 		dockerConfig: {
 			containerLabel,
 			host,
@@ -48,7 +47,8 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 			tag
 		},
 		maxContainers: parseInt(maxContainers),
-		minContainers: parseInt(minContainers)
+		minContainers: parseInt(minContainers),
+		tasksPerContainer: parseInt(tasksPerContainer)
 	}
 }
 export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {

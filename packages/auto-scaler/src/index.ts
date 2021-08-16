@@ -59,7 +59,7 @@ export class AutoScaler {
 		const containerInfo = await this.dockerService.getRunningContainerInfo()
 		const runningContainers = containerInfo.length
 		const {
-			containerStartThreshold,
+			tasksPerContainer,
 			maxContainers,
 			minContainers
 		} = this.config
@@ -68,7 +68,7 @@ export class AutoScaler {
 		} = this.computeContainerScaleAmount(
 			runningContainers,
 			pendingRequests,
-			containerStartThreshold,
+			tasksPerContainer,
 			maxContainers,
 			minContainers
 		)
