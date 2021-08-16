@@ -1,5 +1,12 @@
 export interface IContainerInfo {
 	containerId: string,
-	containerLabel: string
-	// TODO: provide more information about container, e.g. container-name, ports, etc
+	containerImage?: string,
+	containerLabel: string,
+	containerTag?: string
+}
+export interface IDockerAPIContainer {
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	Image: string,
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	Names: string[]
 }

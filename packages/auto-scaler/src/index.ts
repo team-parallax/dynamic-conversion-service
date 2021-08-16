@@ -18,7 +18,9 @@ export class AutoScaler {
 	}
 	public applyConfigurationState = async (
 		status: IContainerStatus,
-		idleContainerIds?: string[]
+		idleContainerIds?: string[],
+		imageId?: string,
+		tag?: string
 	): Promise<IContainerInfo[]> => {
 		const {
 			containersToRemove,
@@ -32,7 +34,10 @@ export class AutoScaler {
 		if (containersToStart) {
 			for (let i = 0; i < containersToStart; i++) {
 				// eslint-disable-next-line no-await-in-loop
-				const containerInfo = await this.dockerService.createContainer()
+				const containerInfo = await this.dockerService.createContainer(
+					imageId,
+					tag
+				)
 				containerInfos.push(containerInfo)
 			}
 		}

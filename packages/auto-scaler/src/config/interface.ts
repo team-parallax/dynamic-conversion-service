@@ -9,5 +9,6 @@ export interface IDockerConfiguration {
     host?: string,
     imageId: string,
     port?: number,
-    socketPath?: string
+    socketPath?: string,
+    tag?: string
 }
