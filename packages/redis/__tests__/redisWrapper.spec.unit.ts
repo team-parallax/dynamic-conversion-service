@@ -15,69 +15,30 @@ describe("redis-wrapper should pass all tests", () => {
 		port: 6379,
 		queue: "redis-service-test-queue"
 	}, logger)
-	it("initialization should work", async () => {
-		let failed = false
-		try {
-			await redis.initialize()
-			await redis2.initialize()
-		}
-		catch (error) {
-			failed = false
-		}
-		expect(failed).toBe(false)
+	it("initialization should work", async (): Promise<void> => {
+		await expect(redis.initialize()).resolves.not.toThrowError()
+		await expect(redis2.initialize()).resolves.not.toThrowError()
 	})
 	it("should send a message", async () => {
-		let failed = false
-		try {
-			await redis.sendMessage("test-message")
-		}
-		catch (error) {
-			failed = true
-		}
-		expect(failed).toBe(false)
+		await expect(redis.sendMessage("test-message")).resolves.not.toThrowError()
 	})
 	it("should have one pending message", async () => {
 		const pendingMessagesCount = await redis.getPendingMessagesCount()
 		expect(pendingMessagesCount).toEqual(1)
 	})
 	it("should receive a message", async () => {
-		let failed = false
-		let message = ""
-		try {
-			message = await redis.receiveMessage()
-		}
-		catch (error) {
-			failed = true
-		}
-		expect(failed).toBe(false)
-		expect(message).toEqual("test-message")
+		await expect(redis.receiveMessage()).resolves.toEqual("test-message")
 	})
 	it("should have zero pending message", async () => {
 		const pendingMessagesCount = await redis.getPendingMessagesCount()
 		expect(pendingMessagesCount).toEqual(0)
 	})
 	it("should not receive another message", async () => {
-		let failed = false
-		let message = ""
-		try {
-			message = await redis.receiveMessage()
-		}
-		catch (error) {
-			failed = true
-		}
-		expect(failed).toBe(false)
-		expect(message).toBeUndefined()
+		await expect(redis.receiveMessage()).resolves.toBeUndefined()
 	})
 	it("should send two messages", async () => {
-		let failed = false
-		try {
-			await redis.sendMessage("test-message-1")
-			await redis.sendMessage("test-message-2")
-		}
-		catch (error) {
-			failed = true
-		}
-		expect(failed).toBe(false)
+		await expect(redis.sendMessage("test-message-1")).resolves.not.toThrowError()
+		await expect(redis.sendMessage("test-message-2")).resolves.not.toThrowError()
 	})
 	it("should have two pending message", async () => {
 		const pendingMessagesCount = await redis.getPendingMessagesCount()
@@ -85,66 +46,28 @@ describe("redis-wrapper should pass all tests", () => {
 		expect(pendingMessagesCount).toEqual(expected)
 	})
 	it("should receive only two messages", async () => {
-		let failed = false
-		let message1 = ""
-		let message2 = ""
-		let message3 = ""
-		try {
-			message1 = await redis.receiveMessage()
-			message2 = await redis.receiveMessage()
-			message3 = await redis.receiveMessage()
-		}
-		catch (error) {
-			failed = true
-		}
-		expect(failed).toBe(false)
-		expect(message1).toEqual("test-message-1")
-		expect(message2).toEqual("test-message-2")
-		expect(message3).toBeUndefined()
+		await expect(redis.receiveMessage()).resolves.toEqual("test-message-1")
+		await expect(redis.receiveMessage()).resolves.toEqual("test-message-2")
+		await expect(redis.receiveMessage()).resolves.toBeUndefined()
 	})
 	it("should have zero pending message", async () => {
 		const pendingMessagesCount = await redis.getPendingMessagesCount()
 		expect(pendingMessagesCount).toEqual(0)
 	})
 	it("should send one message", async () => {
-		let failed = false
-		try {
-			await redis.sendMessage("test-message-1")
-		}
-		catch (error) {
-			failed = true
-		}
-		expect(failed).toBe(false)
+		await expect(redis.sendMessage("test-message-1")).resolves.not.toThrowError()
 	})
 	it("second instance should not receive a message", async () => {
-		let failed = false
-		let message1 = ""
-		let message2 = ""
-		try {
-			message1 = await redis.receiveMessage()
-			message2 = await redis2.receiveMessage()
-		}
-		catch (error) {
-			failed = true
-		}
-		expect(failed).toBe(false)
-		expect(message1).toEqual("test-message-1")
-		expect(message2).toBeUndefined()
+		await expect(redis.receiveMessage()).resolves.toEqual("test-message-1")
+		await expect(redis2.receiveMessage()).resolves.toBeUndefined()
 	})
 	it("should have zero pending message", async () => {
 		const pendingMessagesCount = await redis.getPendingMessagesCount()
 		expect(pendingMessagesCount).toEqual(0)
 	})
 	it("should send two messages again", async () => {
-		let failed = false
-		try {
-			await redis2.sendMessage("test-message-1")
-			await redis.sendMessage("test-message-2")
-		}
-		catch (error) {
-			failed = true
-		}
-		expect(failed).toBe(false)
+		await expect(redis2.sendMessage("test-message-1")).resolves.not.toThrowError()
+		await expect(redis.sendMessage("test-message-2")).resolves.not.toThrowError()
 	})
 	it("should have two pending message", async () => {
 		const pendingMessagesCount = await redis.getPendingMessagesCount()
@@ -152,30 +75,12 @@ describe("redis-wrapper should pass all tests", () => {
 		expect(pendingMessagesCount).toEqual(expected)
 	})
 	it("second instance should receive a message", async () => {
-		let failed = false
-		let message1 = ""
-		let message2 = ""
-		try {
-			message1 = await redis.receiveMessage()
-			message2 = await redis2.receiveMessage()
-		}
-		catch (error) {
-			failed = true
-		}
-		expect(failed).toBe(false)
-		expect(message1).toEqual("test-message-1")
-		expect(message2).toEqual("test-message-2")
+		await expect(redis.receiveMessage()).resolves.toEqual("test-message-1")
+		await expect(redis2.receiveMessage()).resolves.toEqual("test-message-2")
 	})
 	it("teardown should work", async () => {
-		let failed = false
-		try {
-			await redis.quit()
-			await redis2.quit()
-		}
-		catch (error) {
-			failed = false
-		}
-		expect(failed).toBe(false)
+		await expect(redis.quit()).resolves.not.toThrowError()
+		await expect(redis2.quit()).resolves.not.toThrowError()
 	})
 	it("should only run when initialized", async () => {
 		const testRedis = new RedisWrapper({
@@ -184,18 +89,9 @@ describe("redis-wrapper should pass all tests", () => {
 			port: 6379,
 			queue: "redis-service-test-queue"
 		}, logger)
-		let failed = false
-		let isCorrectError = false
-		try {
-			await testRedis.sendMessage("foobar")
-		}
-		catch (error) {
-			failed = true
-			isCorrectError = error instanceof RedisWrapperNotInitializedError
-		}
-		expect(failed).toBe(true)
-		expect(isCorrectError).toBe(true)
-		await testRedis.quit()
+		await expect(testRedis.sendMessage("foobar"))
+			.rejects.toThrowError(RedisWrapperNotInitializedError)
+		await expect(testRedis.quit()).resolves.not.toThrowError()
 	})
 })
 export {}
