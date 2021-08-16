@@ -8,7 +8,7 @@ describe("auto-scaler should pass all tests", () => {
 	// Base Config
 	const dockerConfig: IDockerConfiguration = {
 		containerLabel: "conversion-service",
-		imageId: "bash"
+		imageName: "bash"
 	}
 	if (process.env.IS_CI) {
 		dockerConfig.host = "tcp://localhost"

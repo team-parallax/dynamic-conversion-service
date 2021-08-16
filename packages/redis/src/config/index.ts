@@ -31,10 +31,10 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 	else {
 		throw new InvalidAutoScalerConfiguration("CONTAINER_LABEL")
 	}
-	let imageId = "bash"
+	let imageName = "bash"
 	const envImage = process.env.CONTAINER_IMAGE
 	if (envImage) {
-		imageId = envImage
+		imageName = envImage
 	}
 	else {
 		throw new InvalidAutoScalerConfiguration("CONTAINER_IMAGE")
@@ -50,7 +50,7 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 		dockerConfig: {
 			containerLabel,
 			host,
-			imageId,
+			imageName,
 			port,
 			socketPath,
 			tag
