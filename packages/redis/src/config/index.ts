@@ -1,43 +1,35 @@
 import { IAutoScalerConfiguration } from "../../../auto-scaler/src/config"
 import { IRedisServiceConfiguration } from "./interface"
-import { InvalidAutoScalerConfiguration, InvalidRedisConfiguration } from "./exception"
+import { InvalidConfigurationError } from "./exception"
 const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
-	let containerStartThreshold = 3
-	const envThreshold = process.env.TASKS_PER_CONTAINER
-	if (envThreshold) {
-		containerStartThreshold = parseInt(envThreshold)
+	const containerStartThreshold = process.env.TASKS_PER_CONTAINER
+	if (!containerStartThreshold) {
+		throw new InvalidConfigurationError("auto-scaler", "TASKS_PER_CONTAINER")
 	}
-	let maxContainers = 50
-	const envMax = process.env.MAX_WORKER_CONTAINER
-	if (envMax) {
-		maxContainers = parseInt(envMax)
+	if (isNaN(Number(containerStartThreshold))) {
+		throw new InvalidConfigurationError("auto-scaler", "MAX_CONTAINERS", containerStartThreshold)
 	}
-	else {
-		throw new InvalidAutoScalerConfiguration("MAX_WORKER_CONTAINER")
+	const maxContainers = process.env.MAX_WORKER_CONTAINER
+	if (!maxContainers) {
+		throw new InvalidConfigurationError("auto-scaler", "MAX_CONTAINERS")
 	}
-	let minContainers = 50
-	const envMin = process.env.MIN_WORKER_CONTAINER
-	if (envMax) {
-		minContainers = parseInt(envMax)
+	if (isNaN(Number(maxContainers))) {
+		throw new InvalidConfigurationError("auto-scaler", "MAX_CONTAINERS", maxContainers)
 	}
-	else {
-		throw new InvalidAutoScalerConfiguration("MIN_WORKER_CONTAINER")
+	const minContainers = process.env.MIN_WORKER_CONTAINER
+	if (!minContainers) {
+		throw new InvalidConfigurationError("auto-scaler", "MIN_CONTAINERS")
 	}
-	let containerLabel = "foo-bar-123"
-	const envLabel = process.env.CONTAINER_LABEL
-	if (envLabel) {
-		containerLabel = envLabel
+	if (isNaN(Number(minContainers))) {
+		throw new InvalidConfigurationError("auto-scaler", "MAX_CONTAINERS", minContainers)
 	}
-	else {
-		throw new InvalidAutoScalerConfiguration("CONTAINER_LABEL")
+	const containerLabel = process.env.CONTAINER_LABEL
+	if (!containerLabel) {
+		throw new InvalidConfigurationError("auto-scaler", "CONTAINER_LABEL")
 	}
-	let imageName = "bash"
-	const envImage = process.env.CONTAINER_IMAGE
-	if (envImage) {
-		imageName = envImage
-	}
-	else {
-		throw new InvalidAutoScalerConfiguration("CONTAINER_IMAGE")
+	const imageName = process.env.CONTAINER_LABEL
+	if (!imageName) {
+		throw new InvalidConfigurationError("auto-scaler", "CONTAINER_IMAGE")
 	}
 	const tag = process.env.CONTAINER_TAG
 	const socketPath = process.env.DOCKER_SOCKET_PATH
@@ -46,7 +38,7 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 		? parseInt(process.env.DOCKER_PORT)
 		: undefined
 	return {
-		containerStartThreshold,
+		containerStartThreshold: parseInt(containerStartThreshold),
 		dockerConfig: {
 			containerLabel,
 			host,
@@ -55,8 +47,8 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 			socketPath,
 			tag
 		},
-		maxContainers,
-		minContainers
+		maxContainers: parseInt(maxContainers),
+		minContainers: parseInt(minContainers)
 	}
 }
 export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
@@ -65,16 +57,19 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 	const envNS = process.env.REDIS_NS
 	const envQ = process.env.REDIS_QUEUE
 	if (!envHost) {
-		throw new InvalidRedisConfiguration("REDIS_HOST")
+		throw new InvalidConfigurationError("redis-service", "REDIS_HOST")
 	}
 	if (!envPort) {
-		throw new InvalidRedisConfiguration("REDIS_PORT")
+		throw new InvalidConfigurationError("redis-service", "REDIS_PORT")
+	}
+	if (isNaN(Number(envPort))) {
+		throw new InvalidConfigurationError("redis-service", "REDIS_PORT", envPort)
 	}
 	if (!envNS) {
-		throw new InvalidRedisConfiguration("REDIS_NS")
+		throw new InvalidConfigurationError("redis-service", "REDIS_NS")
 	}
 	if (!envQ) {
-		throw new InvalidRedisConfiguration("REDIS_QUEUE")
+		throw new InvalidConfigurationError("redis-service", "REDIS_QUEUE")
 	}
 	return {
 		autoScalerConfig: getAutoScalerConfigFromEnv(),
