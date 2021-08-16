@@ -1,4 +1,4 @@
-import { IAutoScalerConfiguration } from "../../../auto-scaler/src/config"
+import { IAutoScalerConfiguration } from "auto-scaler/src/config"
 import { IRedisServiceConfiguration } from "./interface"
 import { InvalidConfigurationError } from "./exception"
 const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {

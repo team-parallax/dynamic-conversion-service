@@ -1,5 +1,5 @@
 import { IRedisConfiguration } from "../config"
-import { Logger } from "~/../packages/logger"
+import { Logger } from "../../../../packages/logger"
 import {
 	RedisWrapperNotInitializedError,
 	RedisWrapperPopError,
