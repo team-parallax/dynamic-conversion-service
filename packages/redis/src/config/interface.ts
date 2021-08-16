@@ -1,3 +1,4 @@
+import { IAutoScalerConfiguration } from "auto-scaler/src/config"
 export interface IRedisConfiguration {
     host: string,
     namespace: string,
@@ -5,5 +6,6 @@ export interface IRedisConfiguration {
     queue: string
 }
 export interface IRedisServiceConfiguration {
+    autoScalerConfig: IAutoScalerConfiguration,
     redisConfig: IRedisConfiguration
 }

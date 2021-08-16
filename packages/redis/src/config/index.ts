@@ -1,7 +1,7 @@
 import { IAutoScalerConfiguration } from "../../../auto-scaler/src/config"
 import { IRedisServiceConfiguration } from "./interface"
 import { InvalidAutoScalerConfiguration, InvalidRedisConfiguration } from "./exception"
-export const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
+const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 	let containerStartThreshold = 3
 	const envThreshold = process.env.TASKS_PER_CONTAINER
 	if (envThreshold) {
@@ -77,6 +77,7 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 		throw new InvalidRedisConfiguration("REDIS_QUEUE")
 	}
 	return {
+		autoScalerConfig: getAutoScalerConfigFromEnv(),
 		redisConfig: {
 			host: envHost,
 			namespace: envNS,

@@ -2,7 +2,6 @@ import { AutoScaler } from "auto-scaler"
 import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
 import { Logger } from "../../logger"
 import { RedisWrapper } from "./wrapper"
-import { getAutoScalerConfigFromEnv } from "./config"
 export class RedisService {
 	private readonly autoScaler: AutoScaler
 	private readonly config: IRedisServiceConfiguration
@@ -12,8 +11,12 @@ export class RedisService {
 	constructor() {
 		this.config = getRedisConfigFromEnv()
 		this.logger = new Logger("redis-service")
-		this.redisWrapper = new RedisWrapper(this.config.redisConfig, this.logger)
-		this.autoScaler = new AutoScaler(getAutoScalerConfigFromEnv())
+		const {
+			autoScalerConfig,
+			redisConfig
+		} = this.config
+		this.redisWrapper = new RedisWrapper(redisConfig, this.logger)
+		this.autoScaler = new AutoScaler(autoScalerConfig)
 		this.runningContainers = new Map()
 	}
 	readonly checkHealth = async (): Promise<void> => {
