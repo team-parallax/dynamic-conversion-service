@@ -33,6 +33,9 @@ describe("loading configuration fields from environment should work", () => {
 			expect(isNumber("0kekw123")).toBe(false)
 			expect(isNumber("123_asasdposdkfg2134q23")).toBe(false)
 		})
+		it("should report undefined as invalid", () => {
+			expect(isNumber(undefined)).toBe(false)
+		})
 	})
 	describe("it should load valid configurations", () => {
 		it("should load a minimal valid configuration (docker socket)", () => {
