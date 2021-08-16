@@ -1,27 +1,28 @@
 import { IAutoScalerConfiguration } from "auto-scaler/src/config"
-import { IRedisServiceConfiguration } from "./interface"
-import { InvalidConfigurationError } from "./exception"
+import { IRedisServiceConfiguration, ISchedulerConfiguration } from "./interface"
+import { InvalidConfigurationError, InvalidConfigurationValueError } from "./exception"
+export const isNumber = (s: string): boolean => !isNaN(Number(s))
 const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 	const tasksPerContainer = process.env.TASKS_PER_CONTAINER
 	if (!tasksPerContainer) {
 		throw new InvalidConfigurationError("auto-scaler", "TASKS_PER_CONTAINER")
 	}
-	if (isNaN(Number(tasksPerContainer))) {
-		throw new InvalidConfigurationError("auto-scaler", "MAX_WORKER_CONTAINERS", tasksPerContainer)
+	if (!isNumber(tasksPerContainer)) {
+		throw new InvalidConfigurationValueError("auto-scaler", "MAX_WORKER_CONTAINERS", tasksPerContainer)
 	}
 	const maxContainers = process.env.MAX_WORKER_CONTAINERS
 	if (!maxContainers) {
 		throw new InvalidConfigurationError("auto-scaler", "MAX_WORKER_CONTAINERS")
 	}
-	if (isNaN(Number(maxContainers))) {
-		throw new InvalidConfigurationError("auto-scaler", "MAX_WORKER_CONTAINERS", maxContainers)
+	if (!isNumber(maxContainers)) {
+		throw new InvalidConfigurationValueError("auto-scaler", "MAX_WORKER_CONTAINERS", maxContainers)
 	}
 	const minContainers = process.env.MIN_WORKER_CONTAINERS
 	if (!minContainers) {
 		throw new InvalidConfigurationError("auto-scaler", "MIN_WORKER_CONTAINERS")
 	}
-	if (isNaN(Number(minContainers))) {
-		throw new InvalidConfigurationError("auto-scaler", "MIN_WORKER_CONTAINERS", minContainers)
+	if (!isNumber(minContainers)) {
+		throw new InvalidConfigurationValueError("auto-scaler", "MIN_WORKER_CONTAINERS", minContainers)
 	}
 	const containerLabel = process.env.CONTAINER_LABEL
 	if (!containerLabel) {
@@ -34,9 +35,14 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 	const tag = process.env.CONTAINER_TAG
 	const socketPath = process.env.DOCKER_SOCKET_PATH
 	const host = process.env.DOCKER_HOST
-	const port = process.env.DOCKER_PORT
-		? parseInt(process.env.DOCKER_PORT)
-		: undefined
+	let port: number | undefined = undefined
+	const envPort = process.env.DOCKER_PORT
+	if (envPort) {
+		if (!isNumber(envPort)) {
+			throw new InvalidConfigurationValueError("auto-scaler", "DOCKER_PORT", envPort)
+		}
+		port = parseInt(envPort)
+	}
 	return {
 		dockerConfig: {
 			containerLabel,
@@ -51,6 +57,36 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 		tasksPerContainer: parseInt(tasksPerContainer)
 	}
 }
+const getSchedulerConfigFromEnv = (): ISchedulerConfiguration => {
+	const envHealthInterval = process.env.HEALTHCHECK_INTERVAL
+	const envStateInterval = process.env.APPLY_DESIRED_STATE_INTERVAL
+	let healthCheckInterval = 120
+	let stateApplicationInterval = 600
+	if (envHealthInterval) {
+		if (!isNumber(envHealthInterval)) {
+			throw new InvalidConfigurationValueError(
+				"auto-scaler",
+				"HEALTHCHECK_INTERVAL",
+				envHealthInterval
+			)
+		}
+		healthCheckInterval = parseInt(envHealthInterval)
+	}
+	if (envStateInterval) {
+		if (!isNumber(envStateInterval)) {
+			throw new InvalidConfigurationValueError(
+				"auto-scaler",
+				"APPLY_DESIRED_STATE_INTERVAL",
+				envStateInterval
+			)
+		}
+		stateApplicationInterval = parseInt(envStateInterval)
+	}
+	return {
+		healthCheckInterval,
+		stateApplicationInterval
+	}
+}
 export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 	const envHost = process.env.REDIS_HOST
 	const envPort = process.env.REDIS_PORT
@@ -62,8 +98,8 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 	if (!envPort) {
 		throw new InvalidConfigurationError("redis-service", "REDIS_PORT")
 	}
-	if (isNaN(Number(envPort))) {
-		throw new InvalidConfigurationError("redis-service", "REDIS_PORT", envPort)
+	if (!isNumber(envPort)) {
+		throw new InvalidConfigurationValueError("redis-service", "REDIS_PORT", envPort)
 	}
 	if (!envNS) {
 		throw new InvalidConfigurationError("redis-service", "REDIS_NS")
@@ -78,7 +114,8 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 			namespace: envNS,
 			port: parseInt(envPort),
 			queue: envQ
-		}
+		},
+		schedulerConfig: getSchedulerConfigFromEnv()
 	}
 }
 export * from "./interface"

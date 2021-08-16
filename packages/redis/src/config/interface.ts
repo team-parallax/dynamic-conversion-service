@@ -5,7 +5,12 @@ export interface IRedisConfiguration {
     port: number,
     queue: string
 }
+export interface ISchedulerConfiguration {
+    healthCheckInterval: number,
+    stateApplicationInterval: number
+}
 export interface IRedisServiceConfiguration {
     autoScalerConfig: IAutoScalerConfiguration,
-    redisConfig: IRedisConfiguration
+    redisConfig: IRedisConfiguration,
+    schedulerConfig: ISchedulerConfiguration
 }
