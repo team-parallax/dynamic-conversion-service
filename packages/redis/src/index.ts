@@ -1,5 +1,5 @@
 import { AutoScaler } from "auto-scaler"
-import { IRedisServiceConfiguration } from "./config"
+import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
 import { Logger } from "../../logger"
 import { RedisWrapper } from "./wrapper"
 import { getAutoScalerConfigFromEnv } from "./config"
@@ -8,10 +8,53 @@ export class RedisService {
 	private readonly config: IRedisServiceConfiguration
 	private readonly logger: Logger
 	private readonly redisWrapper: RedisWrapper
-	constructor(config: IRedisServiceConfiguration) {
-		this.config = config
+	private readonly runningContainers: Map<string, boolean>
+	constructor() {
+		this.config = getRedisConfigFromEnv()
 		this.logger = new Logger("redis-service")
 		this.redisWrapper = new RedisWrapper(this.config.redisConfig, this.logger)
 		this.autoScaler = new AutoScaler(getAutoScalerConfigFromEnv())
+		this.runningContainers = new Map()
+	}
+	readonly checkHealth = async (): Promise<void> => {
+		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
+		const containerStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
+		const {
+			runningContainers,
+			containersToRemove,
+			containersToStart
+		} = containerStatus
+		this.logger.info(`${runningContainers.length} are currently running`)
+		this.logger.info(`start/remove : ${containersToStart}/${containersToRemove}`)
+		runningContainers.forEach(container => {
+			this.runningContainers.set(container.containerId, true)
+		})
+		this.logger.info("applying scaling...")
+		const changedContainers = await this.autoScaler.applyConfigurationState(containerStatus)
+		/*
+		Currently we cannot differentiate if `applyConfigurationState` has started
+		or removerd any containers.
+		That's why we have to rely on the `containerStatus` from the health check
+		*/
+		if (containersToStart > 0) {
+			changedContainers.forEach(container => {
+				this.runningContainers.set(container.containerId, true)
+			})
+		}
+		else if (containersToRemove > 0) {
+			changedContainers.forEach(container => {
+				this.runningContainers.delete(container.containerId)
+			})
+		}
+	}
+	// This is a pending placeholder for actual interfaces
+	readonly forwardRequest = async (request: number): Promise<void> => {
+		await this.redisWrapper.sendMessage(JSON.stringify(request))
+	}
+	readonly initalize = async (): Promise<void> => {
+		await this.redisWrapper.initialize()
+	}
+	readonly quit = async (): Promise<void> => {
+		await this.redisWrapper.quit()
 	}
 }
