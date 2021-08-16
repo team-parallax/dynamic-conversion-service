@@ -15,24 +15,10 @@ describe("redis-service should pass all tests", () => {
 	})
 	let redisService: RedisService
 	it("should initialize without error", async (): Promise<void> => {
-		let failed = false
-		try {
-			redisService = new RedisService()
-			await redisService.initalize()
-		}
-		catch (error) {
-			failed = true
-		}
-		expect(failed).toBe(false)
+		redisService = new RedisService()
+		await expect(redisService.initalize()).resolves.not.toThrowError()
 	})
 	it("should exit without error", async (): Promise<void> => {
-		let failed = false
-		try {
-			await redisService.quit()
-		}
-		catch (error) {
-			failed = true
-		}
-		expect(failed).toBe(false)
+		await expect(redisService.quit()).resolves.not.toThrowError()
 	})
 })
