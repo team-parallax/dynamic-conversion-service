@@ -36,6 +36,10 @@ describe("redis-wrapper should pass all tests", () => {
 		}
 		expect(failed).toBe(false)
 	})
+	it("should have one pending message", async () => {
+		const pendingMessagesCount = await redis.getPendingMessagesCount()
+		expect(pendingMessagesCount).toEqual(1)
+	})
 	it("should receive a message", async () => {
 		let failed = false
 		let message = ""
@@ -47,6 +51,10 @@ describe("redis-wrapper should pass all tests", () => {
 		}
 		expect(failed).toBe(false)
 		expect(message).toEqual("test-message")
+	})
+	it("should have zero pending message", async () => {
+		const pendingMessagesCount = await redis.getPendingMessagesCount()
+		expect(pendingMessagesCount).toEqual(0)
 	})
 	it("should not receive another message", async () => {
 		let failed = false
@@ -71,6 +79,11 @@ describe("redis-wrapper should pass all tests", () => {
 		}
 		expect(failed).toBe(false)
 	})
+	it("should have two pending message", async () => {
+		const pendingMessagesCount = await redis.getPendingMessagesCount()
+		const expected = 2
+		expect(pendingMessagesCount).toEqual(expected)
+	})
 	it("should receive only two messages", async () => {
 		let failed = false
 		let message1 = ""
@@ -88,6 +101,10 @@ describe("redis-wrapper should pass all tests", () => {
 		expect(message1).toEqual("test-message-1")
 		expect(message2).toEqual("test-message-2")
 		expect(message3).toBeUndefined()
+	})
+	it("should have zero pending message", async () => {
+		const pendingMessagesCount = await redis.getPendingMessagesCount()
+		expect(pendingMessagesCount).toEqual(0)
 	})
 	it("should send one message", async () => {
 		let failed = false
@@ -114,6 +131,10 @@ describe("redis-wrapper should pass all tests", () => {
 		expect(message1).toEqual("test-message-1")
 		expect(message2).toBeUndefined()
 	})
+	it("should have zero pending message", async () => {
+		const pendingMessagesCount = await redis.getPendingMessagesCount()
+		expect(pendingMessagesCount).toEqual(0)
+	})
 	it("should send two messages again", async () => {
 		let failed = false
 		try {
@@ -124,6 +145,11 @@ describe("redis-wrapper should pass all tests", () => {
 			failed = true
 		}
 		expect(failed).toBe(false)
+	})
+	it("should have two pending message", async () => {
+		const pendingMessagesCount = await redis.getPendingMessagesCount()
+		const expected = 2
+		expect(pendingMessagesCount).toEqual(expected)
 	})
 	it("second instance should receive a message", async () => {
 		let failed = false

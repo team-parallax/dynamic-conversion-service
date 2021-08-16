@@ -6,7 +6,7 @@ import {
 	RedisWrapperQueueCreateError,
 	RedisWrapperQueueDeleteError,
 	RedisWrapperQueueListError,
-	RedisWrapperReceiveError,
+	RedisWrapperQueueStatError,
 	RedisWrapperSendError
 } from "./exception"
 import RedisSMQ, { QueueMessage } from "rsmq"
@@ -27,6 +27,23 @@ export class RedisWrapper {
 			port
 		})
 	}
+	readonly getPendingMessagesCount = async (): Promise<number> => {
+		if (!this.isInitialized) {
+			this.logger.error(`using 'getPendingMessagesCount' before initializing`)
+			throw new RedisWrapperNotInitializedError()
+		}
+		return new Promise((resolve, reject) => {
+			this.rsmq.getQueueAttributes({
+				qname: this.config.queue
+			}, (err, resp) => {
+				if (err) {
+					this.logger.error(err)
+					return reject(new RedisWrapperQueueStatError())
+				}
+				return resolve(resp.msgs)
+			})
+		})
+	}
 	readonly initialize = async (): Promise<void> => {
 		const existingQueues = await this.getQueues()
 		const {
@@ -36,28 +53,6 @@ export class RedisWrapper {
 			await this.createQueue(queue)
 		}
 		this.isInitialized = true
-	}
-	readonly popMessage = async (): Promise<string> => {
-		if (!this.isInitialized) {
-			this.logger.error(`using 'popMessage' before initializing`)
-			throw new RedisWrapperNotInitializedError()
-		}
-		return new Promise((resolve, reject) => {
-			this.rsmq.popMessage({
-				qname: this.config.queue
-			}, (err, resp) => {
-				if (err) {
-					this.logger.error(err)
-					return reject(new RedisWrapperPopError())
-				}
-				if (resp === {}) {
-					return resolve("")
-				}
-				else {
-					return resolve((resp as QueueMessage).message)
-				}
-			})
-		})
 	}
 	readonly quit = async (): Promise<void> => {
 		const runningQueues = await this.getQueues()
@@ -71,16 +66,16 @@ export class RedisWrapper {
 	}
 	readonly receiveMessage = async (): Promise<string> => {
 		if (!this.isInitialized) {
-			this.logger.error(`using 'receive' before initializing`)
+			this.logger.error(`using 'receiveMessage' before initializing`)
 			throw new RedisWrapperNotInitializedError()
 		}
 		return new Promise((resolve, reject) => {
-			this.rsmq.receiveMessage({
+			this.rsmq.popMessage({
 				qname: this.config.queue
 			}, (err, resp) => {
 				if (err) {
 					this.logger.error(err)
-					return reject(new RedisWrapperReceiveError())
+					return reject(new RedisWrapperPopError())
 				}
 				if (resp === {}) {
 					return resolve("")
