@@ -159,9 +159,13 @@ describe("auto-scaler should pass all tests", () => {
 			}
 			/* Act */
 			const targetContainerCount = 3
-			const containers = await autoScaler.applyConfigurationState(tempStatus)
+			const {
+				removedContainers,
+				startedContainers
+			} = await autoScaler.applyConfigurationState(tempStatus)
 			/* Assert */
-			expect(containers.length).toEqual(targetContainerCount)
+			expect(startedContainers.length).toEqual(targetContainerCount)
+			expect(removedContainers.length).toEqual(0)
 		})
 		it("should start zero containers", async (): Promise<void> => {
 			/* Arrange */
@@ -173,9 +177,13 @@ describe("auto-scaler should pass all tests", () => {
 			}
 			const targetContainerCount = 0
 			/* Act */
-			const containers = await autoScaler.applyConfigurationState(tempStatus)
+			const {
+				removedContainers,
+				startedContainers
+			} = await autoScaler.applyConfigurationState(tempStatus)
 			/* Assert */
-			expect(containers.length).toEqual(targetContainerCount)
+			expect(startedContainers.length).toEqual(targetContainerCount)
+			expect(removedContainers.length).toEqual(0)
 		})
 		it("should start zero containers on negative target", async (): Promise<void> => {
 			/* Arrange */
@@ -187,9 +195,13 @@ describe("auto-scaler should pass all tests", () => {
 			}
 			const targetContainerCount = 0
 			/* Act */
-			const containers = await autoScaler.applyConfigurationState(tempStatus)
+			const {
+				removedContainers,
+				startedContainers
+			} = await autoScaler.applyConfigurationState(tempStatus)
 			/* Assert */
-			expect(containers.length).toEqual(targetContainerCount)
+			expect(startedContainers.length).toEqual(targetContainerCount)
+			expect(removedContainers.length).toEqual(targetContainerCount)
 		})
 		it(
 			"should report three running containers after starting three containers",
@@ -213,9 +225,13 @@ describe("auto-scaler should pass all tests", () => {
 			}
 			const expectedRemovedContainerCount = 3
 			/* Act */
-			const containers = await autoScaler.applyConfigurationState(tempStatus, containerIds)
+			const {
+				removedContainers,
+				startedContainers
+			} = await autoScaler.applyConfigurationState(tempStatus, containerIds)
 			/* Assert */
-			expect(containers.length).toEqual(expectedRemovedContainerCount)
+			expect(removedContainers.length).toEqual(expectedRemovedContainerCount)
+			expect(startedContainers.length).toEqual(0)
 		})
 		it("should report zero running containers after removing all", async () : Promise<void> => {
 			/* ActAssert */
@@ -234,9 +250,13 @@ describe("auto-scaler should pass all tests", () => {
 			}
 			/* Act */
 			const targetContainerCount = 2
-			const containers = await autoScaler.applyConfigurationState(tempStatus)
+			const {
+				removedContainers,
+				startedContainers
+			} = await autoScaler.applyConfigurationState(tempStatus)
 			/* Assert */
-			expect(containers.length).toEqual(targetContainerCount)
+			expect(startedContainers.length).toEqual(targetContainerCount)
+			expect(removedContainers.length).toEqual(0)
 		})
 		it(
 			"should report two running containers after starting two containers",
@@ -261,9 +281,13 @@ describe("auto-scaler should pass all tests", () => {
 			}
 			const expectedRemovedContainerCount = 1
 			/* Act */
-			const containers = await autoScaler.applyConfigurationState(tempStatus, containerIds)
+			const {
+				removedContainers,
+				startedContainers
+			} = await autoScaler.applyConfigurationState(tempStatus, containerIds)
 			/* Assert */
-			expect(containers.length).toEqual(expectedRemovedContainerCount)
+			expect(removedContainers.length).toEqual(expectedRemovedContainerCount)
+			expect(startedContainers.length).toEqual(0)
 		})
 		it("should report one running containers after removing two containers", async () : Promise<void> => {
 			/* Arrange */
@@ -285,9 +309,13 @@ describe("auto-scaler should pass all tests", () => {
 			}
 			const expectedRemovedContainerCount = 1
 			/* Act */
-			const containers = await autoScaler.applyConfigurationState(tempStatus, containerIds)
+			const {
+				removedContainers,
+				startedContainers
+			} = await autoScaler.applyConfigurationState(tempStatus, containerIds)
 			/* Assert */
-			expect(containers.length).toEqual(expectedRemovedContainerCount)
+			expect(removedContainers.length).toEqual(expectedRemovedContainerCount)
+			expect(startedContainers.length).toEqual(0)
 		})
 		it("should report zero running containers after removing one containers", async () : Promise<void> => {
 			/* Arrange */
@@ -308,12 +336,18 @@ describe("auto-scaler should pass all tests", () => {
 				runningContainers: []
 			}
 			/* Act */
-			const [container] = await autoScaler.applyConfigurationState(
+			const {
+				startedContainers,
+				removedContainers
+			} = await autoScaler.applyConfigurationState(
 				tempStatus,
 				containerIds,
 				"redis",
 				"6.2.5-alpine"
 			)
+			expect(startedContainers.length).toEqual(1)
+			expect(removedContainers.length).toEqual(0)
+			const [container] = startedContainers
 			/* Assert */
 			expect(container.containerImage).toEqual("redis")
 			expect(container.containerTag).toEqual("6.2.5-alpine")
@@ -337,10 +371,16 @@ describe("auto-scaler should pass all tests", () => {
 				runningContainers: []
 			}
 			/* Act */
-			const [removedContainer] = await autoScaler.applyConfigurationState(
+			const {
+				removedContainers,
+				startedContainers
+			} = await autoScaler.applyConfigurationState(
 				tempStatus,
 				containerIds
 			)
+			expect(removedContainers.length).toEqual(1)
+			expect(startedContainers.length).toEqual(0)
+			const [removedContainer] = removedContainers
 			/* Assert */
 			expect(removedContainer.containerImage).toEqual("redis")
 			expect(removedContainer.containerTag).toEqual("6.2.5-alpine")
