@@ -8,7 +8,7 @@ describe("auto-scaler should pass all tests", () => {
 	// Base Config
 	const dockerConfig: IDockerConfiguration = {
 		containerLabel: "conversion-service",
-		imageId: "bash"
+		imageName: "bash"
 	}
 	if (process.env.IS_CI) {
 		dockerConfig.host = "tcp://localhost"
@@ -18,10 +18,10 @@ describe("auto-scaler should pass all tests", () => {
 		dockerConfig.socketPath = "/var/run/docker.sock"
 	}
 	const autoScaler = new AutoScaler({
-		containerStartThreshold: 2,
 		dockerConfig,
 		maxContainers: 10,
-		minContainers: 0
+		minContainers: 0,
+		tasksPerContainer: 2
 	})
 	const pendingRequests = 10
 	let containerIds: string[] = []

@@ -1,45 +1,63 @@
-import { IRedisServiceConfiguration } from "./config"
+import { AutoScaler } from "auto-scaler"
+import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
 import { Logger } from "../../logger"
-import { RedisNotInitializedError } from "./exception"
 import { RedisWrapper } from "./wrapper"
 export class RedisService {
+	private readonly autoScaler: AutoScaler
 	private readonly config: IRedisServiceConfiguration
-	private isInitialized: boolean = false
 	private readonly logger: Logger
 	private readonly redisWrapper: RedisWrapper
-	constructor(config: IRedisServiceConfiguration) {
-		this.config = config
+	private readonly runningContainers: Map<string, boolean>
+	constructor() {
+		this.config = getRedisConfigFromEnv()
 		this.logger = new Logger("redis-service")
-		this.redisWrapper = new RedisWrapper(this.config.redisConfig, this.logger)
+		const {
+			autoScalerConfig,
+			redisConfig
+		} = this.config
+		this.redisWrapper = new RedisWrapper(redisConfig, this.logger)
+		this.autoScaler = new AutoScaler(autoScalerConfig)
+		this.runningContainers = new Map()
 	}
-	public readonly initialize = async (): Promise<void> => {
-		await this.redisWrapper.init()
-		this.isInitialized = true
-		this.logger.info("successfully initialized redis-service")
-	}
-	public readonly popMessage = async (): Promise<string> => {
-		if (!this.isInitialized) {
-			this.logger.error(`using 'popMessage' before initializing`)
-			throw new RedisNotInitializedError()
+	readonly checkHealth = async (): Promise<void> => {
+		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
+		const containerStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
+		const {
+			runningContainers,
+			containersToRemove,
+			containersToStart
+		} = containerStatus
+		this.logger.info(`${runningContainers.length} are currently running`)
+		this.logger.info(`start/remove : ${containersToStart}/${containersToRemove}`)
+		runningContainers.forEach(container => {
+			this.runningContainers.set(container.containerId, true)
+		})
+		this.logger.info("applying scaling...")
+		const changedContainers = await this.autoScaler.applyConfigurationState(containerStatus)
+		/*
+		Currently we cannot differentiate if `applyConfigurationState` has started
+		or removerd any containers.
+		That's why we have to rely on the `containerStatus` from the health check
+		*/
+		if (containersToStart > 0) {
+			changedContainers.forEach(container => {
+				this.runningContainers.set(container.containerId, true)
+			})
 		}
-		return await this.redisWrapper.popMessage()
+		else if (containersToRemove > 0) {
+			changedContainers.forEach(container => {
+				this.runningContainers.delete(container.containerId)
+			})
+		}
 	}
-	public readonly quit = async (): Promise<void> => {
+	// This is a pending placeholder for actual interfaces
+	readonly forwardRequest = async (request: number): Promise<void> => {
+		await this.redisWrapper.sendMessage(JSON.stringify(request))
+	}
+	readonly initalize = async (): Promise<void> => {
+		await this.redisWrapper.initialize()
+	}
+	readonly quit = async (): Promise<void> => {
 		await this.redisWrapper.quit()
-		this.logger.info("successfully terminated redis-service")
-	}
-	public readonly receive = async (): Promise<string> => {
-		if (!this.isInitialized) {
-			this.logger.error(`using 'receive' before initializing`)
-			throw new RedisNotInitializedError()
-		}
-		return await this.redisWrapper.receiveMessage()
-	}
-	public readonly send = async (message: string): Promise<void> => {
-		if (!this.isInitialized) {
-			this.logger.error(`using 'send' before initializing`)
-			throw new RedisNotInitializedError()
-		}
-		await this.redisWrapper.sendMessage(message)
 	}
 }

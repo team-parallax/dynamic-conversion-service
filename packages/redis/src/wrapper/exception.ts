@@ -28,3 +28,13 @@ export class RedisWrapperQueueListError extends Error {
 		super("failed to list redis queues")
 	}
 }
+export class RedisWrapperQueueStatError extends Error {
+	constructor() {
+		super("failed to list stats for queue")
+	}
+}
+export class RedisWrapperNotInitializedError extends Error {
+	constructor() {
+		super("redis-service has not been initialized")
+	}
+}

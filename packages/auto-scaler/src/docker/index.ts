@@ -44,14 +44,14 @@ export class DockerService {
 		this.logger.info(`pulled image: ${imageId}:${targetTag}`)
 	}
 	createContainer = async (
-		newImageId?: string,
+		newImageName?: string,
 		newTag?: string
 	) : Promise<IContainerInfo> => {
 		const {
-			imageId, containerLabel, tag
+			imageName, containerLabel, tag
 		} = this.config
-		const needPull = !this.hasImage || newImageId !== undefined || newTag !== undefined
-		const targetImage = newImageId ?? imageId
+		const needPull = !this.hasImage || newImageName !== undefined || newTag !== undefined
+		const targetImage = newImageName ?? imageName
 		const targetTag = newTag ?? tag ?? "latest"
 		if (needPull) {
 			await this.checkImage(targetImage, targetTag)
