@@ -1,9 +1,9 @@
 import { IAutoScalerConfiguration } from "auto-scaler/src/config"
 import { IRedisServiceConfiguration, ISchedulerConfiguration } from "./interface"
 import { InvalidConfigurationError, InvalidConfigurationValueError } from "./exception"
-export const isStringNumber = (s: string | undefined): boolean =>
-	s
-		? !isNaN(Number(s)) && /^\d+$/.test(s)
+export const isStringNumber = (stringNumber: string | undefined): boolean =>
+	stringNumber
+		? !isNaN(Number(stringNumber)) && /^\d+$/.test(stringNumber)
 		: false
 const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 	const tasksPerContainer = process.env.TASKS_PER_CONTAINER
