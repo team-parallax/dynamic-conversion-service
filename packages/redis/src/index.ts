@@ -25,7 +25,10 @@ export class RedisService {
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
 		const containerStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
-		const result = await this.autoScaler.applyConfigurationState(containerStatus)
+		const result = await this.autoScaler.applyConfigurationState(
+			containerStatus,
+			this.getIdleWorkerIDs()
+		)
 		await this.updateActiveWorkers(result)
 	}
 	// This is a pending placeholder for actual interfaces
@@ -37,6 +40,15 @@ export class RedisService {
 	}
 	readonly quit = async (): Promise<void> => {
 		await this.redisWrapper.quit()
+	}
+	private readonly getIdleWorkerIDs = (): string[] => {
+		const idleContainers: string[] = []
+		this.runningWorkers.forEach((containerInfo, containerID) => {
+			if (containerInfo.currentConversionInfo === null) {
+				idleContainers.push(containerID)
+			}
+		})
+		return idleContainers
 	}
 	private readonly pingWorker = async (worker: any): Promise<boolean> => {
 		// Worker.ping
