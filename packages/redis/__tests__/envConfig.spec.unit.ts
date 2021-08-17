@@ -1,5 +1,5 @@
 import { InvalidConfigurationError, InvalidConfigurationValueError } from "../src/config/exception"
-import { getRedisConfigFromEnv, isNumber } from "../src/config"
+import { getRedisConfigFromEnv, isStringNumber } from "../src/config"
 describe("loading configuration fields from environment should work", () => {
 	beforeEach(() => {
 		process.env.TASKS_PER_CONTAINER = "5"
@@ -19,22 +19,22 @@ describe("loading configuration fields from environment should work", () => {
 	})
 	describe("number validation should work", () => {
 		it("should report numbers as valid", () => {
-			expect(isNumber("123")).toBe(true)
-			expect(isNumber("0")).toBe(true)
-			expect(isNumber("420691337")).toBe(true)
+			expect(isStringNumber("123")).toBe(true)
+			expect(isStringNumber("0")).toBe(true)
+			expect(isStringNumber("420691337")).toBe(true)
 		})
 		it("should report strings with trailing non-numeric characters as invalid", () => {
-			expect(isNumber("120ff")).toBe(false)
-			expect(isNumber("1__-123")).toBe(false)
-			expect(isNumber("420foobar")).toBe(false)
+			expect(isStringNumber("120ff")).toBe(false)
+			expect(isStringNumber("1__-123")).toBe(false)
+			expect(isStringNumber("420foobar")).toBe(false)
 		})
 		it("should report non-numbers as invalid", () => {
-			expect(isNumber("foo-bar")).toBe(false)
-			expect(isNumber("0kekw123")).toBe(false)
-			expect(isNumber("123_asasdposdkfg2134q23")).toBe(false)
+			expect(isStringNumber("foo-bar")).toBe(false)
+			expect(isStringNumber("0kekw123")).toBe(false)
+			expect(isStringNumber("123_asasdposdkfg2134q23")).toBe(false)
 		})
 		it("should report undefined as invalid", () => {
-			expect(isNumber(undefined)).toBe(false)
+			expect(isStringNumber(undefined)).toBe(false)
 		})
 	})
 	describe("it should load valid configurations", () => {

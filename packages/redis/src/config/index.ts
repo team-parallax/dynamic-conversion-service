@@ -1,7 +1,7 @@
 import { IAutoScalerConfiguration } from "auto-scaler/src/config"
 import { IRedisServiceConfiguration, ISchedulerConfiguration } from "./interface"
 import { InvalidConfigurationError, InvalidConfigurationValueError } from "./exception"
-export const isNumber = (s: string | undefined): boolean =>
+export const isStringNumber = (s: string | undefined): boolean =>
 	s
 		? !isNaN(Number(s)) && /^\d+$/.test(s)
 		: false
@@ -10,21 +10,21 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 	if (!tasksPerContainer) {
 		throw new InvalidConfigurationError("auto-scaler", "TASKS_PER_CONTAINER")
 	}
-	if (!isNumber(tasksPerContainer)) {
+	if (!isStringNumber(tasksPerContainer)) {
 		throw new InvalidConfigurationValueError("auto-scaler", "MAX_WORKER_CONTAINERS", tasksPerContainer)
 	}
 	const maxContainers = process.env.MAX_WORKER_CONTAINERS
 	if (!maxContainers) {
 		throw new InvalidConfigurationError("auto-scaler", "MAX_WORKER_CONTAINERS")
 	}
-	if (!isNumber(maxContainers)) {
+	if (!isStringNumber(maxContainers)) {
 		throw new InvalidConfigurationValueError("auto-scaler", "MAX_WORKER_CONTAINERS", maxContainers)
 	}
 	const minContainers = process.env.MIN_WORKER_CONTAINERS
 	if (!minContainers) {
 		throw new InvalidConfigurationError("auto-scaler", "MIN_WORKER_CONTAINERS")
 	}
-	if (!isNumber(minContainers)) {
+	if (!isStringNumber(minContainers)) {
 		throw new InvalidConfigurationValueError("auto-scaler", "MIN_WORKER_CONTAINERS", minContainers)
 	}
 	const containerLabel = process.env.CONTAINER_LABEL
@@ -41,7 +41,7 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 	let port: number | undefined = undefined
 	const envPort = process.env.DOCKER_PORT
 	if (envPort) {
-		if (!isNumber(envPort)) {
+		if (!isStringNumber(envPort)) {
 			throw new InvalidConfigurationValueError("auto-scaler", "DOCKER_PORT", envPort)
 		}
 		port = parseInt(envPort)
@@ -66,7 +66,7 @@ const getSchedulerConfigFromEnv = (): ISchedulerConfiguration => {
 	let healthCheckInterval: number | undefined = undefined
 	let stateApplicationInterval: number | undefined = undefined
 	if (envHealthInterval) {
-		if (!isNumber(envHealthInterval)) {
+		if (!isStringNumber(envHealthInterval)) {
 			throw new InvalidConfigurationValueError(
 				"auto-scaler",
 				"HEALTH_CHECK_INTERVAL",
@@ -76,7 +76,7 @@ const getSchedulerConfigFromEnv = (): ISchedulerConfiguration => {
 		healthCheckInterval = parseInt(envHealthInterval)
 	}
 	if (envStateInterval) {
-		if (!isNumber(envStateInterval)) {
+		if (!isStringNumber(envStateInterval)) {
 			throw new InvalidConfigurationValueError(
 				"auto-scaler",
 				"APPLY_DESIRED_STATE_INTERVAL",
@@ -101,7 +101,7 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 	if (!envPort) {
 		throw new InvalidConfigurationError("redis-service", "REDIS_PORT")
 	}
-	if (!isNumber(envPort)) {
+	if (!isStringNumber(envPort)) {
 		throw new InvalidConfigurationValueError("redis-service", "REDIS_PORT", envPort)
 	}
 	if (!envNS) {
