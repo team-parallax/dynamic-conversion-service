@@ -46,6 +46,15 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 		}
 		port = parseInt(envPort)
 	}
+	const useSocket = socketPath && (!host && !port)
+	const useHostPort = host && port && !socketPath
+	if (!(useSocket || useHostPort)) {
+		throw new InvalidConfigurationValueError(
+			"auto-scaler",
+			"DOCKER_SOCKET_PATH|DOCKER_HOST|DOCKER_PORT",
+			"Either use socketPath OR host+port"
+		)
+	}
 	return {
 		dockerConfig: {
 			containerLabel,

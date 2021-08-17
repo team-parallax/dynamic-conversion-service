@@ -86,5 +86,20 @@ describe("loading configuration fields from environment should work", () => {
 			expect(() => getRedisConfigFromEnv()).toThrowError(InvalidConfigurationError)
 		})
 	})
+	describe("it should handle invalid config option combinations", () => {
+		it("should report when all docker connection options are set", () => {
+			// Per test-default, DOCKER_SOCKET_PATH, DOCKER_HOST
+			// And DOCKER_PORT are set before each test so it should fail here
+			expect(() => getRedisConfigFromEnv()).toThrowError(InvalidConfigurationValueError)
+		})
+		it("should report missing docker port/host fields", () => {
+			delete process.env.DOCKER_SOCKET_PATH
+			delete process.env.DOCKER_HOST
+			expect(() => getRedisConfigFromEnv()).toThrowError(InvalidConfigurationValueError)
+			process.env.DOCKER_HOST = "127.0.0.1"
+			delete process.env.DOCKER_PORT
+			expect(() => getRedisConfigFromEnv()).toThrowError(InvalidConfigurationValueError)
+		})
+	})
 })
 export {}
