@@ -1,4 +1,5 @@
 import { AutoScaler } from "auto-scaler"
+import { IContainerCheck } from "./interface"
 import { IContainerInfo } from "auto-scaler/src/docker/interface"
 import { IContainerStateChange } from "auto-scaler/src/interface"
 import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
@@ -25,7 +26,7 @@ export class RedisService {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
 		const containerStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
 		const result = await this.autoScaler.applyConfigurationState(containerStatus)
-		await this.updateWorkerStatus(result)
+		await this.updateActiveWorkers(result)
 	}
 	// This is a pending placeholder for actual interfaces
 	readonly forwardRequest = async (request: number): Promise<void> => {
@@ -43,19 +44,26 @@ export class RedisService {
 		await new Promise((resolve, reject) => setTimeout(resolve, 100))
 		return true
 	}
-	private readonly updateWorkerStatus = async ({
+	private readonly updateActiveWorkers = async ({
 		removedContainers,
 		startedContainers
 	}: IContainerStateChange): Promise<void> => {
-		// Un-register all removed containers
 		removedContainers.forEach(container =>
 			this.runningWorkers.delete(container.containerId))
-		// Register all started containers
-		for (const container of startedContainers) {
-			// eslint-disable-next-line no-await-in-loop
-			if (await this.pingWorker(container)) {
-				this.runningWorkers.set(container.containerId, container)
-			}
-		}
+		const pingChecks = startedContainers.map(
+			async (container): Promise<IContainerCheck> => ({
+				containerInfo: container,
+				isRunning: await this.pingWorker(container)
+			})
+		)
+		const containerChecks = await Promise.all(pingChecks)
+		const runningContainers = containerChecks
+			.filter(check => check.isRunning)
+		// What do we do with started container which do not respond?
+		runningContainers.forEach(containerCheck =>
+			this.runningWorkers.set(
+				containerCheck.containerInfo.containerId,
+				containerCheck.containerInfo
+			))
 	}
 }
