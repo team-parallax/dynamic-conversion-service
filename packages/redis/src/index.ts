@@ -1,4 +1,6 @@
 import { AutoScaler } from "auto-scaler"
+import { IContainerInfo } from "auto-scaler/src/docker/interface"
+import { IContainerStateChange } from "auto-scaler/src/interface"
 import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
 import { Logger } from "../../logger"
 import { RedisWrapper } from "./wrapper"
@@ -7,7 +9,7 @@ export class RedisService {
 	private readonly config: IRedisServiceConfiguration
 	private readonly logger: Logger
 	private readonly redisWrapper: RedisWrapper
-	private readonly runningContainers: Map<string, boolean>
+	private readonly runningWorkers: Map<string, IContainerInfo>
 	constructor() {
 		this.config = getRedisConfigFromEnv()
 		this.logger = new Logger("redis-service")
@@ -17,32 +19,13 @@ export class RedisService {
 		} = this.config
 		this.redisWrapper = new RedisWrapper(redisConfig, this.logger)
 		this.autoScaler = new AutoScaler(autoScalerConfig)
-		this.runningContainers = new Map()
+		this.runningWorkers = new Map()
 	}
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
 		const containerStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
-		const {
-			runningContainers,
-			containersToRemove,
-			containersToStart
-		} = containerStatus
-		this.logger.info(`${runningContainers.length} are currently running`)
-		this.logger.info(`start/remove : ${containersToStart}/${containersToRemove}`)
-		runningContainers.forEach(container => {
-			this.runningContainers.set(container.containerId, true)
-		})
-		this.logger.info("applying scaling...")
-		const {
-			startedContainers,
-			removedContainers
-		} = await this.autoScaler.applyConfigurationState(containerStatus)
-		startedContainers.forEach(container => {
-			this.runningContainers.set(container.containerId, true)
-		})
-		removedContainers.forEach(container => {
-			this.runningContainers.delete(container.containerId)
-		})
+		const result = await this.autoScaler.applyConfigurationState(containerStatus)
+		await this.updateWorkerStatus(result)
 	}
 	// This is a pending placeholder for actual interfaces
 	readonly forwardRequest = async (request: number): Promise<void> => {
@@ -53,5 +36,26 @@ export class RedisService {
 	}
 	readonly quit = async (): Promise<void> => {
 		await this.redisWrapper.quit()
+	}
+	private readonly pingWorker = async (worker: any): Promise<boolean> => {
+		// Worker.ping
+		// eslint-disable-next-line @typescript-eslint/no-magic-numbers
+		await new Promise((resolve, reject) => setTimeout(resolve, 100))
+		return true
+	}
+	private readonly updateWorkerStatus = async ({
+		removedContainers,
+		startedContainers
+	}: IContainerStateChange): Promise<void> => {
+		// Un-register all removed containers
+		removedContainers.forEach(container =>
+			this.runningWorkers.delete(container.containerId))
+		// Register all started containers
+		for (const container of startedContainers) {
+			// eslint-disable-next-line no-await-in-loop
+			if (await this.pingWorker(container)) {
+				this.runningWorkers.set(container.containerId, container)
+			}
+		}
 	}
 }
