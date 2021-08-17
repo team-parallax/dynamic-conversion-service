@@ -71,7 +71,8 @@ export class DockerService {
 			containerId: startedContainer.id,
 			containerImage: targetImage,
 			containerLabel,
-			containerTag: targetTag ?? "latest"
+			containerTag: targetTag ?? "latest",
+			currentConversionInfo: null
 		}
 	}
 	getRunningContainerInfo = async () : Promise<IContainerInfo[]> => {
@@ -89,7 +90,8 @@ export class DockerService {
 				containerId: container.id,
 				containerImage: image,
 				containerLabel,
-				containerTag: tag
+				containerTag: tag,
+				currentConversionInfo: null
 			}
 		})
 	}
@@ -114,7 +116,8 @@ export class DockerService {
 			containerId: container.id,
 			containerImage: image,
 			containerLabel: this.config.containerLabel,
-			containerTag: tag
+			containerTag: tag,
+			currentConversionInfo: null
 		}
 	}
 }
