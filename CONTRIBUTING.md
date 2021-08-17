@@ -20,6 +20,5 @@ In general when creating issues it might be good/helpful if:
 - you provide the information in a clear, structured way
 - you try to explain the issue as accurate as possible (while not more verbose than needed)
 - you provide additional relevant information
-	- screenshots
-	- logs
-	
+  - screenshots
+  - logs
