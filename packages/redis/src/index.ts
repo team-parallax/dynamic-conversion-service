@@ -3,6 +3,7 @@ import { IContainerCheck } from "./interface"
 import { IContainerInfo } from "auto-scaler/src/docker/interface"
 import { IContainerStateChange } from "auto-scaler/src/interface"
 import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
+import { InvalidWorkerIDError } from "./exception"
 import { Logger } from "../../logger"
 import { RedisWrapper } from "./wrapper"
 export class RedisService {
@@ -77,5 +78,25 @@ export class RedisService {
 				containerCheck.containerInfo.containerId,
 				containerCheck.containerInfo
 			))
+	}
+	private readonly updateWorkerConversionStatus = (
+		workerID: string,
+		// Temporary til interface is present
+		conversionRequest: {
+			file: string,
+			filename: string,
+			originalFormat?: string,
+			targetFormat: string
+		} | null
+	): void => {
+		let containerInfo = this.runningWorkers.get(workerID)
+		if (!containerInfo) {
+			throw new InvalidWorkerIDError(workerID)
+		}
+		containerInfo = {
+			...containerInfo,
+			currentConversionInfo: conversionRequest
+		}
+		this.runningWorkers.set(workerID, containerInfo)
 	}
 }
