@@ -93,8 +93,8 @@ const getSchedulerConfigFromEnv = (): ISchedulerConfiguration => {
 export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 	const envHost = process.env.REDIS_HOST
 	const envPort = process.env.REDIS_PORT
-	const envNS = process.env.REDIS_NS
-	const envQ = process.env.REDIS_QUEUE
+	const envNameSpace = process.env.REDIS_NS
+	const envQueue = process.env.REDIS_QUEUE
 	if (!envHost) {
 		throw new InvalidConfigurationError("redis-service", "REDIS_HOST")
 	}
@@ -104,19 +104,19 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 	if (!isStringNumber(envPort)) {
 		throw new InvalidConfigurationValueError("redis-service", "REDIS_PORT", envPort)
 	}
-	if (!envNS) {
+	if (!envNameSpace) {
 		throw new InvalidConfigurationError("redis-service", "REDIS_NS")
 	}
-	if (!envQ) {
+	if (!envQueue) {
 		throw new InvalidConfigurationError("redis-service", "REDIS_QUEUE")
 	}
 	return {
 		autoScalerConfig: getAutoScalerConfigFromEnv(),
 		redisConfig: {
 			host: envHost,
-			namespace: envNS,
+			namespace: envNameSpace,
 			port: parseInt(envPort),
-			queue: envQ
+			queue: envQueue
 		},
 		schedulerConfig: getSchedulerConfigFromEnv()
 	}
