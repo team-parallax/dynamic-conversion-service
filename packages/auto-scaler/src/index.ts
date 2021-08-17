@@ -1,7 +1,11 @@
 import { DockerService } from "./docker"
 import { ELogLevel } from "logger/src/enum"
 import { IAutoScalerConfiguration } from "./config"
-import { IComputedScalingResult, IContainerStatus } from "./interface"
+import {
+	IComputedScalingResult,
+	IContainerStateChange,
+	IContainerStatus
+} from "./interface"
 import { IContainerInfo } from "./docker/interface"
 import { Logger } from "logger/src/index"
 export class AutoScaler {
@@ -21,7 +25,7 @@ export class AutoScaler {
 		idleContainerIds?: string[],
 		imageId?: string,
 		tag?: string
-	): Promise<IContainerInfo[]> => {
+	): Promise<IContainerStateChange> => {
 		const {
 			containersToRemove,
 			containersToStart
@@ -29,8 +33,7 @@ export class AutoScaler {
 		if (containersToStart !== 0 && containersToRemove !== 0) {
 			throw new Error("invalid status: cannot start and kill containers in one call")
 		}
-		const containerInfos: IContainerInfo[] = []
-		this.logger.info(`creating ${containersToStart}/removing ${containersToRemove} containers`)
+		const startedContainers: IContainerInfo[] = []
 		if (containersToStart) {
 			for (let i = 0; i < containersToStart; i++) {
 				// eslint-disable-next-line no-await-in-loop
@@ -38,9 +41,11 @@ export class AutoScaler {
 					imageId,
 					tag
 				)
-				containerInfos.push(containerInfo)
+				startedContainers.push(containerInfo)
 			}
+			this.logger.info(`started ${startedContainers.length} containers`)
 		}
+		const removedContainers: IContainerInfo[] = []
 		if (containersToRemove && idleContainerIds) {
 			const idleContainersToRemove = idleContainerIds.slice(0, containersToRemove)
 			for (let i = 0; i < idleContainersToRemove.length; i++) {
@@ -48,10 +53,14 @@ export class AutoScaler {
 				const containerInfo = await this.dockerService.removeContainer(
 					idleContainersToRemove[i]
 				)
-				containerInfos.push(containerInfo)
+				removedContainers.push(containerInfo)
 			}
+			this.logger.info(`removed ${removedContainers.length} containers`)
 		}
-		return containerInfos
+		return {
+			removedContainers,
+			startedContainers
+		}
 	}
 	public checkContainerStatus = async (
 		pendingRequests: number

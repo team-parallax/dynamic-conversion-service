@@ -33,22 +33,16 @@ export class RedisService {
 			this.runningContainers.set(container.containerId, true)
 		})
 		this.logger.info("applying scaling...")
-		const changedContainers = await this.autoScaler.applyConfigurationState(containerStatus)
-		/*
-		Currently we cannot differentiate if `applyConfigurationState` has started
-		or removerd any containers.
-		That's why we have to rely on the `containerStatus` from the health check
-		*/
-		if (containersToStart > 0) {
-			changedContainers.forEach(container => {
-				this.runningContainers.set(container.containerId, true)
-			})
-		}
-		else if (containersToRemove > 0) {
-			changedContainers.forEach(container => {
-				this.runningContainers.delete(container.containerId)
-			})
-		}
+		const {
+			startedContainers,
+			removedContainers
+		} = await this.autoScaler.applyConfigurationState(containerStatus)
+		startedContainers.forEach(container => {
+			this.runningContainers.set(container.containerId, true)
+		})
+		removedContainers.forEach(container => {
+			this.runningContainers.delete(container.containerId)
+		})
 	}
 	// This is a pending placeholder for actual interfaces
 	readonly forwardRequest = async (request: number): Promise<void> => {

@@ -9,3 +9,7 @@ export interface IComputedScalingResult {
 	remove: number,
 	start: number
 }
+export interface IContainerStateChange {
+	removedContainers: IContainerInfo[],
+	startedContainers: IContainerInfo[]
+}
