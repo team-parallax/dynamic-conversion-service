@@ -36,7 +36,9 @@
   },
   "config": {
     "commitizen": {
-      "path": "cz-conventional-changelog"
+      "path": "cz-conventional-changelog",
+      "maxHeaderWidth": 72,
+      "maxLineWidth": 100
     }
   },
   "lint-staged": {
