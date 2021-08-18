@@ -17,7 +17,10 @@ export class AutoScaler {
 		const {
 			dockerConfig
 		} = this.config
-		this.logger = new Logger("auto-scaler", ELogLevel.info)
+		this.logger = new Logger({
+			logLevel: ELogLevel.info,
+			serviceName: "auto-scaler"
+		})
 		this.dockerService = new DockerService(dockerConfig, this.logger)
 	}
 	public applyConfigurationState = async (

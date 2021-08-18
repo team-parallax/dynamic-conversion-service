@@ -1,4 +1,5 @@
 import { ELogLevel } from "./enum"
+import { ILoggerOptions } from "./interface"
 import {
 	Logger as WinstonLogger,
 	createLogger,
@@ -14,12 +15,13 @@ const {
 export class Logger {
 	private readonly defaultIndentation: number = 2
 	private readonly logger: WinstonLogger
-	private readonly loggerServiceName: string
-	constructor(
-		serviceName?: string,
-		logLevel: ELogLevel = ELogLevel.info
-	) {
-		this.loggerServiceName = serviceName ?? "conversion-service"
+	private loggerServiceName: string
+	constructor(loggerOptions?: ILoggerOptions) {
+		const {
+			logLevel = ELogLevel.info,
+			serviceName = "default-logger"
+		} = loggerOptions as ILoggerOptions
+		this.loggerServiceName = serviceName
 		const customFormat = printf(
 			({
 				level, message, timestamp
@@ -51,6 +53,20 @@ export class Logger {
 			})
 		)
 	}
+	changeServiceName = (newName: string): void => {
+		const {
+			serviceName: currentServiceName
+		} = this.logger.defaultMeta
+		const newServiceName = newName.length > 0
+			? newName
+			: currentServiceName
+		this.loggerServiceName = newServiceName
+		if (newServiceName !== newName) {
+			this.debug(`New Service name is empty - keeping ${currentServiceName}`)
+			return
+		}
+		this.logger.debug(`New service name set to: ${newName}`)
+	}
 	critical = (message: any): void => {
 		this.logger.crit(JSON.stringify(message, null, this.defaultIndentation))
 	}
@@ -62,5 +78,8 @@ export class Logger {
 	}
 	info = (message: any): void => {
 		this.logger.info(JSON.stringify(message, null, this.defaultIndentation))
+	}
+	get serviceName(): string {
+		return this.loggerServiceName
 	}
 }
