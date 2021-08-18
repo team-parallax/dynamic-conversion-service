@@ -1,7 +1,7 @@
+import { ContainerNotFoundError, InvalidDockerConnectionOptions } from "./execption"
 import { Docker } from "node-docker-api"
 import { IContainerInfo, IDockerAPIContainer } from "./interface"
 import { IDockerConfiguration } from "../config"
-import { InvalidDockerConnectionOptions } from "./execption"
 import { Logger } from "logger/src"
 import { Stream } from "stream"
 import { promisifyStream } from "./util"
@@ -96,10 +96,11 @@ export class DockerService {
 	}
 	removeContainer = async (containerId: string) : Promise<IContainerInfo> => {
 		const containers = await this.docker.container.list()
-		if (containers.length < 1) {
-			throw new Error("cannot remove container when no container is running")
+		const filteredContainers = containers.filter(container => container.id === containerId)
+		if (filteredContainers.length !== 1) {
+			throw new ContainerNotFoundError(containerId)
 		}
-		const [container] = containers.filter(container => container.id === containerId)
+		const [container] = filteredContainers
 		const typedData = container.data as IDockerAPIContainer
 		const [image, tag] = typedData.Image.split(":")
 		const [name] = typedData.Names[0]

@@ -6,3 +6,8 @@ export class InvalidDockerConnectionOptions extends Error {
 		this.name = "InvalidDockerConfigurationError"
 	}
 }
+export class ContainerNotFoundError extends Error {
+	constructor(containerId: string) {
+		super(`No worker with containerId=${containerId}`)
+	}
+}

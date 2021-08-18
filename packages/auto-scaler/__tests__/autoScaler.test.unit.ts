@@ -1,5 +1,6 @@
 import "jest"
 import { AutoScaler } from "../src/index"
+import { ContainerNotFoundError } from "../src/docker/execption"
 import { IContainerStatus } from "../src/interface"
 import { IDockerConfiguration } from "../src/config"
 const dockerTestTimeout = 100000
@@ -384,6 +385,62 @@ describe("auto-scaler should pass all tests", () => {
 			/* Assert */
 			expect(removedContainer.containerImage).toEqual("redis")
 			expect(removedContainer.containerTag).toEqual("6.2.5-alpine")
+		})
+		it("should start two containers", async (): Promise<void> => {
+			/* Arrange */
+			containerIds = []
+			const tempStatus: IContainerStatus = {
+				containersToRemove: 0,
+				containersToStart: 2,
+				pendingRequests,
+				runningContainers: []
+			}
+			/* Act */
+			const targetContainerCount = 2
+			const {
+				removedContainers,
+				startedContainers
+			} = await autoScaler.applyConfigurationState(tempStatus)
+			/* Assert */
+			expect(startedContainers.length).toEqual(targetContainerCount)
+			expect(removedContainers.length).toEqual(0)
+		})
+		it(
+			"should report two running containers after starting two containers",
+			async () : Promise<void> => {
+			/* Arrange */
+				containerIds = []
+				const expectedNumberOfContainers = 2
+				/* Act */
+				const status = await autoScaler.checkContainerStatus(pendingRequests)
+				containerIds = status.runningContainers.map(container => container.containerId)
+				/* Assert */
+				expect(status.runningContainers.length).toEqual(expectedNumberOfContainers)
+			}
+		)
+		it("should remove two containers by id", async (): Promise<void> => {
+			const removePromises = containerIds.map(async id => autoScaler.removeContainer(id))
+			const removedContainers = await Promise.all(removePromises)
+			const stoppedContainerIds = removedContainers.map(container => container.containerId)
+			// eslint-disable-next-line @typescript-eslint/require-array-sort-compare
+			expect(containerIds.sort()).toEqual(stoppedContainerIds.sort())
+		})
+		it(
+			"should report zero running containers after removing two containers by id",
+			async () : Promise<void> => {
+				/* Arrange */
+				containerIds = []
+				const expectedNumberOfContainers = 0
+				/* Act */
+				const status = await autoScaler.checkContainerStatus(pendingRequests)
+				containerIds = status.runningContainers.map(container => container.containerId)
+				/* Assert */
+				expect(status.runningContainers.length).toEqual(expectedNumberOfContainers)
+			}
+		)
+		it("should throw an error when trying to remove a invalid container id", async () => {
+			await expect(autoScaler.removeContainer("foobarbaz"))
+				.rejects.toThrowError(ContainerNotFoundError)
 		})
 	})
 })
