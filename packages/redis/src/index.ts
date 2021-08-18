@@ -26,6 +26,9 @@ export class RedisService {
 		this.autoScaler = new AutoScaler(autoScalerConfig)
 		this.runningWorkers = new Map()
 	}
+	readonly addRequestToQueue = async (conversionRequest: IConversionRequest): Promise<void> => {
+		await this.redisWrapper.sendMessage(JSON.stringify(conversionRequest))
+	}
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
 		const containerStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
@@ -35,12 +38,13 @@ export class RedisService {
 		)
 		await this.updateActiveWorkers(result)
 	}
-	// This is a pending placeholder for actual interfaces
-	readonly forwardRequest = async (request: number): Promise<void> => {
-		await this.redisWrapper.sendMessage(JSON.stringify(request))
-	}
 	readonly initalize = async (): Promise<void> => {
 		await this.redisWrapper.initialize()
+	}
+	readonly popRequest = async (): Promise<IConversionRequest> => {
+		const requestString = await this.redisWrapper.receiveMessage()
+		const conversionRequest = JSON.parse(requestString) as IConversionRequest
+		return conversionRequest
 	}
 	readonly quit = async (): Promise<void> => {
 		await this.redisWrapper.quit()
