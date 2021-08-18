@@ -28,7 +28,7 @@ export class RedisService {
 		const containerStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
 		const result = await this.autoScaler.applyConfigurationState(
 			containerStatus,
-			this.getIdleWorkerIDs()
+			this.getIdleWorkerIds()
 		)
 		await this.updateActiveWorkers(result)
 	}
@@ -42,7 +42,7 @@ export class RedisService {
 	readonly quit = async (): Promise<void> => {
 		await this.redisWrapper.quit()
 	}
-	private readonly getIdleWorkerIDs = (): string[] => {
+	private readonly getIdleWorkerIds = (): string[] => {
 		const idleContainers: string[] = []
 		this.runningWorkers.forEach((containerInfo, containerID) => {
 			if (containerInfo.currentConversionInfo === null) {
@@ -78,16 +78,16 @@ export class RedisService {
 				containerCheck.containerInfo.containerId,
 				containerCheck.containerInfo
 			))
-		const nonRunningContainerIDs = containerChecks
+		const nonRunningContainerIds = containerChecks
 			.filter(check => !check.isRunning)
 			.map(container => container.containerInfo.containerId)
-		const removePromises = nonRunningContainerIDs.map(
+		const removePromises = nonRunningContainerIds.map(
 			async id => this.autoScaler.removeContainer(id)
 		)
 		await Promise.all(removePromises)
 	}
 	private readonly updateWorkerConversionStatus = (
-		workerID: string,
+		workerId: string,
 		// Temporary til interface is present
 		conversionRequest: {
 			file: string,
@@ -96,14 +96,14 @@ export class RedisService {
 			targetFormat: string
 		} | null
 	): void => {
-		let containerInfo = this.runningWorkers.get(workerID)
+		let containerInfo = this.runningWorkers.get(workerId)
 		if (!containerInfo) {
-			throw new InvalidWorkerIdError(workerID)
+			throw new InvalidWorkerIdError(workerId)
 		}
 		containerInfo = {
 			...containerInfo,
 			currentConversionInfo: conversionRequest
 		}
-		this.runningWorkers.set(workerID, containerInfo)
+		this.runningWorkers.set(workerId, containerInfo)
 	}
 }
