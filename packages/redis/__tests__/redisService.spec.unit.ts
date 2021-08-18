@@ -32,9 +32,19 @@ describe("redis-service should pass all tests", () => {
 		await expect(redisService.addRequestToQueue(dummyRequest))
 			.resolves.not.toThrowError()
 	})
+	it("should have one request in the queue", async (): Promise<void> => {
+		const expectedRequestCount = 1
+		const requestCount = await redisService.getPendingRequestCount()
+		expect(requestCount).toEqual(expectedRequestCount)
+	})
 	it("should retrieve the request from the queue", async () => {
 		const request = await redisService.popRequest()
 		expect(request).toEqual(dummyRequest)
+	})
+	it("should have zero requests in the queue", async (): Promise<void> => {
+		const expectedRequestCount = 0
+		const requestCount = await redisService.getPendingRequestCount()
+		expect(requestCount).toEqual(expectedRequestCount)
 	})
 	it("should exit without error", async (): Promise<void> => {
 		await expect(redisService.quit()).resolves.not.toThrowError()
