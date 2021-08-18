@@ -27,11 +27,11 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 	if (!isStringNumber(minContainers)) {
 		throw new InvalidConfigurationValueError("auto-scaler", "MIN_WORKER_CONTAINERS", minContainers)
 	}
-	const containerLabel = process.env.CONTAINER_LABEL
-	if (!containerLabel) {
-		throw new InvalidConfigurationError("auto-scaler", "CONTAINER_LABEL")
+	const containerNamePrefix = process.env.CONTAINER_NAME_PREFIX
+	if (!containerNamePrefix) {
+		throw new InvalidConfigurationError("auto-scaler", "CONTAINER_NAME_PREFIX")
 	}
-	const imageName = process.env.CONTAINER_LABEL
+	const imageName = process.env.CONTAINER_IMAGE
 	if (!imageName) {
 		throw new InvalidConfigurationError("auto-scaler", "CONTAINER_IMAGE")
 	}
@@ -57,9 +57,9 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 	}
 	return {
 		dockerConfig: {
-			containerLabel,
 			host,
 			imageName,
+			namePrefix: containerNamePrefix,
 			port,
 			socketPath,
 			tag
