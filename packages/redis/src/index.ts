@@ -10,7 +10,9 @@ export class RedisService {
 	private readonly runningContainers: Map<string, boolean>
 	constructor() {
 		this.config = getRedisConfigFromEnv()
-		this.logger = new Logger("redis-service")
+		this.logger = new Logger({
+			serviceName: "redis-service"
+		})
 		const {
 			autoScalerConfig,
 			redisConfig

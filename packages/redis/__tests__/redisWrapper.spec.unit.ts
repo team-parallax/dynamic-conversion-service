@@ -2,7 +2,9 @@ import { Logger } from "../../logger/src"
 import { RedisWrapper } from "../src/wrapper"
 import { RedisWrapperNotInitializedError } from "../src/wrapper/exception"
 describe("redis-wrapper should pass all tests", () => {
-	const logger = new Logger("redis-wrapper-test")
+	const logger = new Logger({
+		serviceName: "redis-wrapper-test"
+	})
 	const redis = new RedisWrapper({
 		host: "127.0.0.1",
 		namespace: "redis-service-tests",
