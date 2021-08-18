@@ -3,7 +3,7 @@ import { IContainerCheck } from "./interface"
 import { IContainerInfo } from "auto-scaler/src/docker/interface"
 import { IContainerStateChange } from "auto-scaler/src/interface"
 import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
-import { InvalidWorkerIDError } from "./exception"
+import { InvalidWorkerIdError } from "./exception"
 import { Logger } from "../../logger"
 import { RedisWrapper } from "./wrapper"
 export class RedisService {
@@ -100,7 +100,7 @@ export class RedisService {
 	): void => {
 		let containerInfo = this.runningWorkers.get(workerID)
 		if (!containerInfo) {
-			throw new InvalidWorkerIDError(workerID)
+			throw new InvalidWorkerIdError(workerID)
 		}
 		containerInfo = {
 			...containerInfo,
