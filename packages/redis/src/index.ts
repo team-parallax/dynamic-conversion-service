@@ -38,6 +38,9 @@ export class RedisService {
 		)
 		await this.updateActiveWorkers(result)
 	}
+	readonly getPendingRequestCount = async (): Promise<number> => {
+		return this.redisWrapper.getPendingMessagesCount()
+	}
 	readonly initalize = async (): Promise<void> => {
 		await this.redisWrapper.initialize()
 	}
