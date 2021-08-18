@@ -7,8 +7,8 @@ describe("auto-scaler should pass all tests", () => {
 	jest.setTimeout(dockerTestTimeout)
 	// Base Config
 	const dockerConfig: IDockerConfiguration = {
-		containerLabel: "conversion-service",
-		imageName: "bash"
+		imageName: "teamparallax/conversion-service",
+		namePrefix: "conversion-service-worker"
 	}
 	if (process.env.IS_CI) {
 		dockerConfig.host = "tcp://localhost"
@@ -28,8 +28,8 @@ describe("auto-scaler should pass all tests", () => {
 	// Remove any existing containers
 	beforeAll(async () => {
 		const initialStatus = await autoScaler.checkContainerStatus(pendingRequests)
-		const ids = initialStatus?.runningContainers
-			.map(runningContainers => runningContainers.containerId) ?? []
+		const ids = initialStatus.runningContainers
+			.map(runningContainers => runningContainers.containerId)
 		await autoScaler.applyConfigurationState({
 			containersToRemove: ids.length,
 			containersToStart: 0,

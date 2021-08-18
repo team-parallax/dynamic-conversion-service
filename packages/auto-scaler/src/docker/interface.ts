@@ -1,7 +1,7 @@
 export interface IContainerInfo {
 	containerId: string,
 	containerImage?: string,
-	containerLabel: string,
+	containerName: string,
 	containerTag?: string,
 	currentConversionInfo: null | {
 		// Importing from redis would make it not-standalone anymore

@@ -12,7 +12,7 @@ const autoScaler = new AutoScaler(
         minContainers: 5,
         maxContainers: 50,
         dockerConfig: {
-            containerLabel: "someLabel",
+            namePrefix: "some-name-prefix",
             imageId: "someImageId",
             socketPath: "socketPath"
         }
@@ -43,12 +43,12 @@ autoScaler.applyConfigurationState(status, ["id1", "id2", "id3"])
 
 ## `checkContainerStatus(pendingRequests: number): IContainerStatus`
 This function reports the number of running containers, pending requests
-and the number of containers to start/remove. 
+and the number of containers to start/remove.
 The result can be passed to `applyConfigurationState`.
 
 ## `applyConfigurationState(status: IContainerStatus, idleContainerIds: []): IContainerInfo[]`
-This function starts/removes the number of specified containers within 
+This function starts/removes the number of specified containers within
 the status object. If containers need to be removed, the ID's of these containers
-must be provided via the `idleContainerIds` parameter.  
-The return value is an array of started/removed container infos containing 
+must be provided via the `idleContainerIds` parameter.
+The return value is an array of started/removed container infos containing
 their label and id.

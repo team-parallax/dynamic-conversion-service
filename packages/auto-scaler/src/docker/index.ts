@@ -7,6 +7,7 @@ import { Stream } from "stream"
 import { promisifyStream } from "./util"
 export class DockerService {
 	private readonly config: IDockerConfiguration
+	private containerCounter: number = 1
 	private readonly docker: Docker
 	private hasImage: boolean = false
 	private readonly logger: Logger
@@ -48,7 +49,7 @@ export class DockerService {
 		newTag?: string
 	) : Promise<IContainerInfo> => {
 		const {
-			imageName, containerLabel, tag
+			imageName, namePrefix, tag
 		} = this.config
 		const needPull = !this.hasImage || newImageName !== undefined || newTag !== undefined
 		const targetImage = newImageName ?? imageName
@@ -57,31 +58,28 @@ export class DockerService {
 			await this.checkImage(targetImage, targetTag)
 			this.hasImage = true
 		}
+		const containerName = `${namePrefix}__${this.containerCounter}`
 		const newContainer = await this.docker.container.create({
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			Cmd: ["sleep", "infinity"],
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			Image: `${targetImage}:${targetTag}`,
 			// eslint-disable-next-line @typescript-eslint/naming-convention
-			label: [containerLabel]
+			name: containerName
 		})
 		const startedContainer = await newContainer.start()
-		this.logger.info(`created container: ${startedContainer.id}/${containerLabel}`)
+		this.logger.info(`created container: ${startedContainer.id}/${containerName}`)
+		this.containerCounter++
 		return {
 			containerId: startedContainer.id,
 			containerImage: targetImage,
-			containerLabel,
+			containerName,
 			containerTag: targetTag ?? "latest",
 			currentConversionInfo: null
 		}
 	}
 	getRunningContainerInfo = async () : Promise<IContainerInfo[]> => {
-		const {
-			containerLabel
-		} = this.config
-		const runningContainers = await this.docker.container.list({
-			label: containerLabel
-		})
+		const runningContainers = await this.docker.container.list()
 		return runningContainers.map(container => {
 			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			const typedData = container.data as IDockerAPIContainer
@@ -89,33 +87,31 @@ export class DockerService {
 			return {
 				containerId: container.id,
 				containerImage: image,
-				containerLabel,
+				containerName: typedData.Names[0],
 				containerTag: tag,
 				currentConversionInfo: null
 			}
-		})
+		}).filter(container =>
+			container.containerName.startsWith(`/${this.config.namePrefix}__`))
 	}
 	removeContainer = async (containerId: string) : Promise<IContainerInfo> => {
-		const containers = await this.docker.container.list({
-			// eslint-disable-next-line @typescript-eslint/naming-convention
-			label: this.config.containerLabel
-			// Filtering by container id does not work as expected
-		})
+		const containers = await this.docker.container.list()
 		if (containers.length < 1) {
 			throw new Error("cannot remove container when no container is running")
 		}
 		const [container] = containers.filter(container => container.id === containerId)
 		const typedData = container.data as IDockerAPIContainer
 		const [image, tag] = typedData.Image.split(":")
+		const [name] = typedData.Names[0]
 		const stoppedContainer = await container.stop()
 		await stoppedContainer.delete({
 			force: true
 		})
-		this.logger.info(`removed container: ${container.id}/${this.config.containerLabel}`)
+		this.logger.info(`removed container: ${container.id}/${name}`)
 		return {
 			containerId: container.id,
 			containerImage: image,
-			containerLabel: this.config.containerLabel,
+			containerName: name,
 			containerTag: tag,
 			currentConversionInfo: null
 		}
