@@ -146,4 +146,7 @@ export class AutoScaler {
 			start
 		}
 	}
+	public readonly removeContainer = async (containerId: string): Promise<IContainerInfo> => {
+		return await this.dockerService.removeContainer(containerId)
+	}
 }
