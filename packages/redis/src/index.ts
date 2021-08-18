@@ -78,6 +78,15 @@ export class RedisService {
 				containerCheck.containerInfo.containerId,
 				containerCheck.containerInfo
 			))
+		const nonRunningContainerIDs = containerChecks
+			.filter(check => !check.isRunning)
+			.map(container => container.containerInfo.containerId)
+		await this.autoScaler.applyConfigurationState({
+			containersToRemove: nonRunningContainerIDs.length,
+			containersToStart: 0,
+			pendingRequests: 0,
+			runningContainers: []
+		}, nonRunningContainerIDs)
 	}
 	private readonly updateWorkerConversionStatus = (
 		workerID: string,
