@@ -74,8 +74,7 @@ export class DockerService {
 			containerId: startedContainer.id,
 			containerImage: targetImage,
 			containerName,
-			containerTag: targetTag ?? "latest",
-			currentConversionInfo: null
+			containerTag: targetTag ?? "latest"
 		}
 	}
 	getRunningContainerInfo = async () : Promise<IContainerInfo[]> => {
@@ -88,8 +87,7 @@ export class DockerService {
 				containerId: container.id,
 				containerImage: image,
 				containerName: typedData.Names[0],
-				containerTag: tag,
-				currentConversionInfo: null
+				containerTag: tag
 			}
 		}).filter(container =>
 			container.containerName.startsWith(`/${this.config.namePrefix}__`))
@@ -113,8 +111,7 @@ export class DockerService {
 			containerId: container.id,
 			containerImage: image,
 			containerName: name,
-			containerTag: tag,
-			currentConversionInfo: null
+			containerTag: tag
 		}
 	}
 }
