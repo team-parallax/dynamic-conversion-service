@@ -95,7 +95,7 @@ export class RedisService {
 				{
 					containerInfo,
 					currentRequest: null,
-					dockerNetworkBaseURL: `/${containerName}/`
+					workerUrl: `/${containerName}/`
 				}
 			)
 		})
