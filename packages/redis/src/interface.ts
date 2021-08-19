@@ -1,5 +1,5 @@
+import { EConversionStatus, IConversionRequestBody } from "./api/conversion-client"
 import { IContainerInfo } from "auto-scaler/src/docker/interface"
-import { IConversionRequestBody } from "./api/conversion-client"
 export interface IContainerCheck {
     containerInfo: IContainerInfo,
     isRunning: boolean
@@ -10,7 +10,7 @@ export interface IWorkerInfo {
 	workerUrl: string
 }
 export interface IConversionRequest {
-	converionStatus: "converted" | "erroneous" | "in queue" | "processing",
+	converionStatus: EConversionStatus,
 	conversionId: string,
 	conversionRequestBody: IConversionRequestBody
 }
