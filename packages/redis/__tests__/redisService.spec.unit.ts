@@ -16,6 +16,7 @@ describe("redis-service should pass all tests", () => {
 	})
 	let redisService: RedisService
 	const dummyRequest: IConversionRequest = {
+		converionStatus: "processing",
 		conversionId: "random-id",
 		conversionRequestBody: {
 			file: "foo.bar",
