@@ -41,20 +41,20 @@ yarn run start:docker
 
 #### Using pre-built docker image
 
-You can use the built image of `teamparallax/conversion-webservice` by running the following command:
+You can use the built image of `teamparallax/conversion-service` by running the following command:
 
 ```console
 # Pull image from Dockerhub
-docker pull teamparallax/conversion-webservice:<TAG>
+docker pull teamparallax/conversion-service:<TAG>
 
 # Run the image
-docker run [--name <NAME>] -it -p <YOUR_PORT>:3000 teamparallax/conversion-webservice:<TAG>
+docker run [--name <NAME>] -it -p <YOUR_PORT>:3000 teamparallax/conversion-service:<TAG>
 
 # Pass env variables to container
-docker run [--name <NAME>] -it -e <KEY>=<VALUE> -p <YOUR_PORT>:3000 teamparallax/conversion-webservice:<TAG>
+docker run [--name <NAME>] -it -e <KEY>=<VALUE> -p <YOUR_PORT>:3000 teamparallax/conversion-service:<TAG>
 
 # Pass variables with env-file
-docker run [--name <NAME>] -it --env-file <PATH TO ENV-FILE> -p <YOUR_PORT>:3000 teamparallax/conversion-webservice:<TAG>
+docker run [--name <NAME>] -it --env-file <PATH TO ENV-FILE> -p <YOUR_PORT>:3000 teamparallax/conversion-service:<TAG>
 
 ```
 
