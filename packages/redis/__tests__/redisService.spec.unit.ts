@@ -1,3 +1,4 @@
+import { EConversionStatus } from "../src/api/conversion-client"
 import { IConversionRequest } from "../src/interface"
 import { RedisService } from "../src/service"
 describe("redis-service should pass all tests", () => {
@@ -16,7 +17,7 @@ describe("redis-service should pass all tests", () => {
 	})
 	let redisService: RedisService
 	const dummyRequest: IConversionRequest = {
-		converionStatus: "processing",
+		converionStatus: EConversionStatus.Processing,
 		conversionId: "random-id",
 		conversionRequestBody: {
 			file: "foo.bar",
