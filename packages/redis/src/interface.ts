@@ -7,7 +7,7 @@ export interface IContainerCheck {
 export interface IWorkerInfo {
 	containerInfo: IContainerInfo,
 	currentRequest: IConversionRequest | null,
-	dockerNetworkBaseURL: string
+	workerUrl: string
 }
 export interface IConversionRequest {
 	conversionId: string,
