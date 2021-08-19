@@ -1,8 +1,8 @@
 module.exports = {
-	collectConverageFrom: [
+	collectCoverageFrom: [
 		"**/*.ts",
-		"!**/api/**",
-		"!**/__tests__/**"
+		"!**/api/conversion-client/*",
+		"!**/__tests__/*"
 	],
 	globals: {
 		"ts-jest": {
