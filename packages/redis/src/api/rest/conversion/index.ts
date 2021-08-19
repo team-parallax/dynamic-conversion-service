@@ -54,7 +54,10 @@ export class ConversionController extends Controller {
 		this.logger.info("Conversion requested")
 		try {
 			const multipartConversionRequest = await handleMultipartFormData(request)
-			return await this.conversionService.processConversionRequest(multipartConversionRequest)
+			// TODO: Add conversion-request into queue
+			return {
+				conversionId: ""
+			}
 		}
 		catch (error) {
 			return handleError(error)
@@ -119,7 +122,8 @@ export class ConversionController extends Controller {
 			if (status === EConversionStatus.converted) {
 				if (!isV2Request) {
 					const conversionFileProperties = getConvertedFileNameAndPath(
-						conversionId, targetFormat
+						conversionId,
+						targetFormat
 					)
 					const resultFile = readFromFileSync(conversionFileProperties.filePath)
 					const response: TApiConvertedCompatResponseV1 = {
@@ -164,7 +168,7 @@ export class ConversionController extends Controller {
 					fileName,
 					filePath
 				} = getConvertedFileNameAndPath(conversionId, targetFormat)
-				const stats: fs.Stats = await fs.promises.stat(filePath)
+				const stats = await fs.promises.stat(filePath)
 				this.setHeader("Content-Type", `${getType(filePath)}`)
 				this.setHeader("Content-Length", stats.size.toString())
 				/*

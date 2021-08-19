@@ -64,7 +64,7 @@ export class Api {
 			next: NextFunction
 		): Response | void => {
 			if (err instanceof ValidateError) {
-				console.warn(`Caught Validation Error for ${req.path}:`, err.fields)
+				this.logger.error(`Caught Validation Error for ${req.path}:\n${err.fields}`)
 				return res.status(validationError).json({
 					details: err?.fields,
 					message: "Validation Failed"
@@ -111,7 +111,7 @@ export class Api {
 		}
 		// eslint-disable-next-line @typescript-eslint/no-floating-promises
 		Promise.all(promises)
-			.then(res => this.logger.info(res))
+			.then(this.logger.info)
 			.catch(console.error)
 	}
 	get port(): number {
