@@ -1,6 +1,8 @@
 import { AutoScaler } from "auto-scaler"
 import {
-	IContainerCheck, IConversionRequest, IWorkerInfo
+	IContainerCheck,
+	IConversionRequest,
+	IWorkerInfo
 } from "./interface"
 import { IContainerStateChange } from "auto-scaler/src/interface"
 import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
