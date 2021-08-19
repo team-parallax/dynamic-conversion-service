@@ -34,10 +34,10 @@ export const getConvertedFileNameAndPath = (
 	}
 }
 /**
-	 * Error handler that handles different errors and stes the response code accordingly
-	 * @param error The error to handle.
-	 * @returns an formatted error message
-	 */
+ * Error handler that handles different errors and stes the response code accordingly
+ * @param error The error to handle.
+ * @returns an formatted error message
+ */
 export const handleError = (error: Error): IUnsupportedConversionFormatError => {
 	if (error instanceof DifferentOriginalFormatsDetectedError) {
 		return {

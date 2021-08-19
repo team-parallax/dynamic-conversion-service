@@ -1,11 +1,11 @@
-import { EConversionWrapper } from "../../enum"
-import { EHttpResponseCodes } from "../../constants"
-import { IConversionWrapperConfig } from "../../config/interface"
+import { EHttpResponseCodes } from "conversion-service/src/constants"
 import { Inject } from "typescript-ioc"
 import { Logger } from "logger"
-import { RegisterRoutes } from "../../routes/routes"
+import { RegisterRoutes } from "conversion-service/src/routes/routes"
 import { ValidateError } from "tsoa"
+import { createDirectoryIfNotPresent } from "conversion-service/src/service/file-io"
 import { generateHTML, serve } from "swagger-ui-express"
+import { join } from "path"
 import cors from "cors"
 import express, {
 	Application,
@@ -16,7 +16,7 @@ import express, {
 	json,
 	urlencoded
 } from "express"
-import swaggerDocument from "../../../swagger.json"
+import swaggerDocument from "conversion-service/swagger.json"
 export class Api {
 	@Inject
 	private readonly logger!: Logger
@@ -25,10 +25,12 @@ export class Api {
 	private readonly startUpDelay: number = 1500
 	constructor(port?: number) {
 		this.app = express()
-		// this._port = webservicePort
+		if (port) {
+			this._port = port
+		}
 		this.configureServer()
 		this.addApi()
-		// this.createApplicationDirectiories(["input", "output"])
+		this.createApplicationDirectiories(["input", "output"])
 		setTimeout(
 			() => this.listen(),
 			this.startUpDelay
@@ -50,7 +52,7 @@ export class Api {
 		})
 		this.app.use("/docs", serve, async (req: Request, res: Response) => {
 			return res.send(
-				generateHTML(await import("../../../swagger.json"))
+				generateHTML(await import("conversion-service/swagger.json"))
 			)
 		})
 		RegisterRoutes(this.app as Express)
@@ -101,17 +103,17 @@ export class Api {
 			next()
 		})
 	}
-	// private createApplicationDirectiories(directories: string[]): void {
-	// 	const basePath = path.join(__dirname, "../../..")
-	// 	const promises = []
-	// 	for (const directory of directories) {
-	// 		promises.push(createDirectoryIfNotPresent(path.join(basePath, directory)))
-	// 	}
-	// 	// eslint-disable-next-line @typescript-eslint/no-floating-promises
-	// 	Promise.all(promises)
-	// 		.then(res => this.logger.log(res))
-	// 		.catch(console.error)
-	// }
+	private createApplicationDirectiories(directories: string[]): void {
+		const basePath = join(__dirname, "../../..")
+		const promises = []
+		for (const directory of directories) {
+			promises.push(createDirectoryIfNotPresent(join(basePath, directory)))
+		}
+		// eslint-disable-next-line @typescript-eslint/no-floating-promises
+		Promise.all(promises)
+			.then(res => this.logger.info(res))
+			.catch(console.error)
+	}
 	get port(): number {
 		return this._port
 	}
