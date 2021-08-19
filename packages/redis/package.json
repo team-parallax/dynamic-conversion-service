@@ -15,6 +15,7 @@
   "scripts": {
     "lint": "yarn eslint src --ext .ts",
     "lint:fix": "yarn eslint src --ext .ts --fix",
+    "start": "yarn ts-node src/index.ts",
     "test": "yarn jest --config ./jest.config.js --detectOpenHandles",
     "test:integration": "yarn jest integration --config ./jest.config.js --detectOpenHandles",
     "test:unit": "yarn jest unit --config ./jest.config.js --detectOpenHandles",
