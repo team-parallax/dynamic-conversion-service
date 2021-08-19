@@ -1,3 +1,5 @@
+/* eslint-disable unused-imports/no-unused-imports-ts */
+/* eslint-disable no-unreachable */
 import {
 	Body,
 	Controller,
@@ -113,29 +115,31 @@ export class ConversionController extends Controller {
 		@Request() req: express.Request
 	): IConversionStatus {
 		try {
-			const statusResponse = this.conversionService.getConvertedFile(conversionId)
-			const {
-				retries,
-				status,
-				targetFormat
-			} = statusResponse
-			if (status === EConversionStatus.converted) {
-				if (!isV2Request) {
-					const conversionFileProperties = getConvertedFileNameAndPath(
-						conversionId,
-						targetFormat
-					)
-					const resultFile = readFromFileSync(conversionFileProperties.filePath)
-					const response: TApiConvertedCompatResponseV1 = {
-						...statusResponse,
-						failures: retries,
-						resultFile
-					}
-					return response
-				}
-			}
-			this.setStatus(EHttpResponseCodes.ok)
-			return statusResponse
+			// Const statusResponse = this.conversionService.getConvertedFile(conversionId)
+			// Const {
+			// 	Retries,
+			// 	Status,
+			// 	TargetFormat
+			// } = statusResponse
+			// If (status === EConversionStatus.converted) {
+			// 	If (!isV2Request) {
+			// 		Const conversionFileProperties = getConvertedFileNameAndPath(
+			// 			ConversionId,
+			// 			TargetFormat
+			// 		)
+			// 		Const resultFile = readFromFileSync(conversionFileProperties.filePath)
+			// 		Const response: TApiConvertedCompatResponseV1 = {
+			// 			...statusResponse,
+			// 			Failures: retries,
+			// 			ResultFile
+			// 		}
+			// 		Return response
+			// 	}
+			// }
+			// This.setStatus(EHttpResponseCodes.ok)
+			// Return statusResponse
+			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+			return {} as IConversionStatus
 		}
 		catch (err) {
 			this.setStatus(EHttpResponseCodes.notFound)
@@ -152,36 +156,38 @@ export class ConversionController extends Controller {
 	 * will be available to download.
 	 * @param conversionId the id of the file-conversion that is requested
 	 */
+	// eslint-disable-next-line @typescript-eslint/require-await
 	@Get("{conversionId}/download")
 	public async getConvertedFileDownload(
 		@Path("conversionId") conversionId: string
 	): Promise<unknown> {
 		try {
-			const {
-				conversionId: fileId,
-				status,
-				targetFormat
-			} = this.conversionService.getConvertedFile(conversionId)
-			this.setStatus(EHttpResponseCodes.ok)
-			if (status === "converted") {
-				const {
-					fileName,
-					filePath
-				} = getConvertedFileNameAndPath(conversionId, targetFormat)
-				const stats = await fs.promises.stat(filePath)
-				this.setHeader("Content-Type", `${getType(filePath)}`)
-				this.setHeader("Content-Length", stats.size.toString())
-				/*
-				* Removing this line will cause to not launch the download
-				* Just serves the file as it is
-				*/
-				this.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
-				return fs.createReadStream(filePath)
-			}
-			return {
-				conversionId,
-				status
-			}
+			// Const {
+			// 	ConversionId: fileId,
+			// 	Status,
+			// 	TargetFormat
+			// } = this.conversionService.getConvertedFile(conversionId)
+			// This.setStatus(EHttpResponseCodes.ok)
+			// If (status === "converted") {
+			// 	Const {
+			// 		FileName,
+			// 		FilePath
+			// 	} = getConvertedFileNameAndPath(conversionId, targetFormat)
+			// 	Const stats = await fs.promises.stat(filePath)
+			// 	This.setHeader("Content-Type", `${getType(filePath)}`)
+			// 	This.setHeader("Content-Length", stats.size.toString())
+			// 	/*
+			// 	* Removing this line will cause to not launch the download
+			// 	* Just serves the file as it is
+			// 	*/
+			// 	This.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
+			// 	Return fs.createReadStream(filePath)
+			// }
+			// Return {
+			// 	ConversionId,
+			// 	Status
+			// }
+			return {}
 		}
 		catch (err) {
 			this.setStatus(EHttpResponseCodes.notFound)

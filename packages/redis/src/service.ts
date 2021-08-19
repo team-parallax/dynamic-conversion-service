@@ -4,7 +4,7 @@ import { IContainerInfo } from "auto-scaler/src/docker/interface"
 import { IContainerStateChange } from "auto-scaler/src/interface"
 import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
 import { InvalidWorkerIdError } from "./exception"
-import { Logger } from "../../logger"
+import { Logger } from "logger"
 import { RedisWrapper } from "./wrapper"
 export class RedisService {
 	private readonly autoScaler: AutoScaler

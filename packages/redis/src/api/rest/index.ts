@@ -28,6 +28,8 @@ export class Api {
 		if (port) {
 			this._port = port
 		}
+		this.logger.changeServiceName("redis-api")
+		this.logger.debug("Changed Loggername for Redis API.")
 		this.configureServer()
 		this.addApi()
 		this.createApplicationDirectiories(["input", "output"])

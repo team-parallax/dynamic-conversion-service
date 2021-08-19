@@ -1,4 +1,4 @@
-import { RedisService } from "../src"
+import { RedisService } from "../src/service"
 describe("redis-service should pass all tests", () => {
 	beforeAll(() => {
 		process.env.TASKS_PER_CONTAINER = "5"
