@@ -1,6 +1,9 @@
 import { AutoScaler } from "auto-scaler"
-import { IContainerCheck } from "./interface"
-import { IContainerInfo } from "auto-scaler/src/docker/interface"
+import {
+	IContainerCheck,
+	IConversionRequest,
+	IWorkerInfo
+} from "./interface"
 import { IContainerStateChange } from "auto-scaler/src/interface"
 import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
 import { InvalidWorkerIdError } from "./exception"
@@ -11,7 +14,7 @@ export class RedisService {
 	private readonly config: IRedisServiceConfiguration
 	private readonly logger: Logger
 	private readonly redisWrapper: RedisWrapper
-	private readonly runningWorkers: Map<string, IContainerInfo>
+	private readonly runningWorkers: Map<string, IWorkerInfo>
 	constructor() {
 		this.config = getRedisConfigFromEnv()
 		this.logger = new Logger({
@@ -25,6 +28,9 @@ export class RedisService {
 		this.autoScaler = new AutoScaler(autoScalerConfig)
 		this.runningWorkers = new Map()
 	}
+	readonly addRequestToQueue = async (conversionRequest: IConversionRequest): Promise<void> => {
+		await this.redisWrapper.sendMessage(JSON.stringify(conversionRequest))
+	}
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
 		const containerStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
@@ -34,12 +40,16 @@ export class RedisService {
 		)
 		await this.updateActiveWorkers(result)
 	}
-	// This is a pending placeholder for actual interfaces
-	readonly forwardRequest = async (request: number): Promise<void> => {
-		await this.redisWrapper.sendMessage(JSON.stringify(request))
+	readonly getPendingRequestCount = async (): Promise<number> => {
+		return this.redisWrapper.getPendingMessagesCount()
 	}
 	readonly initalize = async (): Promise<void> => {
 		await this.redisWrapper.initialize()
+	}
+	readonly popRequest = async (): Promise<IConversionRequest> => {
+		const requestString = await this.redisWrapper.receiveMessage()
+		const conversionRequest = JSON.parse(requestString) as IConversionRequest
+		return conversionRequest
 	}
 	readonly quit = async (): Promise<void> => {
 		await this.redisWrapper.quit()
@@ -47,7 +57,7 @@ export class RedisService {
 	private readonly getIdleWorkerIds = (): string[] => {
 		const idleContainers: string[] = []
 		this.runningWorkers.forEach((containerInfo, containerID) => {
-			if (containerInfo.currentConversionInfo === null) {
+			if (containerInfo.currentRequest === null) {
 				idleContainers.push(containerID)
 			}
 		})
@@ -74,12 +84,23 @@ export class RedisService {
 		const containerChecks = await Promise.all(pingChecks)
 		const runningContainers = containerChecks
 			.filter(check => check.isRunning)
-		// What do we do with started container which do not respond?
-		runningContainers.forEach(containerCheck =>
+		runningContainers.forEach(containerCheck => {
+			const {
+				containerInfo
+			} = containerCheck
+			const {
+				containerId,
+				containerName
+			} = containerInfo
 			this.runningWorkers.set(
-				containerCheck.containerInfo.containerId,
-				containerCheck.containerInfo
-			))
+				containerId,
+				{
+					containerInfo,
+					currentRequest: null,
+					workerUrl: `/${containerName}/`
+				}
+			)
+		})
 		const nonRunningContainerIds = containerChecks
 			.filter(check => !check.isRunning)
 			.map(container => container.containerInfo.containerId)
@@ -90,22 +111,16 @@ export class RedisService {
 	}
 	private readonly updateWorkerConversionStatus = (
 		workerId: string,
-		// Temporary til interface is present
-		conversionRequest: {
-			file: string,
-			filename: string,
-			originalFormat?: string,
-			targetFormat: string
-		} | null
+		conversionRequest: IConversionRequest | null
 	): void => {
-		let containerInfo = this.runningWorkers.get(workerId)
-		if (!containerInfo) {
+		let workerInfo = this.runningWorkers.get(workerId)
+		if (!workerInfo) {
 			throw new InvalidWorkerIdError(workerId)
 		}
-		containerInfo = {
-			...containerInfo,
-			currentConversionInfo: conversionRequest
+		workerInfo = {
+			...workerInfo,
+			currentRequest: conversionRequest
 		}
-		this.runningWorkers.set(workerId, containerInfo)
+		this.runningWorkers.set(workerId, workerInfo)
 	}
 }
