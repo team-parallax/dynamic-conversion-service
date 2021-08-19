@@ -10,6 +10,7 @@ export interface IWorkerInfo {
 	workerUrl: string
 }
 export interface IConversionRequest {
+	converionStatus: "converted" | "erroneous" | "in queue" | "processing",
 	conversionId: string,
 	conversionRequestBody: IConversionRequestBody
 }
