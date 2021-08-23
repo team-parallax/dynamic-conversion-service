@@ -16,6 +16,7 @@
     "lint": "yarn eslint src --ext .ts",
     "lint:fix": "yarn eslint src --ext .ts --fix",
     "start": "yarn ts-node src/index.ts",
+    "start-dev": "WEBSERVICE_PORT=3000 FFMPEG_PATH=/bin/ffmpeg UNOCONV_PATH=/bin/unoconv MAX_CONVERSION_TIME=9000 MAX_CONVERSION_TRIES=5 CONVERTER_DOCUMENT_PRIORITY=imageMagick,unoconv CONVERTER_MEDIA_PRIORITY=imageMagick,ffmpeg,unoconv yarn ts-node src/index.ts",
     "test": "yarn jest --config ./jest.config.js --detectOpenHandles",
     "test:integration": "yarn jest integration --config ./jest.config.js --detectOpenHandles",
     "test:unit": "yarn jest unit --config ./jest.config.js --detectOpenHandles",
