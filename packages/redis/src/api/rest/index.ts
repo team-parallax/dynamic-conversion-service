@@ -97,7 +97,7 @@ export class Api {
 			limit: "50mb"
 		}))
 		this.app.use((req: Request, res: Response, next: NextFunction) => {
-			this.logger.info(`Request received: ${req.method} ${req.url}`)
+			this.logger.info(`[${req.method}] ${req.url}`)
 			res.header("Access-Control-Allow-Origin", "*")
 			res.header(
 				"Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept"
