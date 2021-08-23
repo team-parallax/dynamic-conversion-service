@@ -1,7 +1,7 @@
 import { EHttpResponseCodes } from "conversion-service/src/constants"
 import { Inject } from "typescript-ioc"
 import { Logger } from "logger"
-import { RegisterRoutes } from "conversion-service/src/routes/routes"
+import { RegisterRoutes } from "../rest/routes"
 import { ValidateError } from "tsoa"
 import { createDirectoryIfNotPresent } from "conversion-service/src/service/file-io"
 import { generateHTML, serve } from "swagger-ui-express"
