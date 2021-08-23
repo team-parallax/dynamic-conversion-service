@@ -28,7 +28,7 @@ export class Logger {
 			({
 				level, message, timestamp
 			}) => {
-				return `[${level.toUpperCase()}][${this.loggerServiceName}][${timestamp}] ${message}`
+				return `[${level.toUpperCase()}][${this.loggerServiceName}][${timestamp}] :: ${message}`
 			}
 		)
 		this.logger = createLogger({
