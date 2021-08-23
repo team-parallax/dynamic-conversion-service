@@ -17,7 +17,7 @@ import {
 	Container,
 	Inject
 } from "typescript-ioc"
-import { EConversionStatus } from "conversion-service/src/service/conversion/enum"
+import { EConversionStatus } from "../../../api/conversion-client"
 import {
 	EHttpResponseCodes,
 	InvalidRequestBodyError
@@ -35,12 +35,15 @@ import {
 import { Logger } from "logger"
 import { RedisService } from "../../../service"
 import {
+	createDirectoryIfNotPresent, readFromFileSync, writeToFile
+} from "conversion-service/src/service/file-io"
+import {
 	getConvertedFileNameAndPath,
 	handleError,
 	handleMultipartFormData
 } from "conversion-service/src/service/conversion/util"
 import { getType } from "mime"
-import { readFromFileSync } from "conversion-service/src/service/file-io"
+import { join } from "path"
 import express from "express"
 import fs from "fs"
 @Route("/conversion")
@@ -61,9 +64,33 @@ export class ConversionController extends Controller {
 		this.logger.info("Conversion requested")
 		try {
 			const multipartConversionRequest = await handleMultipartFormData(request)
-			// TODO: Add conversion-request into queue
+			const {
+				originalFormat,
+				targetFormat,
+				filename,
+				file
+			} = multipartConversionRequest
+			// Temporary solution since I don't know how it normally works
+			const conversionId = `${Date.now()}-${filename.split(".").join("")}-${originalFormat?.slice(1)}-${targetFormat.slice(1)}`
+			const inputDir = `./input/${conversionId}`
+			await createDirectoryIfNotPresent(inputDir)
+			await writeToFile(join(inputDir, filename), file)
+			await this.redisService.addRequestToQueue({
+				converionStatus: EConversionStatus.InQueue,
+				conversionId,
+				conversionRequestBody: {
+					file: "",
+					filename,
+					originalFormat,
+					targetFormat
+				}
+			})
+			const queueDepth = await this.redisService.getPendingRequestCount()
+			this.logger.info(
+				`Added request to queue. Current Depth: ${queueDepth}`
+			)
 			return {
-				conversionId: ""
+				conversionId
 			}
 		}
 		catch (error) {
