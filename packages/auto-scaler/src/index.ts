@@ -99,6 +99,12 @@ export class AutoScaler {
 		minContainers: number
 	): IComputedScalingResult => {
 		// Nothing to do here
+		if (pendingRequests === 0 && runningContainers === 0) {
+			return {
+				remove: 0,
+				start: minContainers
+			}
+		}
 		if (pendingRequests === 0) {
 			return {
 				remove: 0,
