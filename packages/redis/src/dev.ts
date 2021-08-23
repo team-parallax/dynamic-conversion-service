@@ -36,6 +36,7 @@ import { RedisService } from "./service"
 (async (): Promise<void> => {
 	const redisService = new RedisService()
 	await redisService.initalize()
+	await redisService.checkHealth()
 	Container.bind(RedisService)
 		.factory(() => redisService)
 		.scope(Scope.Singleton)
