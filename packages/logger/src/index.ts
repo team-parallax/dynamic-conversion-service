@@ -17,10 +17,12 @@ export class Logger {
 	private readonly logger: WinstonLogger
 	private loggerServiceName: string
 	constructor(loggerOptions?: ILoggerOptions) {
-		const {
-			logLevel = ELogLevel.info,
-			serviceName = "default-logger"
-		} = loggerOptions as ILoggerOptions
+		let logLevel = ELogLevel.info
+		let serviceName = "default-logger"
+		if (loggerOptions) {
+			logLevel = loggerOptions.logLevel ?? ELogLevel.info
+			serviceName = loggerOptions.serviceName ?? "default-logger"
+		}
 		this.loggerServiceName = serviceName
 		const customFormat = printf(
 			({
