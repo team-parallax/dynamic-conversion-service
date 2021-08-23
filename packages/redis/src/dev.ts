@@ -15,7 +15,7 @@ process.env.CONVERTER_MEDIA_PRIORITY = "ffmpeg,unoconv"
 // =============================================================
 process.env.REDIS_HOST = "127.0.0.1"
 process.env.REDIS_PORT = "6379"
-process.env.NS = "redis-service-test"
+process.env.REDIS_NS = "redis-service-test"
 process.env.REDIS_QUEUE = "redis-service-test-queue"
 // =============================================================
 // || auto-scaler ENVIRONMENT VARIABLES
@@ -30,4 +30,14 @@ process.env.DOCKER_SOCKET_PATH = "/var/run/docker.sock"
 // =============================================================
 // It's important to import it here due to issue #87 (see above)
 import { Api } from "./api/rest"
-new Api()
+import { Container, Scope } from "typescript-ioc"
+import { RedisService } from "./service"
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
+(async (): Promise<void> => {
+	const redisService = new RedisService()
+	await redisService.initalize()
+	Container.bind(RedisService)
+		.factory(() => redisService)
+		.scope(Scope.Singleton)
+	new Api()
+})()

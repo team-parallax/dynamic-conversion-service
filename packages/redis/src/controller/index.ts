@@ -1,3 +1,4 @@
+import { Container, Inject } from "typescript-ioc"
 import {
 	Controller,
 	Example,
@@ -7,12 +8,13 @@ import {
 } from "tsoa"
 import { EHttpResponseCodes } from "conversion-service/src/constants"
 import { IApiConversionFormatResponse } from "../api/conversion-client"
-import { Inject } from "typescript-ioc"
 import { Logger } from "logger"
+import { RedisService } from "../service"
 @Route("/")
 export class IndexController extends Controller {
 	@Inject
 	private readonly logger!: Logger
+	private readonly redisService: RedisService = Container.get(RedisService)
 	@Tags("Misc.")
 	@Get("/ping")
 	@Example<string>("pong")

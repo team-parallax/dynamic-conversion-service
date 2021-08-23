@@ -13,6 +13,10 @@ import {
 	Route,
 	Tags
 } from "tsoa"
+import {
+	Container,
+	Inject
+} from "typescript-ioc"
 import { EConversionStatus } from "conversion-service/src/service/conversion/enum"
 import {
 	EHttpResponseCodes,
@@ -28,8 +32,8 @@ import {
 	IConversionStatus,
 	TApiConvertedCompatResponseV1
 } from "conversion-service/src/abstract/converter/interface"
-import { Inject } from "typescript-ioc"
 import { Logger } from "logger"
+import { RedisService } from "../../../service"
 import {
 	getConvertedFileNameAndPath,
 	handleError,
@@ -44,6 +48,7 @@ import fs from "fs"
 export class ConversionController extends Controller {
 	@Inject
 	private readonly logger!: Logger
+	private readonly redisService: RedisService = Container.get(RedisService)
 	/**
 	 * Adds the file from the request body to the internal conversion queue.
 	 * The files in queue will be processed after the FIFO principle.
