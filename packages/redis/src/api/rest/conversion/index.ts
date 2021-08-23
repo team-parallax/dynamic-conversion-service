@@ -34,6 +34,7 @@ import {
 } from "conversion-service/src/abstract/converter/interface"
 import { Logger } from "logger"
 import { RedisService } from "../../../service"
+import { assertStatus, isFinished } from "./util"
 import {
 	createDirectoryIfNotPresent, readFromFileSync, writeToFile
 } from "conversion-service/src/service/file-io"
@@ -131,9 +132,34 @@ export class ConversionController extends Controller {
 	@Get("/")
 	public getConversionQueueStatus(): IConversionQueueStatus {
 		this.logger.info("Conversion queue status requested")
+		const workerInfos = this.redisService.getQueueStatus()
+		const runningWorkers = workerInfos.filter(w => w.currentRequest !== null)
+		const conversions: IConversionStatus[] = []
+		runningWorkers.forEach(rW => {
+			const {
+				currentRequest
+			} = rW
+			if (currentRequest === null) {
+				return
+			}
+			const {
+				converionStatus,
+				conversionId,
+				conversionRequestBody
+			} = currentRequest
+			conversions.push({
+				conversionId,
+				path: conversionRequestBody.filename,
+				retries: 0,
+				// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+				sourceFormat: conversionRequestBody.originalFormat!,
+				status: assertStatus(converionStatus),
+				targetFormat: conversionRequestBody.targetFormat
+			})
+		})
 		return {
-			conversions: [],
-			remainingConversions: 0
+			conversions,
+			remainingConversions: runningWorkers.length
 		}
 	}
 	/**

@@ -43,6 +43,13 @@ export class RedisService {
 	readonly getPendingRequestCount = async (): Promise<number> => {
 		return this.redisWrapper.getPendingMessagesCount()
 	}
+	readonly getQueueStatus = (): IWorkerInfo[] => {
+		const workerInfos: IWorkerInfo[] = []
+		this.runningWorkers.forEach(workerInfo => {
+			workerInfos.push(workerInfo)
+		})
+		return workerInfos
+	}
 	readonly initalize = async (): Promise<void> => {
 		await this.redisWrapper.initialize()
 	}
