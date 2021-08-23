@@ -77,14 +77,14 @@ export class ConversionController extends Controller {
 			await createDirectoryIfNotPresent(inputDir)
 			await writeToFile(join(inputDir, filename), file)
 			await this.redisService.addRequestToQueue({
-				converionStatus: EConversionStatus.InQueue,
 				conversionId,
 				conversionRequestBody: {
 					file: "",
 					filename,
 					originalFormat,
 					targetFormat
-				}
+				},
+				conversionStatus: EConversionStatus.InQueue
 			})
 			const queueDepth = await this.redisService.getPendingRequestCount()
 			this.logger.info(
@@ -143,7 +143,7 @@ export class ConversionController extends Controller {
 				return
 			}
 			const {
-				converionStatus,
+				conversionStatus,
 				conversionId,
 				conversionRequestBody
 			} = currentRequest
@@ -153,7 +153,7 @@ export class ConversionController extends Controller {
 				retries: 0,
 				// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 				sourceFormat: conversionRequestBody.originalFormat!,
-				status: assertStatus(converionStatus),
+				status: assertStatus(conversionStatus),
 				targetFormat: conversionRequestBody.targetFormat
 			})
 		})

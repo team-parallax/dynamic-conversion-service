@@ -17,14 +17,14 @@ describe("redis-service should pass all tests", () => {
 	})
 	let redisService: RedisService
 	const dummyRequest: IConversionRequest = {
-		converionStatus: EConversionStatus.Processing,
 		conversionId: "random-id",
 		conversionRequestBody: {
 			file: "foo.bar",
 			filename: "foo.bar",
 			originalFormat: "baz",
 			targetFormat: "bar"
-		}
+		},
+		conversionStatus: EConversionStatus.Processing
 	}
 	it("should initialize without error", async (): Promise<void> => {
 		redisService = new RedisService()

@@ -13,7 +13,7 @@ export interface IWorkerInfo {
 	workerUrl: string
 }
 export interface IConversionRequest {
-	converionStatus: EConversionStatus,
 	conversionId: string,
-	conversionRequestBody: IConversionRequestBody
+	conversionRequestBody: IConversionRequestBody,
+	conversionStatus: EConversionStatus
 }
