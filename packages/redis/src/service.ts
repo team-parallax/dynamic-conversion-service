@@ -116,7 +116,20 @@ export class RedisService {
 	 * Clean-up and quit the redis-service.
 	 */
 	readonly quit = async (): Promise<void> => {
+		this.logger.info("Commencing redis-service cleanup")
 		await this.redisWrapper.quit()
+		const {
+			runningContainers
+		} = await this.autoScaler.checkContainerStatus(0)
+		const {
+			removedContainers
+		} = await this.autoScaler.applyConfigurationState({
+			containersToRemove: runningContainers.length,
+			containersToStart: 0,
+			pendingRequests: 0,
+			runningContainers
+		}, runningContainers.map(runningContainer => runningContainer.containerId))
+		this.logger.info(`Removed ${removedContainers.length} containers`)
 	}
 	/**
 	 * Get the docker-container id's of idle workers.
