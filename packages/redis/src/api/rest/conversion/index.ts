@@ -130,36 +130,46 @@ export class ConversionController extends Controller {
 	 * their corresponding status and the amount of outstanding conversions.
 	 */
 	@Get("/")
-	public getConversionQueueStatus(): IConversionQueueStatus {
+	public async getConversionQueueStatus(): Promise<IConversionQueueStatus> {
 		this.logger.info("Conversion queue status requested")
-		const workerInfos = this.redisService.getQueueStatus()
-		const runningWorkers = workerInfos.filter(w => w.currentRequest !== null)
-		const conversions: IConversionStatus[] = []
-		runningWorkers.forEach(rW => {
-			const {
-				currentRequest
-			} = rW
-			if (currentRequest === null) {
-				return
-			}
-			const {
-				conversionStatus,
-				conversionId,
-				conversionRequestBody
-			} = currentRequest
-			conversions.push({
-				conversionId,
-				path: conversionRequestBody.filename,
-				retries: 0,
-				// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-				sourceFormat: conversionRequestBody.originalFormat!,
-				status: assertStatus(conversionStatus),
-				targetFormat: conversionRequestBody.targetFormat
+		try {
+			const workerInfos = this.redisService.getQueueStatus()
+			const runningWorkers = workerInfos.filter(w => w.currentRequest !== null)
+			const conversions: IConversionStatus[] = []
+			runningWorkers.forEach(rW => {
+				const {
+					currentRequest
+				} = rW
+				if (currentRequest === null) {
+					return
+				}
+				const {
+					conversionStatus,
+					conversionId,
+					conversionRequestBody
+				} = currentRequest
+				conversions.push({
+					conversionId,
+					path: conversionRequestBody.filename,
+					retries: 0,
+					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+					sourceFormat: conversionRequestBody.originalFormat!,
+					status: assertStatus(conversionStatus),
+					targetFormat: conversionRequestBody.targetFormat
+				})
 			})
-		})
-		return {
-			conversions,
-			remainingConversions: runningWorkers.length
+			const inProcessConversions = runningWorkers.length
+			const inQueueConversions = await this.redisService.getPendingRequestCount()
+			return {
+				conversions,
+				remainingConversions: inProcessConversions + inQueueConversions
+			}
+		}
+		catch (error) {
+			return {
+				conversions: [],
+				remainingConversions: 0
+			}
 		}
 	}
 	/**
