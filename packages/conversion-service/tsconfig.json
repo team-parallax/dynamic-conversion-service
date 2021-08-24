@@ -1,3 +1,47 @@
 {
-  "extends": "../../tsconfig.json"
+	"compilerOptions": {
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+		"downlevelIteration": true,
+		"sourceMap": true,
+		"noImplicitAny": true,
+		"noImplicitThis": true,
+		"noImplicitReturns": true,
+		"strictBindCallApply": true,
+		"strictFunctionTypes": true,
+		"strictNullChecks": true,
+		"strictPropertyInitialization": true,
+		"alwaysStrict": true,
+		"module": "commonjs",
+		"target": "es6",
+		"lib": [
+			"dom.iterable",
+			"es2015.promise",
+			"esnext",
+			"dom"
+		],
+		"removeComments": true,
+		"isolatedModules": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+		"allowSyntheticDefaultImports": true,
+		"suppressImplicitAnyIndexErrors": true,
+		"allowJs": true,
+		"baseUrl": "../../src",
+		"types": ["node", "jest"],
+		"paths": {
+			"~/*": ["*"],
+			"Api/*": ["./api/*"],
+			"Service/*": ["./service/*"],
+			"Config": ["./config/index.ts", "./service/config/index.ts"],
+			"Config/*": ["./config/*", "./service/config/*"],
+			"Data/*": ["./data/*"],
+			"Entity/*": ["./data/entity/*"],
+			"Repository/*": ["./data/repository/*"],
+			"Controller/*": ["./controller/*"],
+			"Spec/*": ["./spec/*"]
+		}
+	}
 }

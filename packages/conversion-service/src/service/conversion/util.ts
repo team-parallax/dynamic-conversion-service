@@ -71,12 +71,14 @@ export const handleMultipartFormData = async (
 			const {
 				file
 			} = request
-			resolve({
-				file: file.buffer,
-				filename: file.originalname,
-				originalFormat,
-				targetFormat
-			})
+			if (file) {
+				resolve({
+					file: file.buffer,
+					filename: file.originalname,
+					originalFormat,
+					targetFormat
+				})
+			}
 		})
 	})
 }
