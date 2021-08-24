@@ -46,6 +46,7 @@ test unit redis:
       junit: artifacts/test/unit/junit.xml
     untracked: false
     when: always
+  allow_failure: true
   rules:
     - changes:
       - packages/redis/**/*.ts
