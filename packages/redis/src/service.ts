@@ -28,7 +28,7 @@ export class RedisService {
 	 */
 	private readonly redisWrapper: RedisWrapper
 	/**
-	 * The map of currently running containers
+	 * The map of currently running containers.
 	 */
 	private readonly runningWorkers: Map<string, IWorkerInfo>
 	constructor() {
