@@ -2,6 +2,14 @@ import { InvalidConfigurationError, InvalidConfigurationValueError } from "../sr
 import { getRedisConfigFromEnv, isStringNumber } from "../src/config"
 describe("loading configuration fields from environment should work", () => {
 	beforeEach(() => {
+		process.env.WEBSERVICE_PORT = "3000"
+		process.env.FFMPEG_PATH = "/opt/ffmpeg/bin/ffmpeg"
+		process.env.IMAGE_MAGICK_PATH = "usr/bin/convert"
+		process.env.UNOCONV_PATH = "/usr/bin/unoconv"
+		process.env.MAX_CONVERSION_TIME = "90000"
+		process.env.MAX_CONVERSION_TRIES = "5"
+		process.env.CONVERTER_DOCUMENT_PRIORITY = "unoconv,imageMagick"
+		process.env.CONVERTER_MEDIA_PRIORITY = "ffmpeg,imageMagick,unoconv"
 		process.env.TASKS_PER_CONTAINER = "5"
 		process.env.MAX_WORKER_CONTAINERS = "10"
 		process.env.MIN_WORKER_CONTAINERS = "1"
