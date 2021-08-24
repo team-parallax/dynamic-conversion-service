@@ -69,7 +69,7 @@ export class DockerService {
 		newTag?: string
 	) : Promise<IContainerInfo> => {
 		const {
-			imageName, namePrefix, tag
+			imageName, namePrefix, tag, envVars = []
 		} = this.config
 		const needPull = !this.hasImage || newImageName !== undefined || newTag !== undefined
 		const targetImage = newImageName ?? imageName
@@ -80,6 +80,8 @@ export class DockerService {
 		}
 		const containerName = `${namePrefix}__${this.containerCounter}`
 		const newContainer = await this.docker.container.create({
+			// eslint-disable-next-line @typescript-eslint/naming-convention
+			Env: envVars,
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			Image: `${targetImage}:${targetTag}`,
 			// eslint-disable-next-line @typescript-eslint/naming-convention
