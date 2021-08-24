@@ -88,7 +88,7 @@ export class DockerService {
 			name: containerName
 		})
 		const startedContainer = await newContainer.start()
-		this.logger.info(`created container: ${startedContainer.id}/${containerName}`)
+		this.logger.info(`created container: ${containerName}`)
 		this.containerCounter++
 		return {
 			containerId: startedContainer.id,
@@ -121,12 +121,12 @@ export class DockerService {
 		const [container] = filteredContainers
 		const typedData = container.data as IDockerAPIContainer
 		const [image, tag] = typedData.Image.split(":")
-		const [name] = typedData.Names[0]
+		const [name] = typedData.Names
 		const stoppedContainer = await container.stop()
 		await stoppedContainer.delete({
 			force: true
 		})
-		this.logger.info(`removed container: ${container.id}/${name}`)
+		this.logger.info(`removed container: ${name}`)
 		return {
 			containerId: container.id,
 			containerImage: image,
