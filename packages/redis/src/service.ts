@@ -10,10 +10,25 @@ import { InvalidWorkerIdError } from "./exception"
 import { Logger } from "logger"
 import { RedisWrapper } from "./wrapper"
 export class RedisService {
+	/**
+	 * The auto-scaler component managing the docker containers.
+	 */
 	private readonly autoScaler: AutoScaler
+	/**
+	 * The configuration of redis-service containing environment variables.
+	 */
 	private readonly config: IRedisServiceConfiguration
+	/**
+	 * The redis-service logger.
+	 */
 	private readonly logger: Logger
+	/**
+	 * The wrapper around the rsmq implementation.
+	 */
 	private readonly redisWrapper: RedisWrapper
+	/**
+	 * The map of currently running containers
+	 */
 	private readonly runningWorkers: Map<string, IWorkerInfo>
 	constructor() {
 		this.config = getRedisConfigFromEnv()
@@ -28,9 +43,16 @@ export class RedisService {
 		this.autoScaler = new AutoScaler(autoScalerConfig)
 		this.runningWorkers = new Map()
 	}
+	/**
+	 * Add the given request to the queue to be processed later.
+	 * @param conversionRequest request to add to the queue
+	 */
 	readonly addRequestToQueue = async (conversionRequest: IConversionRequest): Promise<void> => {
 		await this.redisWrapper.sendMessage(JSON.stringify(conversionRequest))
 	}
+	/**
+	 * Check the current container status and apply any required scaling.
+	 */
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
 		const containerStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
@@ -40,6 +62,12 @@ export class RedisService {
 		)
 		await this.updateActiveWorkers(result)
 	}
+	/**
+	 * Get the current conversion request for the given conversion id.
+	 * @param conversionId the conversion id to look for
+	 * @returns the current request of the conversion id, undefined if theres
+	 * no conversion with the given id
+	 */
 	readonly getConversionResult = (conversionId: string): IConversionRequest | undefined => {
 		let conversionRequest: IConversionRequest | undefined = undefined
 		this.runningWorkers.forEach(workerInfo => {
@@ -51,9 +79,17 @@ export class RedisService {
 		})
 		return conversionRequest
 	}
+	/**
+	 * Get the number of pending requests within the queue.
+	 * @returns The number of pending requests in the queue
+	 */
 	readonly getPendingRequestCount = async (): Promise<number> => {
 		return this.redisWrapper.getPendingMessagesCount()
 	}
+	/**
+	 * Get all currently running workers and their info.
+	 * @returns all currently runniung workers
+	 */
 	readonly getQueueStatus = (): IWorkerInfo[] => {
 		const workerInfos: IWorkerInfo[] = []
 		this.runningWorkers.forEach(workerInfo => {
@@ -61,17 +97,31 @@ export class RedisService {
 		})
 		return workerInfos
 	}
+	/**
+	 * Initialize redis service.
+	 */
 	readonly initalize = async (): Promise<void> => {
 		await this.redisWrapper.initialize()
 	}
+	/**
+	 * Retrieve a request from the queue.
+	 * @returns a request from the queue
+	 */
 	readonly popRequest = async (): Promise<IConversionRequest> => {
 		const requestString = await this.redisWrapper.receiveMessage()
 		const conversionRequest = JSON.parse(requestString) as IConversionRequest
 		return conversionRequest
 	}
+	/**
+	 * Clean-up and quit the redis-service.
+	 */
 	readonly quit = async (): Promise<void> => {
 		await this.redisWrapper.quit()
 	}
+	/**
+	 * Get the docker-container id's of idle workers.
+	 * @returns the container id's of idle workers
+	 */
 	private readonly getIdleWorkerIds = (): string[] => {
 		const idleContainers: string[] = []
 		this.runningWorkers.forEach((containerInfo, containerID) => {
@@ -81,12 +131,21 @@ export class RedisService {
 		})
 		return idleContainers
 	}
+	/**
+	 *
+	 * @param worker
+	 * @returns
+	 */
 	private readonly pingWorker = async (worker: any): Promise<boolean> => {
 		// Worker.ping
 		// eslint-disable-next-line @typescript-eslint/no-magic-numbers
 		await new Promise((resolve, reject) => setTimeout(resolve, 100))
 		return true
 	}
+	/**
+	 *
+	 * @param param0
+	 */
 	private readonly updateActiveWorkers = async ({
 		removedContainers,
 		startedContainers
@@ -127,6 +186,11 @@ export class RedisService {
 		)
 		await Promise.all(removePromises)
 	}
+	/**
+	 *
+	 * @param workerId
+	 * @param conversionRequest
+	 */
 	private readonly updateWorkerConversionStatus = (
 		workerId: string,
 		conversionRequest: IConversionRequest | null
