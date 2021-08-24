@@ -8,6 +8,7 @@ import { IContainerStateChange } from "auto-scaler/src/interface"
 import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
 import { InvalidWorkerIdError } from "./exception"
 import { Logger } from "logger"
+import { MiscApiFactory } from "./api/conversion-client"
 import { RedisWrapper } from "./wrapper"
 export class RedisService {
 	/**
@@ -149,11 +150,23 @@ export class RedisService {
 	 * @param worker
 	 * @returns
 	 */
-	private readonly pingWorker = async (worker: any): Promise<boolean> => {
-		// Worker.ping
-		// eslint-disable-next-line @typescript-eslint/no-magic-numbers
-		await new Promise((resolve, reject) => setTimeout(resolve, 100))
-		return true
+	private readonly pingWorker = async (containerIp: string): Promise<boolean> => {
+		const baseUrl = `http://${containerIp}:3000`
+		this.logger.info(`pinging ${baseUrl}`)
+		try {
+			await MiscApiFactory(undefined, baseUrl)
+				.getPingResponse()
+		}
+		catch (error) {
+			// If it refuses it means it's up
+			// For some reason it refused
+			// Probably some cors related issue
+			if (error.code === "ECONNREFUSED") {
+				this.logger.info(`${containerIp} replied ping (sort of...)`)
+				return true
+			}
+		}
+		return false
 	}
 	/**
 	 *
@@ -168,7 +181,7 @@ export class RedisService {
 		const pingChecks = startedContainers.map(
 			async (container): Promise<IContainerCheck> => ({
 				containerInfo: container,
-				isRunning: await this.pingWorker(container)
+				isRunning: await this.pingWorker(container.containerIp)
 			})
 		)
 		const containerChecks = await Promise.all(pingChecks)
