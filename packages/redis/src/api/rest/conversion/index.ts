@@ -116,7 +116,6 @@ export class ConversionController extends Controller {
 			if (!requestBody) {
 				throw new InvalidRequestBodyError()
 			}
-			// TODO: Add conversion-request into queue
 			return {
 				conversionId: ""
 			}
@@ -183,31 +182,22 @@ export class ConversionController extends Controller {
 		@Request() req: express.Request
 	): IConversionStatus {
 		try {
-			// Const statusResponse = this.conversionService.getConvertedFile(conversionId)
-			// Const {
-			// 	Retries,
-			// 	Status,
-			// 	TargetFormat
-			// } = statusResponse
-			// If (status === EConversionStatus.converted) {
-			// 	If (!isV2Request) {
-			// 		Const conversionFileProperties = getConvertedFileNameAndPath(
-			// 			ConversionId,
-			// 			TargetFormat
-			// 		)
-			// 		Const resultFile = readFromFileSync(conversionFileProperties.filePath)
-			// 		Const response: TApiConvertedCompatResponseV1 = {
-			// 			...statusResponse,
-			// 			Failures: retries,
-			// 			ResultFile
-			// 		}
-			// 		Return response
-			// 	}
-			// }
-			// This.setStatus(EHttpResponseCodes.ok)
-			// Return statusResponse
-			// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-			return {} as IConversionStatus
+			const conversionRequest = this.redisService.getConversionResult(conversionId)
+			if (!conversionRequest) {
+				throw new Error(`Conversion with id ${conversionId} not found`)
+			}
+			const {
+				targetFormat,
+				originalFormat
+			} = conversionRequest.conversionRequestBody
+			return {
+				conversionId,
+				path: "",
+				retries: 0,
+				sourceFormat: originalFormat ?? "",
+				status: assertStatus(conversionRequest.conversionStatus),
+				targetFormat
+			}
 		}
 		catch (err) {
 			this.setStatus(EHttpResponseCodes.notFound)
@@ -230,32 +220,28 @@ export class ConversionController extends Controller {
 		@Path("conversionId") conversionId: string
 	): Promise<unknown> {
 		try {
-			// Const {
-			// 	ConversionId: fileId,
-			// 	Status,
-			// 	TargetFormat
-			// } = this.conversionService.getConvertedFile(conversionId)
-			// This.setStatus(EHttpResponseCodes.ok)
-			// If (status === "converted") {
-			// 	Const {
-			// 		FileName,
-			// 		FilePath
-			// 	} = getConvertedFileNameAndPath(conversionId, targetFormat)
-			// 	Const stats = await fs.promises.stat(filePath)
-			// 	This.setHeader("Content-Type", `${getType(filePath)}`)
-			// 	This.setHeader("Content-Length", stats.size.toString())
-			// 	/*
-			// 	* Removing this line will cause to not launch the download
-			// 	* Just serves the file as it is
-			// 	*/
-			// 	This.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
-			// 	Return fs.createReadStream(filePath)
-			// }
-			// Return {
-			// 	ConversionId,
-			// 	Status
-			// }
-			return {}
+			const conversionRequest = this.redisService.getConversionResult(conversionId)
+			if (!conversionRequest) {
+				throw new Error(`Conversion with id ${conversionId} not found`)
+			}
+			if (conversionRequest.conversionStatus === EConversionStatus.Converted) {
+				const {
+					filename,
+					originalFormat,
+					targetFormat
+				} = conversionRequest.conversionRequestBody
+				const filePath = `./output/${conversionId}/${filename}`
+					.replace(originalFormat ?? ".jpg", targetFormat)
+				const stats = await fs.promises.stat(filePath)
+				this.setHeader("Content-Type", `${getType(filePath)}`)
+				this.setHeader("Content-Length", stats.size.toString())
+				this.setHeader("Content-Disposition", `attachment; filename=${filename}`)
+				return fs.createReadStream(filePath)
+			}
+			return {
+				conversionId,
+				status: conversionRequest.conversionStatus
+			}
 		}
 		catch (err) {
 			this.setStatus(EHttpResponseCodes.notFound)

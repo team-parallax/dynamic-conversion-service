@@ -40,6 +40,17 @@ export class RedisService {
 		)
 		await this.updateActiveWorkers(result)
 	}
+	readonly getConversionResult = (conversionId: string): IConversionRequest | undefined => {
+		let conversionRequest: IConversionRequest | undefined = undefined
+		this.runningWorkers.forEach(workerInfo => {
+			if (workerInfo.currentRequest !== null) {
+				if (workerInfo.currentRequest.conversionId === conversionId) {
+					conversionRequest = workerInfo.currentRequest
+				}
+			}
+		})
+		return conversionRequest
+	}
 	readonly getPendingRequestCount = async (): Promise<number> => {
 		return this.redisWrapper.getPendingMessagesCount()
 	}
