@@ -5,6 +5,50 @@ export const isStringNumber = (stringNumber: string | undefined): boolean =>
 	stringNumber
 		? !isNaN(Number(stringNumber)) && /^\d+$/.test(stringNumber)
 		: false
+const getConversionServiceConfigFromEnv = (): string[] => {
+	const envFfmpegPath = process.env.FFMPEG_PATH
+	if (!envFfmpegPath) {
+		throw new InvalidConfigurationError("conversion-service", "FFMPEG_PATH")
+	}
+	const envImageMagickPath = process.env.IMAGE_MAGICK_PATH
+	if (!envImageMagickPath) {
+		throw new InvalidConfigurationError("conversion-service", "IMAGE_MAGICK_PATH")
+	}
+	const envUnoConvPath = process.env.UNOCONV_PATH
+	if (!envUnoConvPath) {
+		throw new InvalidConfigurationError("conversion-service", "UNOCONV_PATH")
+	}
+	const envWebservicePort = process.env.WEBSERVICE_PORT
+	if (!envWebservicePort) {
+		throw new InvalidConfigurationError("conversion-service", "WEBSERVICE_PORT")
+	}
+	const envMaxConversionTime = process.env.MAX_CONVERSION_TIME
+	if (!envMaxConversionTime) {
+		throw new InvalidConfigurationError("conversion-service", "MAX_CONVERSION_TIME")
+	}
+	const envMaxConversionTries = process.env.MAX_CONVERSION_TRIES
+	if (!envMaxConversionTries) {
+		throw new InvalidConfigurationError("conversion-service", "MAX_CONVERSION_TRIES")
+	}
+	const envConverterDocumentPrio = process.env.CONVERTER_DOCUMENT_PRIORITY
+	if (!envConverterDocumentPrio) {
+		throw new InvalidConfigurationError("conversion-service", "CONVERTER_DOCUMENT_PRIORITY")
+	}
+	const envConverterMediaPrio = process.env.CONVERTER_MEDIA_PRIORITY
+	if (!envConverterMediaPrio) {
+		throw new InvalidConfigurationError("conversion-service", "CONVERTER_MEDIA_PRIORITY")
+	}
+	return [
+		`FFMPEG_PATH=${envFfmpegPath}`,
+		`IMAGE_MAGICK_PATH=${envImageMagickPath}`,
+		`UNOCONV_PATH=${envUnoConvPath}`,
+		`WEBSERVICE_PORT=${envWebservicePort}`,
+		`MAX_CONVERSION_TIME=${envMaxConversionTime}`,
+		`MAX_CONVERSION_TRIES=${envMaxConversionTries}`,
+		`CONVERTER_DOCUMENT_PRIORITY=${envConverterDocumentPrio}`,
+		`CONVERTER_MEDIA_PRIORITY=${envConverterMediaPrio}`
+	]
+}
 const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 	const tasksPerContainer = process.env.TASKS_PER_CONTAINER
 	if (!tasksPerContainer) {
@@ -57,6 +101,7 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 	}
 	return {
 		dockerConfig: {
+			envVars: getConversionServiceConfigFromEnv(),
 			host,
 			imageName,
 			namePrefix: containerNamePrefix,
