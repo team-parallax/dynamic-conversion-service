@@ -2,6 +2,7 @@ import { EHttpResponseCodes } from "conversion-service/src/constants"
 import { Inject } from "typescript-ioc"
 import { Logger } from "logger"
 import { RegisterRoutes } from "../rest/routes"
+import { Server } from "net"
 import { ValidateError } from "tsoa"
 import { createDirectoryIfNotPresent } from "conversion-service/src/service/file-io"
 import { generateHTML, serve } from "swagger-ui-express"
@@ -22,9 +23,11 @@ export class Api {
 	private readonly logger!: Logger
 	public readonly app: Application
 	private readonly _port: number = 8000
-	private readonly startUpDelay: number = 1500
+	private server: Server | null
+	// Private readonly startUpDelay: number = 1500
 	constructor(port?: number) {
 		this.app = express()
+		this.server = null
 		if (port) {
 			this._port = port
 		}
@@ -33,13 +36,17 @@ export class Api {
 		this.configureServer()
 		this.addApi()
 		this.createApplicationDirectiories(["input", "output"])
-		setTimeout(
-			() => this.listen(),
-			this.startUpDelay
-		)
+		// SetTimeout(
+		// 	() => this.listen(),
+		// 	This.startUpDelay
+		// )
+	}
+	close = (): void => {
+		this.logger.info(`Closing http server running on port ${this.port}`)
+		this.server?.close()
 	}
 	listen = (): void => {
-		this.app.listen(this.port, () => {
+		this.server = this.app.listen(this.port, () => {
 			this.logger.info(`Listening on port ${this.port}`)
 		})
 	}

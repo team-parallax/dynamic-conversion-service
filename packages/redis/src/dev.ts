@@ -41,5 +41,11 @@ import { RedisService } from "./service"
 	Container.bind(RedisService)
 		.factory(() => redisService)
 		.scope(Scope.Singleton)
-	new Api()
+	const api = new Api()
+	// eslint-disable-next-line @typescript-eslint/no-misused-promises
+	process.on("SIGINT", async (): Promise<void> => {
+		await redisService.quit()
+		api.close()
+	})
+	api.listen()
 })()
