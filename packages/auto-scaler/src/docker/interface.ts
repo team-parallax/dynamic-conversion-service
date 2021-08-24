@@ -1,6 +1,7 @@
 export interface IContainerInfo {
 	containerId: string,
 	containerImage?: string,
+	containerIp: string,
 	containerName: string,
 	containerTag?: string
 }

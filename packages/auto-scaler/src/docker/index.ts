@@ -11,6 +11,7 @@ import {
 import { IDockerConfiguration } from "../config"
 import { Logger } from "logger/src"
 import { Stream } from "stream"
+import { execSync } from "child_process"
 import { promisifyStream } from "./util"
 export class DockerService {
 	private readonly config: IDockerConfiguration
@@ -88,12 +89,16 @@ export class DockerService {
 			name: containerName
 		})
 		const startedContainer = await newContainer.start()
-		this.logger.info(`created container: ${containerName}`)
+		// Docker prefixes a '/' before names
+		const createdContainerName = `/${containerName}`
+		const containerIp = this.getContainerIP(createdContainerName)
+		this.logger.info(`created container: ${createdContainerName} (${containerIp})`)
 		this.containerCounter++
 		return {
 			containerId: startedContainer.id,
 			containerImage: targetImage,
-			containerName,
+			containerIp,
+			containerName: createdContainerName,
 			containerTag: targetTag ?? "latest"
 		}
 	}
@@ -103,9 +108,11 @@ export class DockerService {
 			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			const typedData = container.data as IDockerAPIContainer
 			const [image, tag] = typedData.Image.split(":")
+			const [name] = typedData.Names
 			return {
 				containerId: container.id,
 				containerImage: image,
+				containerIp: this.getContainerIP(name),
 				containerName: typedData.Names[0],
 				containerTag: tag
 			}
@@ -122,16 +129,22 @@ export class DockerService {
 		const typedData = container.data as IDockerAPIContainer
 		const [image, tag] = typedData.Image.split(":")
 		const [name] = typedData.Names
+		const removedIp = this.getContainerIP(name)
 		const stoppedContainer = await container.stop()
 		await stoppedContainer.delete({
 			force: true
 		})
-		this.logger.info(`removed container: ${name}`)
+		this.logger.info(`removed container: ${name} (${removedIp})`)
 		return {
 			containerId: container.id,
 			containerImage: image,
+			containerIp: removedIp,
 			containerName: name,
 			containerTag: tag
 		}
+	}
+	private readonly getContainerIP = (name: string): string => {
+		const output = execSync(`docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${name}`)
+		return output.toString().trimEnd()
 	}
 }
