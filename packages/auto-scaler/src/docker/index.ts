@@ -1,6 +1,13 @@
-import { ContainerNotFoundError, InvalidDockerConnectionOptions } from "./execption"
+import {
+	ContainerNotFoundError,
+	InvalidDockerConnectionOptions
+} from "./execption"
 import { Docker } from "node-docker-api"
-import { IContainerInfo, IDockerAPIContainer } from "./interface"
+import {
+	IContainerInfo,
+	IDockerAPIContainer,
+	IDockerAPIImage
+} from "./interface"
 import { IDockerConfiguration } from "../config"
 import { Logger } from "logger/src"
 import { Stream } from "stream"
@@ -37,12 +44,25 @@ export class DockerService {
 	}
 	checkImage = async (imageId: string, tag?: string): Promise<void> => {
 		const targetTag = tag ?? "latest"
-		const stream = await this.docker.image.create({}, {
-			fromImage: imageId,
-			tag: targetTag
-		}) as Stream
-		await promisifyStream(stream)
-		this.logger.info(`pulled image: ${imageId}:${targetTag}`)
+		const targetString = `${imageId}:${targetTag}`
+		const localImages = await this.docker.image.list()
+		let isAvailable = false
+		localImages.forEach(localImage => {
+			const imageData = localImage.data as IDockerAPIImage
+			const [repoTag] = imageData.RepoTags
+			if (repoTag === targetString) {
+				isAvailable = true
+				this.logger.info(`found image '${targetString}' locally`)
+			}
+		})
+		if (!isAvailable) {
+			const stream = await this.docker.image.create({}, {
+				fromImage: imageId,
+				tag: targetTag
+			}) as Stream
+			await promisifyStream(stream)
+			this.logger.info(`pulled image: ${imageId}:${targetTag}`)
+		}
 	}
 	createContainer = async (
 		newImageName?: string,
@@ -60,8 +80,6 @@ export class DockerService {
 		}
 		const containerName = `${namePrefix}__${this.containerCounter}`
 		const newContainer = await this.docker.container.create({
-			// eslint-disable-next-line @typescript-eslint/naming-convention
-			Cmd: ["sleep", "infinity"],
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			Image: `${targetImage}:${targetTag}`,
 			// eslint-disable-next-line @typescript-eslint/naming-convention
