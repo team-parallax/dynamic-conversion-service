@@ -32,8 +32,6 @@ export class IndexController extends Controller {
 	@Get("/formats")
 	public async getSupportedConversionFormats(): Promise<IApiConversionFormatResponse> {
 		this.logger.info("Conversion formats requested")
-		return new Promise<IApiConversionFormatResponse>((resolve, reject) => {
-			reject("Not implemented yet")
-		})
+		return await this.redisService.getFormats()
 	}
 }

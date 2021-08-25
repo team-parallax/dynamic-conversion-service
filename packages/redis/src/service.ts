@@ -1,5 +1,10 @@
 import { AutoScaler } from "auto-scaler"
 import {
+	ConversionFormatsApiFactory,
+	IApiConversionFormatResponse,
+	MiscApiFactory
+} from "./api/conversion-client"
+import {
 	IContainerCheck,
 	IConversionRequest,
 	IWorkerInfo
@@ -8,13 +13,13 @@ import { IContainerStateChange } from "auto-scaler/src/interface"
 import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
 import { InvalidWorkerIdError } from "./exception"
 import { Logger } from "logger"
-import { MiscApiFactory } from "./api/conversion-client"
 import { RedisWrapper } from "./wrapper"
 export class RedisService {
 	/**
 	 * The auto-scaler component managing the docker containers.
 	 */
 	private readonly autoScaler: AutoScaler
+	private cachedFormats: IApiConversionFormatResponse | null = null
 	/**
 	 * The configuration of redis-service containing environment variables.
 	 */
@@ -79,6 +84,25 @@ export class RedisService {
 			}
 		})
 		return conversionRequest
+	}
+	readonly getFormats = async (): Promise<IApiConversionFormatResponse> => {
+		if (this.cachedFormats !== null) {
+			this.logger.info("using cached formats")
+			return this.cachedFormats
+		}
+		const formats = await Promise.any(this.getWorkerIps().map(async ip => {
+			return ConversionFormatsApiFactory(undefined, `http://${ip}:3000`)
+				.getSupportedConversionFormats()
+				.then(r => r.data)
+				.catch(this.logger.error)
+		}))
+		if (formats) {
+			this.cachedFormats = formats
+			return this.cachedFormats
+		}
+		else {
+			throw new Error("no worker replied with formats")
+		}
 	}
 	/**
 	 * Get the number of pending requests within the queue.
@@ -155,6 +179,20 @@ export class RedisService {
 			}
 		})
 		return idleContainers
+	}
+	/**
+	 * Get the docker-container ip's.
+	 * @returns the ip's of the workers
+	 */
+	private readonly getWorkerIps = (): string[] => {
+		const workerIps: string[] = []
+		this.runningWorkers.forEach(workerInfo => {
+			const {
+				containerIp
+			} = workerInfo.containerInfo
+			workerIps.push(containerIp)
+		})
+		return workerIps
 	}
 	/**
 	 *
