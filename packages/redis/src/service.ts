@@ -105,6 +105,17 @@ export class RedisService {
 		await this.redisWrapper.initialize()
 	}
 	/**
+	 * Ping the first available worker.
+	 */
+	readonly pingRandomWorker = async (): Promise<boolean> => {
+		const containerIps: string[] = []
+		this.runningWorkers.forEach(workerInfo =>
+			containerIps.push(workerInfo.containerInfo.containerIp))
+		const promises = containerIps.map(async ip => this.pingWorker(ip))
+		const result = await Promise.all(promises)
+		return result.filter(res => res).length > 0
+	}
+	/**
 	 * Retrieve a request from the queue.
 	 * @returns a request from the queue
 	 */
@@ -150,23 +161,32 @@ export class RedisService {
 	 * @param worker
 	 * @returns
 	 */
-	private readonly pingWorker = async (containerIp: string): Promise<boolean> => {
+	private readonly pingWorker = async (containerIp: string, retries: number = 0)
+	: Promise<boolean> => {
+		const retryDelay = 2000
 		const baseUrl = `http://${containerIp}:3000`
-		this.logger.info(`pinging ${baseUrl}`)
-		try {
-			await MiscApiFactory(undefined, baseUrl)
-				.getPingResponse()
-		}
-		catch (error) {
-			// If it refuses it means it's up
-			// For some reason it refused
-			// Probably some cors related issue
-			if (error.code === "ECONNREFUSED") {
-				this.logger.info(`${containerIp} replied ping (sort of...)`)
-				return true
+		let isRunning = false
+		for (let i = 0; i <= retries; i++) {
+			this.logger.info(`pinging ${baseUrl} (Attempt: ${i})`)
+			try {
+				// eslint-disable-next-line no-await-in-loop
+				const resp = await MiscApiFactory(undefined, baseUrl)
+					.getPingResponse()
+					.then(r => r.data)
+				if (resp === "pong") {
+					this.logger.info(`${containerIp} replied pong`)
+					isRunning = true
+					break
+				}
+			}
+			catch (error) {
+				// This.logger.error(error)
+				// eslint-disable-next-line no-await-in-loop
+				await new Promise((resolve, reject) => setTimeout(resolve, retryDelay))
+				continue
 			}
 		}
-		return false
+		return isRunning
 	}
 	/**
 	 *
@@ -178,13 +198,19 @@ export class RedisService {
 	}: IContainerStateChange): Promise<void> => {
 		removedContainers.forEach(container =>
 			this.runningWorkers.delete(container.containerId))
-		const pingChecks = startedContainers.map(
-			async (container): Promise<IContainerCheck> => ({
-				containerInfo: container,
-				isRunning: await this.pingWorker(container.containerIp)
+		const containerChecks:IContainerCheck[] = []
+		const maxAttempts = 3
+		for (const startedContainer of startedContainers) {
+			const {
+				containerIp
+			} = startedContainer
+			// eslint-disable-next-line no-await-in-loop
+			const isRunning = await this.pingWorker(containerIp, maxAttempts)
+			containerChecks.push({
+				containerInfo: startedContainer,
+				isRunning
 			})
-		)
-		const containerChecks = await Promise.all(pingChecks)
+		}
 		const runningContainers = containerChecks
 			.filter(check => check.isRunning)
 		runningContainers.forEach(containerCheck => {

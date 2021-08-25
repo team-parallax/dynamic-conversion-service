@@ -18,11 +18,15 @@ export class IndexController extends Controller {
 	@Tags("Misc.")
 	@Get("/ping")
 	@Example<string>("pong")
-	public getPingResponse(): string {
+	public async getPingResponse(): Promise<string> {
 		this.logger.info("Received 'ping' signal.")
-		/* TODO: check if there is at least one worker node */
-		this.setStatus(EHttpResponseCodes.ok)
-		return "pong"
+		const hasWorker = await this.redisService.pingRandomWorker()
+		if (hasWorker) {
+			this.setStatus(EHttpResponseCodes.ok)
+			return "pong"
+		}
+		this.setStatus(EHttpResponseCodes.unavailable)
+		return "no worker available"
 	}
 	@Tags("Conversion-Formats")
 	@Get("/formats")
