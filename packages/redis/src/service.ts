@@ -10,7 +10,10 @@ import {
 	IWorkerInfo
 } from "./interface"
 import { IContainerStateChange } from "auto-scaler/src/interface"
-import { IRedisServiceConfiguration, getRedisConfigFromEnv } from "./config"
+import {
+	IRedisServiceConfiguration,
+	getRedisConfigFromEnv
+} from "./config"
 import { InvalidWorkerIdError } from "./exception"
 import { Logger } from "logger"
 import { RedisWrapper } from "./wrapper"
@@ -19,6 +22,9 @@ export class RedisService {
 	 * The auto-scaler component managing the docker containers.
 	 */
 	private readonly autoScaler: AutoScaler
+	/**
+	 * A cache of supported formats for the workers.
+	 */
 	private cachedFormats: IApiConversionFormatResponse | null = null
 	/**
 	 * The configuration of redis-service containing environment variables.
@@ -85,11 +91,18 @@ export class RedisService {
 		})
 		return conversionRequest
 	}
+	/**
+	 * Get the supported formats of the workers.
+	 * The first call will ask every worker, return the first response
+	 * and cache it since it will not change.
+	 * @returns the supported formats of the workers.
+	 */
 	readonly getFormats = async (): Promise<IApiConversionFormatResponse> => {
 		if (this.cachedFormats !== null) {
 			this.logger.info("using cached formats")
 			return this.cachedFormats
 		}
+		this.logger.info("fetching formats from workers")
 		const formats = await Promise.any(this.getWorkerIps().map(async ip => {
 			return ConversionFormatsApiFactory(undefined, `http://${ip}:3000`)
 				.getSupportedConversionFormats()
@@ -101,6 +114,8 @@ export class RedisService {
 			return this.cachedFormats
 		}
 		else {
+			// This has a really, really low change of happening so
+			// A custom error is not required
 			throw new Error("no worker replied with formats")
 		}
 	}
@@ -195,9 +210,12 @@ export class RedisService {
 		return workerIps
 	}
 	/**
-	 *
-	 * @param worker
-	 * @returns
+	 * Ping the given worker via IP.
+	 * Retries are primarily used for when the worker container
+	 * was just started and isn't ready yet.
+	 * @param containerIp the ip of the worker to ping
+	 * @param retries the number of retries (default = 0)
+	 * @returns true if the worker replied 'pong', false otherwise
 	 */
 	private readonly pingWorker = async (containerIp: string, retries: number = 0)
 	: Promise<boolean> => {
@@ -227,16 +245,20 @@ export class RedisService {
 		return isRunning
 	}
 	/**
-	 *
-	 * @param param0
+	 * Update the running workers. Remove stopped containers.
+	 * Ping started containers and stop them if they do not reply
+	 * after 3 retries.
+	 * @param IContainerStateChange the result of applying the new container state
 	 */
 	private readonly updateActiveWorkers = async ({
 		removedContainers,
 		startedContainers
 	}: IContainerStateChange): Promise<void> => {
+		// Remove removed containers
 		removedContainers.forEach(container =>
 			this.runningWorkers.delete(container.containerId))
 		const containerChecks:IContainerCheck[] = []
+		// Only retry pinging a container 3 times
 		const maxAttempts = 3
 		for (const startedContainer of startedContainers) {
 			const {
@@ -253,16 +275,13 @@ export class RedisService {
 			.filter(check => check.isRunning)
 		runningContainers.forEach(containerCheck => {
 			const {
-				containerInfo
-			} = containerCheck
-			const {
 				containerId,
 				containerName
-			} = containerInfo
+			} = containerCheck.containerInfo
 			this.runningWorkers.set(
 				containerId,
 				{
-					containerInfo,
+					containerInfo: containerCheck.containerInfo,
 					currentRequest: null,
 					workerUrl: `/${containerName}/`
 				}
