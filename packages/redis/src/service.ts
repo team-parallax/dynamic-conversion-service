@@ -9,7 +9,7 @@ import {
 	IConversionRequest,
 	IWorkerInfo
 } from "./interface"
-import { IContainerStateChange } from "auto-scaler/src/interface"
+import { IContainerStateChange, IContainerStatus } from "auto-scaler/src/interface"
 import {
 	IRedisServiceConfiguration,
 	getRedisConfigFromEnv
@@ -30,6 +30,10 @@ export class RedisService {
 	 * The configuration of redis-service containing environment variables.
 	 */
 	private readonly config: IRedisServiceConfiguration
+	/**
+	 * The most recent container status.
+	 */
+	private lastStatus: IContainerStatus | null = null
 	/**
 	 * The redis-service logger.
 	 */
@@ -62,17 +66,21 @@ export class RedisService {
 	readonly addRequestToQueue = async (conversionRequest: IConversionRequest): Promise<void> => {
 		await this.redisWrapper.sendMessage(JSON.stringify(conversionRequest))
 	}
+	readonly applyState = async (): Promise<void> => {
+		if (this.lastStatus !== null) {
+			const result = await this.autoScaler.applyConfigurationState(
+				this.lastStatus,
+				this.getIdleWorkerIds()
+			)
+			await this.updateActiveWorkers(result)
+		}
+	}
 	/**
 	 * Check the current container status and apply any required scaling.
 	 */
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
-		const containerStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
-		const result = await this.autoScaler.applyConfigurationState(
-			containerStatus,
-			this.getIdleWorkerIds()
-		)
-		await this.updateActiveWorkers(result)
+		this.lastStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
 	}
 	/**
 	 * Get the current conversion request for the given conversion id.

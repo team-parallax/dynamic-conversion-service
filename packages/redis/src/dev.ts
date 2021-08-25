@@ -40,6 +40,7 @@ import { RedisService } from "./service"
 	const redisService = new RedisService()
 	await redisService.initalize()
 	await redisService.checkHealth()
+	await redisService.applyState()
 	Container.bind(RedisService)
 		.factory(() => redisService)
 		.scope(Scope.Singleton)
