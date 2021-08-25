@@ -22,6 +22,8 @@ describe("redis-service should pass all tests", () => {
 		process.env.REDIS_PORT = "6379"
 		process.env.REDIS_NS = "redis-service-test"
 		process.env.REDIS_QUEUE = "redis-service-test-queue"
+		process.env.HEALTH_CHECK_INTERVAL = "120"
+		process.env.APPLY_DESIRED_STATE_INTERVAL = "600"
 	})
 	let redisService: RedisService
 	const dummyRequest: IConversionRequest = {

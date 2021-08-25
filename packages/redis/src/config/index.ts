@@ -1,6 +1,12 @@
 import { IAutoScalerConfiguration } from "auto-scaler/src/config"
-import { IRedisServiceConfiguration, ISchedulerConfiguration } from "./interface"
-import { InvalidConfigurationError, InvalidConfigurationValueError } from "./exception"
+import {
+	IRedisServiceConfiguration,
+	ISchedulerConfiguration
+} from "./interface"
+import {
+	InvalidConfigurationError,
+	InvalidConfigurationValueError
+} from "./exception"
 export const isStringNumber = (stringNumber: string | undefined): boolean =>
 	stringNumber
 		? !isNaN(Number(stringNumber)) && /^\d+$/.test(stringNumber)
@@ -117,12 +123,12 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 const getSchedulerConfigFromEnv = (): ISchedulerConfiguration => {
 	const envHealthInterval = process.env.HEALTH_CHECK_INTERVAL
 	const envStateInterval = process.env.APPLY_DESIRED_STATE_INTERVAL
-	let healthCheckInterval: number | undefined = undefined
-	let stateApplicationInterval: number | undefined = undefined
+	let healthCheckInterval: number = 120
+	let stateApplicationInterval: number = 600
 	if (envHealthInterval) {
 		if (!isStringNumber(envHealthInterval)) {
 			throw new InvalidConfigurationValueError(
-				"auto-scaler",
+				"redis-service",
 				"HEALTH_CHECK_INTERVAL",
 				envHealthInterval
 			)
@@ -132,7 +138,7 @@ const getSchedulerConfigFromEnv = (): ISchedulerConfiguration => {
 	if (envStateInterval) {
 		if (!isStringNumber(envStateInterval)) {
 			throw new InvalidConfigurationValueError(
-				"auto-scaler",
+				"redis-service",
 				"APPLY_DESIRED_STATE_INTERVAL",
 				envStateInterval
 			)
