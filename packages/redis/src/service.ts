@@ -30,6 +30,7 @@ export class RedisService {
 	 * The configuration of redis-service containing environment variables.
 	 */
 	private readonly config: IRedisServiceConfiguration
+	private healthCheckInterval: NodeJS.Timeout | null = null
 	/**
 	 * The most recent container status.
 	 */
@@ -38,6 +39,7 @@ export class RedisService {
 	 * The redis-service logger.
 	 */
 	private readonly logger: Logger
+	private queueCheckInterval: NodeJS.Timeout | null = null
 	/**
 	 * The wrapper around the rsmq implementation.
 	 */
@@ -76,6 +78,7 @@ export class RedisService {
 				this.lastStatus,
 				this.getIdleWorkerIds()
 			)
+			this.lastStatus = null
 			await this.updateActiveWorkers(result)
 		}
 	}
@@ -180,6 +183,14 @@ export class RedisService {
 	 */
 	readonly quit = async (): Promise<void> => {
 		this.logger.info("Commencing redis-service cleanup")
+		if (this.queueCheckInterval !== null) {
+			clearInterval(this.queueCheckInterval)
+		}
+		this.logger.info("stopped queue check cron job")
+		if (this.healthCheckInterval !== null) {
+			clearInterval(this.healthCheckInterval)
+		}
+		this.logger.info("stopped health check cron job")
 		await this.redisWrapper.quit()
 		const {
 			runningContainers
@@ -193,6 +204,60 @@ export class RedisService {
 			runningContainers
 		}, runningContainers.map(runningContainer => runningContainer.containerId))
 		this.logger.info(`Removed ${removedContainers.length} containers`)
+	}
+	/**
+	 * Start the queue and health check cron jobs.
+	 */
+	readonly start = (): void => {
+		this.logger.info("Starting intervals")
+		const queueCheckDelay = 5000
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
+		this.queueCheckInterval = setInterval(async (): Promise<void> => {
+			this.logger.debug("=================================================")
+			const queueDepth = await this.redisWrapper.getPendingMessagesCount()
+			this.logger.debug(`${queueDepth} requests in queue`)
+			this.logger.debug("next queue check in 5s")
+			this.logger.debug("=================================================")
+		}, queueCheckDelay)
+		const {
+			healthCheckInterval: healtCheckDelay,
+			stateApplicationInterval
+		} = this.config.schedulerConfig
+		const secondsToMS = 1000
+		const healthChecksPerStateApplication = Math
+			.floor(stateApplicationInterval / healtCheckDelay)
+		let healthCheckCount = 0
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
+		this.healthCheckInterval = setInterval(async (): Promise<void> => {
+			this.logger.debug("=================================================")
+			this.logger.debug("running health check")
+			await this.checkHealth()
+			if (this.lastStatus !== null) {
+				const {
+					containersToStart,
+					containersToRemove,
+					runningContainers,
+					pendingRequests
+				} = this.lastStatus
+				this.logger.debug(`Healthcheck: running containers: ${runningContainers.length}`)
+				this.logger.debug(`Healthcheck: pending requests: ${pendingRequests}`)
+				this.logger.debug(`Healthcheck: start: ${containersToStart}`)
+				this.logger.debug(`Healthcheck: remove: ${containersToRemove}`)
+			}
+			this.logger.debug("next health check in 10s")
+			this.logger.debug("=================================================")
+			healthCheckCount++
+			// Run the applyState function after the health check
+			// To ensure that:
+			// 1) lastStatus is set
+			// 2) health check and apply state run sequentially and do not interfere
+			if (healthCheckCount % healthChecksPerStateApplication === 0) {
+				this.logger.debug("=================================================")
+				this.logger.debug("applying state changes")
+				await this.applyState()
+				this.logger.debug("=================================================")
+			}
+		}, secondsToMS * healtCheckDelay)
 	}
 	/**
 	 * Get the docker-container id's of idle workers.
