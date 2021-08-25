@@ -66,6 +66,10 @@ export class RedisService {
 	readonly addRequestToQueue = async (conversionRequest: IConversionRequest): Promise<void> => {
 		await this.redisWrapper.sendMessage(JSON.stringify(conversionRequest))
 	}
+	/**
+	 * Apply the last status.
+	 * Should only be called after calling checkHealth.
+	 */
 	readonly applyState = async (): Promise<void> => {
 		if (this.lastStatus !== null) {
 			const result = await this.autoScaler.applyConfigurationState(
@@ -76,7 +80,7 @@ export class RedisService {
 		}
 	}
 	/**
-	 * Check the current container status and apply any required scaling.
+	 * Check the current container status.
 	 */
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
