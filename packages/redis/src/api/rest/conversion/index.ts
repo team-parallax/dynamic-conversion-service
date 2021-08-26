@@ -45,6 +45,7 @@ import {
 } from "conversion-service/src/service/conversion/util"
 import { getType } from "mime"
 import { join } from "path"
+import { v4 as uuidV4 } from "uuid"
 import express from "express"
 import fs from "fs"
 @Route("/conversion")
@@ -72,7 +73,7 @@ export class ConversionController extends Controller {
 				file
 			} = multipartConversionRequest
 			// Temporary solution since I don't know how it normally works
-			const conversionId = `${Date.now()}-${filename.split(".").join("")}-${originalFormat?.slice(1)}-${targetFormat.slice(1)}`
+			const conversionId = uuidV4()
 			const inputDir = `./input/${conversionId}`
 			await createDirectoryIfNotPresent(inputDir)
 			await writeToFile(join(inputDir, filename), file)
