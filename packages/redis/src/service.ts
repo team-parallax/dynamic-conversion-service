@@ -100,7 +100,7 @@ export class RedisService {
 		let conversionRequest: IConversionRequest | undefined = undefined
 		this.runningWorkers.forEach(workerInfo => {
 			if (workerInfo.currentRequest !== null) {
-				if (workerInfo.currentRequest.workerConversionId === conversionId) {
+				if (workerInfo.currentRequest.externalConversionId === conversionId) {
 					conversionRequest = workerInfo.currentRequest
 				}
 			}
