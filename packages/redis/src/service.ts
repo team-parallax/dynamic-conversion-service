@@ -14,7 +14,7 @@ import { InvalidWorkerIdError } from "./exception"
 import { Logger } from "logger"
 import { RedisWrapper } from "./wrapper"
 import {
-	forwardRequestToWorker, getFormatsFromWorker, pingWorker
+	forwardRequestToWorker, getConversionStatus, getFormatsFromWorker, pingWorker
 } from "./util"
 export class RedisService {
 	/**
@@ -271,6 +271,30 @@ export class RedisService {
 					workerConversionId
 				})
 				this.logger.info(`forwarded request ${request.externalConversionId} to ${containerName}`)
+			}
+			// =====================================================================================
+			// === Probe worker conversion status ==================================================
+			// =====================================================================================
+			const probeWorkers = this.getWorkers().filter(worker => worker.currentRequest !== null)
+			for (const worker of probeWorkers) {
+				if (worker.currentRequest !== null) {
+					if (worker.currentRequest.externalConversionId === null) {
+						const {
+							workerConversionId
+						} = worker.currentRequest
+						const {
+							status
+							// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+						} = await getConversionStatus(worker.workerUrl, workerConversionId!)
+						this.updateWorkerConversionStatus(
+							worker.containerInfo.containerId,
+							{
+								...worker.currentRequest,
+								conversionStatus: status
+							}
+						)
+					}
+				}
 			}
 			// =====================================================================================
 			// === Run health-check if required ====================================================
