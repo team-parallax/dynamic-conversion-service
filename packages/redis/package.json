@@ -31,6 +31,12 @@
     "url": "git@gitlab.internal.team-parallax.com:belwue/dynamic-conversion-service.git"
   },
   "dependencies": {
-    "rsmq": "^0.9.1"
+    "rsmq": "^0.9.1",
+    "node-fetch": "^2.6.1",
+    "form-data": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.5.12",
+    "@types/form-data": "^2.5.0"
   }
 }

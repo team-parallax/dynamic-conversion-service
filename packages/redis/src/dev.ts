@@ -8,7 +8,7 @@ process.env.FFMPEG_PATH = "/opt/ffmpeg/bin/ffmpeg"
 process.env.IMAGE_MAGICK_PATH = "usr/bin/convert"
 process.env.UNOCONV_PATH = "/usr/bin/unoconv"
 process.env.MAX_CONVERSION_TIME = "90000"
-process.env.MAX_CONVERSION_TRIES = "5"
+process.env.MAX_CONVERSION_TRIES = "1"
 process.env.CONVERTER_DOCUMENT_PRIORITY = "unoconv,imageMagick"
 process.env.CONVERTER_MEDIA_PRIORITY = "ffmpeg,imageMagick,unoconv"
 // =============================================================
@@ -18,7 +18,7 @@ process.env.REDIS_HOST = "127.0.0.1"
 process.env.REDIS_PORT = "6379"
 process.env.REDIS_NS = "redis-service-test"
 process.env.REDIS_QUEUE = "redis-service-test-queue"
-process.env.HEALTH_CHECK_INTERVAL = "10"
+process.env.HEALTH_CHECK_INTERVAL = "15"
 process.env.APPLY_DESIRED_STATE_INTERVAL = "30"
 // =============================================================
 // || auto-scaler ENVIRONMENT VARIABLES

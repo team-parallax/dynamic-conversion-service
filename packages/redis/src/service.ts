@@ -1,9 +1,5 @@
 import { AutoScaler } from "auto-scaler"
-import {
-	ConversionFormatsApiFactory,
-	IApiConversionFormatResponse,
-	MiscApiFactory
-} from "./api/conversion-client"
+import { IApiConversionFormatResponse } from "./api/conversion-client"
 import {
 	IContainerCheck,
 	IConversionRequest,
@@ -17,6 +13,9 @@ import {
 import { InvalidWorkerIdError } from "./exception"
 import { Logger } from "logger"
 import { RedisWrapper } from "./wrapper"
+import {
+	getFormatsFromWorker, pingWorker, wait
+} from "./util"
 export class RedisService {
 	/**
 	 * The auto-scaler component managing the docker containers.
@@ -30,7 +29,6 @@ export class RedisService {
 	 * The configuration of redis-service containing environment variables.
 	 */
 	private readonly config: IRedisServiceConfiguration
-	private healthCheckInterval: NodeJS.Timeout | null = null
 	/**
 	 * The most recent container status.
 	 */
@@ -39,7 +37,10 @@ export class RedisService {
 	 * The redis-service logger.
 	 */
 	private readonly logger: Logger
-	private queueCheckInterval: NodeJS.Timeout | null = null
+	/**
+	 * The reference to interval loop.
+	 */
+	private probeInterval: NodeJS.Timeout | null = null
 	/**
 	 * The wrapper around the rsmq implementation.
 	 */
@@ -99,7 +100,7 @@ export class RedisService {
 		let conversionRequest: IConversionRequest | undefined = undefined
 		this.runningWorkers.forEach(workerInfo => {
 			if (workerInfo.currentRequest !== null) {
-				if (workerInfo.currentRequest.conversionId === conversionId) {
+				if (workerInfo.currentRequest.workerConversionId === conversionId) {
 					conversionRequest = workerInfo.currentRequest
 				}
 			}
@@ -118,12 +119,8 @@ export class RedisService {
 			return this.cachedFormats
 		}
 		this.logger.info("fetching formats from workers")
-		const formats = await Promise.any(this.getWorkerIps().map(async ip => {
-			return ConversionFormatsApiFactory(undefined, `http://${ip}:3000`)
-				.getSupportedConversionFormats()
-				.then(r => r.data)
-				.catch(this.logger.error)
-		}))
+		const [workerIp] = this.getWorkerIps()
+		const formats = await getFormatsFromWorker(workerIp)
 		if (formats) {
 			this.cachedFormats = formats
 			return this.cachedFormats
@@ -183,14 +180,10 @@ export class RedisService {
 	 */
 	readonly quit = async (): Promise<void> => {
 		this.logger.info("Commencing redis-service cleanup")
-		if (this.queueCheckInterval !== null) {
-			clearInterval(this.queueCheckInterval)
+		if (this.probeInterval !== null) {
+			clearInterval(this.probeInterval)
 		}
 		this.logger.info("stopped queue check cron job")
-		if (this.healthCheckInterval !== null) {
-			clearInterval(this.healthCheckInterval)
-		}
-		this.logger.info("stopped health check cron job")
 		await this.redisWrapper.quit()
 		const {
 			runningContainers
@@ -210,54 +203,42 @@ export class RedisService {
 	 */
 	readonly start = (): void => {
 		this.logger.info("Starting intervals")
-		const queueCheckDelay = 5000
-		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		this.queueCheckInterval = setInterval(async (): Promise<void> => {
-			this.logger.debug("=================================================")
-			const queueDepth = await this.redisWrapper.getPendingMessagesCount()
-			this.logger.debug(`${queueDepth} requests in queue`)
-			this.logger.debug("next queue check in 5s")
-			this.logger.debug("=================================================")
-		}, queueCheckDelay)
+		const ms = 1000
+		// Every 5 seconds
+		const queueProbeInterval = 5
+		// Convert to ms
+		const queueCheckDelay = queueProbeInterval * ms
 		const {
-			healthCheckInterval: healtCheckDelay,
+			healthCheckInterval,
 			stateApplicationInterval
 		} = this.config.schedulerConfig
-		const secondsToMS = 1000
-		const healthChecksPerStateApplication = Math
-			.floor(stateApplicationInterval / healtCheckDelay)
-		let healthCheckCount = 0
+		// To ensure data consitency we run everything in the same interval
+		// Compute how many normal probes we need until the specified
+		// Time for a health check / state apply has elapsed.
+		const probesPerHealthCheck = Math.ceil(healthCheckInterval / queueProbeInterval)
+		const probesPerStateApply = Math.ceil(stateApplicationInterval / queueProbeInterval)
+		let probeCount = 1
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		this.healthCheckInterval = setInterval(async (): Promise<void> => {
-			this.logger.debug("=================================================")
-			this.logger.debug("running health check")
-			await this.checkHealth()
-			if (this.lastStatus !== null) {
-				const {
-					containersToStart,
-					containersToRemove,
-					runningContainers,
-					pendingRequests
-				} = this.lastStatus
-				this.logger.debug(`Healthcheck: running containers: ${runningContainers.length}`)
-				this.logger.debug(`Healthcheck: pending requests: ${pendingRequests}`)
-				this.logger.debug(`Healthcheck: start: ${containersToStart}`)
-				this.logger.debug(`Healthcheck: remove: ${containersToRemove}`)
+		this.probeInterval = setInterval(async (): Promise<void> => {
+			this.logger.info(`Probing workers for status updates (${probeCount})`)
+			const runningWorkerCount = this.getQueueStatus().length
+			const pendingRequests = await this.getPendingRequestCount()
+			this.logger.info(`${runningWorkerCount} runnning containers`)
+			this.logger.info(`${pendingRequests} in queue`)
+			// We reached the number of probes we need until we need
+			// To do a health check
+			if (probeCount % probesPerHealthCheck === 0) {
+				this.logger.info("health check ")
+				await this.checkHealth()
 			}
-			this.logger.debug("next health check in 10s")
-			this.logger.debug("=================================================")
-			healthCheckCount++
-			// Run the applyState function after the health check
-			// To ensure that:
-			// 1) lastStatus is set
-			// 2) health check and apply state run sequentially and do not interfere
-			if (healthCheckCount % healthChecksPerStateApplication === 0) {
-				this.logger.debug("=================================================")
-				this.logger.debug("applying state changes")
+			// We reached the number of probes we need until we need
+			// To do a state application
+			if (probeCount % probesPerStateApply === 0) {
+				this.logger.info("state apply")
 				await this.applyState()
-				this.logger.debug("=================================================")
 			}
-		}, secondsToMS * healtCheckDelay)
+			probeCount++
+		}, queueCheckDelay)
 	}
 	/**
 	 * Get the docker-container id's of idle workers.
@@ -296,26 +277,19 @@ export class RedisService {
 	 */
 	private readonly pingWorker = async (containerIp: string, retries: number = 0)
 	: Promise<boolean> => {
-		const retryDelay = 2000
-		const baseUrl = `http://${containerIp}:3000`
+		const retryDelay = 5000
 		let isRunning = false
-		for (let i = 0; i <= retries; i++) {
-			this.logger.info(`pinging ${baseUrl} (Attempt: ${i})`)
-			try {
-				// eslint-disable-next-line no-await-in-loop
-				const resp = await MiscApiFactory(undefined, baseUrl)
-					.getPingResponse()
-					.then(r => r.data)
-				if (resp === "pong") {
-					this.logger.info(`${containerIp} replied pong`)
-					isRunning = true
-					break
-				}
+		for (let i = 1; i <= retries; i++) {
+			this.logger.info(`pinging ${containerIp} (Attempt: ${i})`)
+			// eslint-disable-next-line no-await-in-loop
+			isRunning = await pingWorker(containerIp)
+			if (isRunning) {
+				this.logger.info(`${containerIp} replied pong`)
+				break
 			}
-			catch (error) {
-				// This.logger.error(error)
+			else {
 				// eslint-disable-next-line no-await-in-loop
-				await new Promise((resolve, reject) => setTimeout(resolve, retryDelay))
+				await wait(retryDelay)
 				continue
 			}
 		}
