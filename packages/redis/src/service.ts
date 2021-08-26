@@ -1,5 +1,6 @@
+/* eslint-disable no-await-in-loop */
 import { AutoScaler } from "auto-scaler"
-import { IApiConversionFormatResponse } from "./api/conversion-client"
+import { EConversionStatus, IApiConversionFormatResponse } from "./api/conversion-client"
 import { IContainerStateChange, IContainerStatus } from "auto-scaler/src/interface"
 import {
 	IConversionRequest,
@@ -12,7 +13,9 @@ import {
 import { InvalidWorkerIdError } from "./exception"
 import { Logger } from "logger"
 import { RedisWrapper } from "./wrapper"
-import { getFormatsFromWorker, pingWorker } from "./util"
+import {
+	forwardRequestToWorker, getFormatsFromWorker, pingWorker
+} from "./util"
 export class RedisService {
 	/**
 	 * The auto-scaler component managing the docker containers.
@@ -221,9 +224,10 @@ export class RedisService {
 			const pendingRequests = await this.getPendingRequestCount()
 			this.logger.info(`Probe[${probeCount}]: ${runningWorkerCount} containers/${pendingRequests} requests`)
 			const workers = this.getWorkers()
+			// =====================================================================================
 			// === Checking for dead containers ====================================================
+			// =====================================================================================
 			for (const worker of workers) {
-				// eslint-disable-next-line no-await-in-loop
 				if (!await pingWorker(worker.workerUrl)) {
 					const {
 						containerId,
@@ -233,7 +237,6 @@ export class RedisService {
 					try {
 						const {
 							containerId: removedContainerId
-							// eslint-disable-next-line no-await-in-loop
 						} = await this.autoScaler.removeContainer(containerId)
 						this.runningWorkers.delete(removedContainerId)
 					}
@@ -243,11 +246,43 @@ export class RedisService {
 				}
 			}
 			// =====================================================================================
+			// === Forwarding requests to workers ==================================================
+			// =====================================================================================
+			const idleWorkerContainerIds = this.getIdleWorkerIds()
+			const forwardableRequests: IConversionRequest[] = []
+			// Retrieve as many requests as we can handle right now
+			while (forwardableRequests.length <= idleWorkerContainerIds.length) {
+				forwardableRequests.push(await this.popRequest())
+			}
+			for (let i = 0; i < forwardableRequests.length; i++) {
+				const workerId = idleWorkerContainerIds[i]
+				const worker = this.runningWorkers.get(workerId)
+				if (!worker) {
+					throw new InvalidWorkerIdError(workerId)
+				}
+				const request = forwardableRequests[i]
+				const {
+					containerName
+				} = worker.containerInfo
+				const workerConversionId = await forwardRequestToWorker(worker.workerUrl, request)
+				this.updateWorkerConversionStatus(workerId, {
+					...request,
+					conversionStatus: EConversionStatus.Processing,
+					workerConversionId
+				})
+				this.logger.info(`forwarded request ${request.externalConversionId} to ${containerName}`)
+			}
+			// =====================================================================================
+			// === Run health-check if required ====================================================
+			// =====================================================================================
 			// We reached the number of probes we need until we need
 			// To do a health check
 			if (probeCount % probesPerHealthCheck === 0) {
 				await this.checkHealth()
 			}
+			// =====================================================================================
+			// === Apply state if required -----====================================================
+			// =====================================================================================
 			// We reached the number of probes we need until we need
 			// To do a state application
 			if (probeCount % probesPerStateApply === 0) {
