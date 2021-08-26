@@ -134,7 +134,7 @@ export class ConversionController extends Controller {
 	public async getConversionQueueStatus(): Promise<IConversionQueueStatus> {
 		this.logger.info("Conversion queue status requested")
 		try {
-			const workerInfos = this.redisService.getQueueStatus()
+			const workerInfos = this.redisService.getWorkers()
 			const runningWorkers = workerInfos.filter(w => w.currentRequest !== null)
 			const conversions: IConversionStatus[] = []
 			runningWorkers.forEach(rW => {

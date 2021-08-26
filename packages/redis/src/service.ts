@@ -139,7 +139,7 @@ export class RedisService {
 	 * Get all currently running workers and their info.
 	 * @returns all currently runniung workers
 	 */
-	readonly getQueueStatus = (): IWorkerInfo[] => {
+	readonly getWorkers = (): IWorkerInfo[] => {
 		const workerInfos: IWorkerInfo[] = []
 		this.runningWorkers.forEach(workerInfo => {
 			workerInfos.push(workerInfo)
@@ -218,7 +218,7 @@ export class RedisService {
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		this.probeInterval = setInterval(async (): Promise<void> => {
 			this.logger.info(`Probing workers for status updates (${probeCount})`)
-			const runningWorkerCount = this.getQueueStatus().length
+			const runningWorkerCount = this.getWorkers().length
 			const pendingRequests = await this.getPendingRequestCount()
 			this.logger.info(`${runningWorkerCount} runnning containers`)
 			this.logger.info(`${pendingRequests} in queue`)
