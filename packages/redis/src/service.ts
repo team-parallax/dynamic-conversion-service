@@ -116,8 +116,8 @@ export class RedisService {
 			return this.cachedFormats
 		}
 		this.logger.info("fetching formats from workers")
-		const [workerIp] = this.getWorkerIps()
-		const formats = await getFormatsFromWorker(workerIp)
+		const [workerUrl] = this.getWorkerUrls()
+		const formats = await getFormatsFromWorker(workerUrl)
 		if (formats) {
 			this.cachedFormats = formats
 			return this.cachedFormats
@@ -156,10 +156,10 @@ export class RedisService {
 	 * Ping the first available worker.
 	 */
 	readonly pingRandomWorker = async (): Promise<boolean> => {
-		const containerIps: string[] = []
+		const workerUrls: string[] = []
 		this.runningWorkers.forEach(workerInfo =>
-			containerIps.push(workerInfo.containerInfo.containerIp))
-		const promises = containerIps.map(async ip => pingWorker(ip))
+			workerUrls.push(workerInfo.workerUrl))
+		const promises = workerUrls.map(async url => pingWorker(url))
 		const result = await Promise.all(promises)
 		return result.filter(res => res).length > 0
 	}
@@ -254,15 +254,12 @@ export class RedisService {
 	 * Get the docker-container ip's.
 	 * @returns the ip's of the workers
 	 */
-	private readonly getWorkerIps = (): string[] => {
-		const workerIps: string[] = []
+	private readonly getWorkerUrls = (): string[] => {
+		const workerUrls: string[] = []
 		this.runningWorkers.forEach(workerInfo => {
-			const {
-				containerIp
-			} = workerInfo.containerInfo
-			workerIps.push(containerIp)
+			workerUrls.push(workerInfo.workerUrl)
 		})
-		return workerIps
+		return workerUrls
 	}
 	/**
 	 * Update the running workers. Remove stopped containers.
