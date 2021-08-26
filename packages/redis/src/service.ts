@@ -283,7 +283,7 @@ export class RedisService {
 				{
 					containerInfo: container,
 					currentRequest: null,
-					workerUrl: `http://${container.containerIp}:3000/`
+					workerUrl: `http://${container.containerIp}:3000`
 				}
 			)
 		})

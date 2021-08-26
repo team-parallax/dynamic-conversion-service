@@ -7,21 +7,21 @@ import fetch from "node-fetch"
 export const wait = async (duration: number): Promise<void> => {
 	return await new Promise((resolve, reject) => setTimeout(resolve, duration))
 }
-export const pingWorker = async (workerIp: string): Promise<boolean> => {
-	const response = await fetch(`http://${workerIp}:3000/ping`)
+export const pingWorker = async (workerUrl: string): Promise<boolean> => {
+	const response = await fetch(`${workerUrl}/ping`)
 		.then(async r => r.text())
 		.catch(() => "not pong")
 	return response === "\"pong\""
 }
-export const getFormatsFromWorker = async (workerIp:string)
+export const getFormatsFromWorker = async (workerUrl:string)
 : Promise<IApiConversionFormatResponse | undefined> => {
-	return await fetch(`http://${workerIp}:3000/formats`)
+	return await fetch(`${workerUrl}/formats`)
 		.then(async r => r.json())
 		.then(formats => formats as IApiConversionFormatResponse)
 		.catch(() => undefined)
 }
 export const forwardRequestToWorker = async (
-	workerIp:string,
+	workerUrl:string,
 	request: IConversionRequest): Promise<string> => {
 	const {
 		originalFormat,
@@ -37,16 +37,16 @@ export const forwardRequestToWorker = async (
 	})
 	formData.append("originalFormat", originalFormat ?? filename.split(".")[1])
 	formData.append("targetFormat", targetFormat)
-	const resp = await fetch(`http://${workerIp}:3000/conversion/v2`, {
+	const resp = await fetch(`${workerUrl}/conversion/v2`, {
 		body: formData,
 		method: "POST"
 	}).then(async r => r.json())
 		.then(conversionId => conversionId as {conversionId: string})
 	return resp.conversionId
 }
-export const getConversionStatus = async (workerIp:string, conversionId:string):
+export const getConversionStatus = async (workerUrl:string, conversionId:string):
  Promise<IConversionStatus> => {
-	return await fetch(`http://${workerIp}:3000/conversion/${conversionId}?v2=true`)
+	return await fetch(`${workerUrl}/conversion/${conversionId}?v2=true`)
 		.then(async r => r.json())
 		.then(status => status as IConversionStatus)
 }
