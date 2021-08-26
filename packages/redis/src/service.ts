@@ -251,7 +251,10 @@ export class RedisService {
 			const idleWorkerContainerIds = this.getIdleWorkerIds()
 			const forwardableRequests: IConversionRequest[] = []
 			// Retrieve as many requests as we can handle right now
-			while (forwardableRequests.length <= idleWorkerContainerIds.length) {
+			while (
+				await this.getPendingRequestCount() > 0
+				&& forwardableRequests.length <= idleWorkerContainerIds.length
+			) {
 				forwardableRequests.push(await this.popRequest())
 			}
 			for (let i = 0; i < forwardableRequests.length; i++) {
@@ -278,14 +281,13 @@ export class RedisService {
 			const probeWorkers = this.getWorkers().filter(worker => worker.currentRequest !== null)
 			for (const worker of probeWorkers) {
 				if (worker.currentRequest !== null) {
-					if (worker.currentRequest.externalConversionId === null) {
+					if (worker.currentRequest.workerConversionId !== null) {
 						const {
 							workerConversionId
 						} = worker.currentRequest
 						const {
 							status
-							// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-						} = await getConversionStatus(worker.workerUrl, workerConversionId!)
+						} = await getConversionStatus(worker.workerUrl, workerConversionId)
 						this.updateWorkerConversionStatus(
 							worker.containerInfo.containerId,
 							{
@@ -293,6 +295,7 @@ export class RedisService {
 								conversionStatus: status
 							}
 						)
+						this.logger.info(`${worker.containerInfo.containerName} status: ${status}`)
 					}
 				}
 			}
