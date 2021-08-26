@@ -1,11 +1,10 @@
 import { AutoScaler } from "auto-scaler"
 import { IApiConversionFormatResponse } from "./api/conversion-client"
+import { IContainerStateChange, IContainerStatus } from "auto-scaler/src/interface"
 import {
-	IContainerCheck,
 	IConversionRequest,
 	IWorkerInfo
 } from "./interface"
-import { IContainerStateChange, IContainerStatus } from "auto-scaler/src/interface"
 import {
 	IRedisServiceConfiguration,
 	getRedisConfigFromEnv
@@ -13,9 +12,7 @@ import {
 import { InvalidWorkerIdError } from "./exception"
 import { Logger } from "logger"
 import { RedisWrapper } from "./wrapper"
-import {
-	getFormatsFromWorker, pingWorker, wait
-} from "./util"
+import { getFormatsFromWorker, pingWorker } from "./util"
 export class RedisService {
 	/**
 	 * The auto-scaler component managing the docker containers.
@@ -80,7 +77,7 @@ export class RedisService {
 				this.getIdleWorkerIds()
 			)
 			this.lastStatus = null
-			await this.updateActiveWorkers(result)
+			this.updateActiveWorkers(result)
 		}
 	}
 	/**
@@ -162,7 +159,7 @@ export class RedisService {
 		const containerIps: string[] = []
 		this.runningWorkers.forEach(workerInfo =>
 			containerIps.push(workerInfo.containerInfo.containerIp))
-		const promises = containerIps.map(async ip => this.pingWorker(ip))
+		const promises = containerIps.map(async ip => pingWorker(ip))
 		const result = await Promise.all(promises)
 		return result.filter(res => res).length > 0
 	}
@@ -268,83 +265,28 @@ export class RedisService {
 		return workerIps
 	}
 	/**
-	 * Ping the given worker via IP.
-	 * Retries are primarily used for when the worker container
-	 * was just started and isn't ready yet.
-	 * @param containerIp the ip of the worker to ping
-	 * @param retries the number of retries (default = 0)
-	 * @returns true if the worker replied 'pong', false otherwise
-	 */
-	private readonly pingWorker = async (containerIp: string, retries: number = 0)
-	: Promise<boolean> => {
-		const retryDelay = 5000
-		let isRunning = false
-		for (let i = 1; i <= retries; i++) {
-			this.logger.info(`pinging ${containerIp} (Attempt: ${i})`)
-			// eslint-disable-next-line no-await-in-loop
-			isRunning = await pingWorker(containerIp)
-			if (isRunning) {
-				this.logger.info(`${containerIp} replied pong`)
-				break
-			}
-			else {
-				// eslint-disable-next-line no-await-in-loop
-				await wait(retryDelay)
-				continue
-			}
-		}
-		return isRunning
-	}
-	/**
 	 * Update the running workers. Remove stopped containers.
 	 * Ping started containers and stop them if they do not reply
 	 * after 3 retries.
 	 * @param IContainerStateChange the result of applying the new container state
 	 */
-	private readonly updateActiveWorkers = async ({
+	private readonly updateActiveWorkers = ({
 		removedContainers,
 		startedContainers
-	}: IContainerStateChange): Promise<void> => {
+	}: IContainerStateChange): void => {
 		// Remove removed containers
 		removedContainers.forEach(container =>
 			this.runningWorkers.delete(container.containerId))
-		const containerChecks:IContainerCheck[] = []
-		// Only retry pinging a container 3 times
-		const maxAttempts = 3
-		for (const startedContainer of startedContainers) {
-			const {
-				containerIp
-			} = startedContainer
-			// eslint-disable-next-line no-await-in-loop
-			const isRunning = await this.pingWorker(containerIp, maxAttempts)
-			containerChecks.push({
-				containerInfo: startedContainer,
-				isRunning
-			})
-		}
-		const runningContainers = containerChecks
-			.filter(check => check.isRunning)
-		runningContainers.forEach(containerCheck => {
-			const {
-				containerId,
-				containerName
-			} = containerCheck.containerInfo
+		startedContainers.forEach(container => {
 			this.runningWorkers.set(
-				containerId,
+				container.containerId,
 				{
-					containerInfo: containerCheck.containerInfo,
+					containerInfo: container,
 					currentRequest: null,
-					workerUrl: `/${containerName}/`
+					workerUrl: `http://${container.containerIp}:3000/`
 				}
 			)
 		})
-		const nonRunningContainerIds = containerChecks
-			.filter(check => !check.isRunning)
-			.map(container => container.containerInfo.containerId)
-		const removePromises = nonRunningContainerIds.map(
-			async id => this.autoScaler.removeContainer(id)
-		)
-		await Promise.all(removePromises)
 	}
 	/**
 	 *
