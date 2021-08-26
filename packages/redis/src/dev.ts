@@ -18,8 +18,8 @@ process.env.REDIS_HOST = "127.0.0.1"
 process.env.REDIS_PORT = "6379"
 process.env.REDIS_NS = "redis-service-test"
 process.env.REDIS_QUEUE = "redis-service-test-queue"
-process.env.HEALTH_CHECK_INTERVAL = "15"
-process.env.APPLY_DESIRED_STATE_INTERVAL = "30"
+process.env.HEALTH_CHECK_INTERVAL = "20"
+process.env.APPLY_DESIRED_STATE_INTERVAL = "40"
 // =============================================================
 // || auto-scaler ENVIRONMENT VARIABLES
 // =============================================================

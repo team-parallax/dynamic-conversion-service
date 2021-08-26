@@ -202,7 +202,7 @@ export class RedisService {
 		this.logger.info("Starting intervals")
 		const ms = 1000
 		// Every 5 seconds
-		const queueProbeInterval = 5
+		const queueProbeInterval = 10
 		// Convert to ms
 		const queueCheckDelay = queueProbeInterval * ms
 		const {
@@ -217,21 +217,40 @@ export class RedisService {
 		let probeCount = 1
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		this.probeInterval = setInterval(async (): Promise<void> => {
-			this.logger.info(`Probing workers for status updates (${probeCount})`)
 			const runningWorkerCount = this.getWorkers().length
 			const pendingRequests = await this.getPendingRequestCount()
-			this.logger.info(`${runningWorkerCount} runnning containers`)
-			this.logger.info(`${pendingRequests} in queue`)
+			this.logger.info(`Probe[${probeCount}]: ${runningWorkerCount} containers/${pendingRequests} requests`)
+			const workers = this.getWorkers()
+			// === Checking for dead containers ====================================================
+			for (const worker of workers) {
+				// eslint-disable-next-line no-await-in-loop
+				if (!await pingWorker(worker.workerUrl)) {
+					const {
+						containerId,
+						containerName
+					} = worker.containerInfo
+					this.logger.info(`${containerName} did not reply to ping`)
+					try {
+						const {
+							containerId: removedContainerId
+							// eslint-disable-next-line no-await-in-loop
+						} = await this.autoScaler.removeContainer(containerId)
+						this.runningWorkers.delete(removedContainerId)
+					}
+					catch (error) {
+						this.runningWorkers.delete(containerId)
+					}
+				}
+			}
+			// =====================================================================================
 			// We reached the number of probes we need until we need
 			// To do a health check
 			if (probeCount % probesPerHealthCheck === 0) {
-				this.logger.info("health check ")
 				await this.checkHealth()
 			}
 			// We reached the number of probes we need until we need
 			// To do a state application
 			if (probeCount % probesPerStateApply === 0) {
-				this.logger.info("state apply")
 				await this.applyState()
 			}
 			probeCount++
