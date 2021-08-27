@@ -22,7 +22,7 @@ export class Api {
 	@Inject
 	private readonly logger!: Logger
 	public readonly app: Application
-	private readonly _port: number = 8000
+	private readonly _port: number = 3000
 	private server: Server | null
 	// Private readonly startUpDelay: number = 1500
 	constructor(port?: number) {

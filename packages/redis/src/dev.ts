@@ -5,7 +5,7 @@
 // =============================================================
 process.env.WEBSERVICE_PORT = "3000"
 process.env.FFMPEG_PATH = "/opt/ffmpeg/bin/ffmpeg"
-process.env.IMAGE_MAGICK_PATH = "usr/bin/convert"
+process.env.IMAGE_MAGICK_PATH = "/usr/local/bin/convert"
 process.env.UNOCONV_PATH = "/usr/bin/unoconv"
 process.env.MAX_CONVERSION_TIME = "90000"
 process.env.MAX_CONVERSION_TRIES = "1"
