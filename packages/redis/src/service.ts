@@ -1,9 +1,16 @@
 /* eslint-disable no-await-in-loop */
 import { AutoScaler } from "auto-scaler"
-import { EConversionStatus, IApiConversionFormatResponse } from "./api/conversion-client"
-import { IContainerStateChange, IContainerStatus } from "auto-scaler/src/interface"
+import {
+	EConversionStatus,
+	IApiConversionFormatResponse
+} from "./api/conversion-client"
+import {
+	IContainerStateChange,
+	IContainerStatus
+} from "auto-scaler/src/interface"
 import {
 	IConversionRequest,
+	IFinishedRequest,
 	IWorkerInfo
 } from "./interface"
 import {
@@ -13,9 +20,17 @@ import {
 import { InvalidWorkerIdError } from "./exception"
 import { Logger } from "logger"
 import { RedisWrapper } from "./wrapper"
+import { deleteFile } from "conversion-service/src/service/file-io"
 import {
-	forwardRequestToWorker, getConversionStatus, getFormatsFromWorker, pingWorker
+	forwardRequestToWorker,
+	getConversionStatus,
+	getExtFromFormat,
+	getFileFromWorker,
+	getFormatsFromWorker,
+	pingWorker
 } from "./util"
+import { isFinished } from "./api/rest/conversion/util"
+import { join } from "path"
 export class RedisService {
 	/**
 	 * The auto-scaler component managing the docker containers.
@@ -29,6 +44,10 @@ export class RedisService {
 	 * The configuration of redis-service containing environment variables.
 	 */
 	private readonly config: IRedisServiceConfiguration
+	/**
+	 * The map of finished requests.
+	 */
+	private readonly finishedRequest: Map<string, IFinishedRequest>
 	/**
 	 * The most recent container status.
 	 */
@@ -61,6 +80,7 @@ export class RedisService {
 		this.redisWrapper = new RedisWrapper(redisConfig, this.logger)
 		this.autoScaler = new AutoScaler(autoScalerConfig)
 		this.runningWorkers = new Map()
+		this.finishedRequest = new Map()
 	}
 	/**
 	 * Add the given request to the queue to be processed later.
@@ -79,6 +99,9 @@ export class RedisService {
 				this.lastStatus,
 				this.getIdleWorkerIds()
 			)
+			const started = result.startedContainers.length
+			const removed = result.removedContainers.length
+			this.logger.info(`Scaling: started ${started}/killed ${removed}`)
 			this.lastStatus = null
 			this.updateActiveWorkers(result)
 		}
@@ -89,6 +112,11 @@ export class RedisService {
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
 		this.lastStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
+		const {
+			containersToRemove,
+			containersToStart
+		} = this.lastStatus
+		this.logger.info(`Health-Check: Up:${containersToStart}/Down:${containersToRemove}`)
 	}
 	/**
 	 * Get the current conversion request for the given conversion id.
@@ -97,6 +125,9 @@ export class RedisService {
 	 * no conversion with the given id
 	 */
 	readonly getConversionResult = (conversionId: string): IConversionRequest | undefined => {
+		if (this.finishedRequest.has(conversionId)) {
+			return this.finishedRequest.get(conversionId)?.request
+		}
 		let conversionRequest: IConversionRequest | undefined = undefined
 		this.runningWorkers.forEach(workerInfo => {
 			if (workerInfo.currentRequest !== null) {
@@ -225,6 +256,7 @@ export class RedisService {
 			this.logger.info(`Probe[${probeCount}]: ${runningWorkerCount} containers/${pendingRequests} requests`)
 			const workers = this.getWorkers()
 			// =====================================================================================
+			// =====================================================================================
 			// === Checking for dead containers ====================================================
 			// =====================================================================================
 			for (const worker of workers) {
@@ -244,6 +276,16 @@ export class RedisService {
 						this.runningWorkers.delete(containerId)
 					}
 				}
+				else {
+					if (this.cachedFormats === null) {
+						this.logger.info("no formats in cache")
+						const formats = await getFormatsFromWorker(worker.workerUrl)
+						if (formats) {
+							this.cachedFormats = formats
+							this.logger.info(`successfully cached formats from ${worker.containerInfo.containerName}`)
+						}
+					}
+				}
 			}
 			// =====================================================================================
 			// === Forwarding requests to workers ==================================================
@@ -253,7 +295,7 @@ export class RedisService {
 			// Retrieve as many requests as we can handle right now
 			while (
 				await this.getPendingRequestCount() > 0
-				&& forwardableRequests.length <= idleWorkerContainerIds.length
+				&& forwardableRequests.length < idleWorkerContainerIds.length
 			) {
 				forwardableRequests.push(await this.popRequest())
 			}
@@ -276,27 +318,85 @@ export class RedisService {
 				this.logger.info(`forwarded request ${request.externalConversionId} to ${containerName}`)
 			}
 			// =====================================================================================
-			// === Probe worker conversion status ==================================================
+			// === Probe and update worker conversion status =======================================
 			// =====================================================================================
 			const probeWorkers = this.getWorkers().filter(worker => worker.currentRequest !== null)
 			for (const worker of probeWorkers) {
 				if (worker.currentRequest !== null) {
 					if (worker.currentRequest.workerConversionId !== null) {
 						const {
+							workerUrl,
+							currentRequest
+						} = worker
+						const {
+							containerId,
+							containerName
+						} = worker.containerInfo
+						const {
 							workerConversionId
 						} = worker.currentRequest
-						const {
-							status
-						} = await getConversionStatus(worker.workerUrl, workerConversionId)
+						const status = await getConversionStatus(workerUrl, workerConversionId)
 						this.updateWorkerConversionStatus(
-							worker.containerInfo.containerId,
+							containerId,
 							{
-								...worker.currentRequest,
+								...currentRequest,
 								conversionStatus: status
 							}
 						)
-						this.logger.info(`${worker.containerInfo.containerName} status: ${status}`)
+						this.logger.info(`[${containerName}]: ${status}`)
 					}
+				}
+			}
+			// =====================================================================================
+			// === Fetch files =====================================================================
+			// =====================================================================================
+			const finishedWorkers = this.getWorkers().filter(worker =>
+				isFinished(worker.currentRequest?.conversionStatus))
+			for (const worker of finishedWorkers) {
+				if (worker.currentRequest !== null) {
+					const {
+						currentRequest,
+						workerUrl
+					} = worker
+					if (currentRequest.conversionStatus === "converted") {
+						await getFileFromWorker(
+							workerUrl,
+							// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+							currentRequest.workerConversionId!,
+							currentRequest.externalConversionId,
+							currentRequest.conversionRequestBody.targetFormat
+						)
+						this.logger.info(`fetched result from ${worker.containerInfo.containerName}`)
+						this.finishedRequest.set(
+							currentRequest.externalConversionId,
+							{
+								containerId: worker.containerInfo.containerId,
+								request: currentRequest
+							}
+						)
+					}
+					else if (currentRequest.conversionStatus === "erroneous") {
+						this.finishedRequest.set(
+							currentRequest.externalConversionId,
+							{
+								containerId: worker.containerInfo.containerId,
+								request: currentRequest
+							}
+						)
+					}
+					this.updateWorkerConversionStatus(
+						worker.containerInfo.containerId,
+						null
+					)
+					const ext = getExtFromFormat(
+						currentRequest.conversionRequestBody.originalFormat
+					)
+					const inputPath = join(
+						"input",
+						currentRequest.externalConversionId + ext
+					)
+					await deleteFile(inputPath)
+					this.logger.info(`deleted  ${inputPath}`)
 				}
 			}
 			// =====================================================================================
@@ -384,5 +484,8 @@ export class RedisService {
 			currentRequest: conversionRequest
 		}
 		this.runningWorkers.set(workerId, workerInfo)
+		if (conversionRequest === null) {
+			this.logger.info(`${workerInfo.containerInfo.containerName} is now idle`)
+		}
 	}
 }

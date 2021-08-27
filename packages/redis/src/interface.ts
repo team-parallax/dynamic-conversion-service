@@ -18,3 +18,7 @@ export interface IConversionRequest {
 	externalConversionId:string,
 	workerConversionId: string | null
 }
+export interface IFinishedRequest {
+	containerId: string,
+	request: IConversionRequest
+}

@@ -1,5 +1,8 @@
-import { IApiConversionFormatResponse, IConversionStatus } from "./api/conversion-client"
+import {
+	EConversionStatus, IApiConversionFormatResponse, IConversionStatus
+} from "./api/conversion-client"
 import { IConversionRequest } from "./interface"
+import { createWriteStream } from "fs"
 import { join } from "path"
 import { readFileToBuffer } from "conversion-service/src/service/file-io"
 import FormData from "form-data"
@@ -28,7 +31,21 @@ export const forwardRequestToWorker = async (
 		targetFormat,
 		filename
 	} = request.conversionRequestBody
-	const fileLocation = join("input", request.externalConversionId, filename)
+	let ext = ""
+	if (originalFormat) {
+		ext = originalFormat.startsWith(".")
+			? originalFormat
+			: `.${originalFormat}`
+	}
+	else {
+		ext = filename.includes(".")
+			? filename.split(".")[1]
+			: ""
+	}
+	if (ext === "") {
+		throw new Error("Input File extensions could not be determined")
+	}
+	const fileLocation = join("input", request.externalConversionId + ext)
 	const buffer = await readFileToBuffer(fileLocation)
 	const formData = new FormData()
 	formData.append("conversionFile", buffer, {
@@ -45,8 +62,47 @@ export const forwardRequestToWorker = async (
 	return resp.conversionId
 }
 export const getConversionStatus = async (workerUrl:string, conversionId:string):
- Promise<IConversionStatus> => {
+ Promise<EConversionStatus> => {
 	return await fetch(`${workerUrl}/conversion/${conversionId}?v2=true`)
 		.then(async r => r.json())
-		.then(status => status as IConversionStatus)
+		.then(status => (status as IConversionStatus).status)
+}
+export const getFileFromWorker = async (
+	workerUrl: string,
+	workerConversionId: string,
+	externalConversionId: string,
+	targetFormat: string
+): Promise<void> => {
+	const resp = await fetch(`${workerUrl}/conversion/${workerConversionId}/download`)
+	let format = targetFormat
+	if (!format.startsWith(".")) {
+		format = `.${targetFormat}`
+	}
+	const outputFile = join("output", `${externalConversionId}${format}`)
+	const outStream = createWriteStream(outputFile)
+	resp.body.pipe(outStream)
+}
+export const getExtFromFormat = (format?: string): string => {
+	let ext = ""
+	if (format) {
+		ext = format.startsWith(".")
+			? format
+			: `.${format}`
+	}
+	return ext
+}
+export const getExtFromFilename = (filename: string): string => {
+	return filename.includes(".")
+		? filename.split(".")[1]
+		: ""
+}
+export const getExt = (filename: string, format?: string): string => {
+	let ext = getExtFromFormat(format)
+	if (ext === "") {
+		ext = getExtFromFilename(filename)
+	}
+	if (ext === "") {
+		throw new Error("could not determine file extension")
+	}
+	return ext
 }

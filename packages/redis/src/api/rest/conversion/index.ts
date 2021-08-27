@@ -43,6 +43,9 @@ import {
 	handleError,
 	handleMultipartFormData
 } from "conversion-service/src/service/conversion/util"
+import {
+	getExt, getExtFromFilename, getExtFromFormat
+} from "../../../util"
 import { getType } from "mime"
 import { join } from "path"
 import { v4 as uuidV4 } from "uuid"
@@ -74,9 +77,8 @@ export class ConversionController extends Controller {
 			} = multipartConversionRequest
 			// Temporary solution since I don't know how it normally works
 			const conversionId = uuidV4()
-			const inputDir = `./input/${conversionId}`
-			await createDirectoryIfNotPresent(inputDir)
-			await writeToFile(join(inputDir, filename), file)
+			const ext = getExt(filename, originalFormat)
+			await writeToFile(join("input", `${conversionId}${ext}`), file)
 			await this.redisService.addRequestToQueue({
 				conversionRequestBody: {
 					file: "",
@@ -229,11 +231,12 @@ export class ConversionController extends Controller {
 			if (conversionRequest.conversionStatus === EConversionStatus.Converted) {
 				const {
 					filename,
-					originalFormat,
 					targetFormat
 				} = conversionRequest.conversionRequestBody
-				const filePath = `./output/${conversionId}/${filename}`
-					.replace(originalFormat ?? ".jpg", targetFormat)
+				const ext = targetFormat.startsWith(".")
+					? targetFormat
+					: `.${targetFormat}`
+				const filePath = `./output/${conversionId}${ext}`
 				const stats = await fs.promises.stat(filePath)
 				this.setHeader("Content-Type", `${getType(filePath)}`)
 				this.setHeader("Content-Length", stats.size.toString())
