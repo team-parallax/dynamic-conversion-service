@@ -4,6 +4,7 @@ default:
 stages:
   - prepare
   - test
+  - test integration
 
 # Workflow rules for MR-Pipelines taken from docs at docs.gitlab.com:
 # https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
@@ -51,13 +52,14 @@ test unit redis:
       - packages/redis/**/*.ts
 
 test integration redis:
+  extends: "test unit redis"
   services:
   - redis:6.2.5-alpine
-  stage: test
+  stage: "test integration"
   needs:
     - job: "test unit redis"
   script:
-    - yarn test:integration:coverage --ci
+    - yarn test:integration --ci
   coverage: /All files[^|]*\|[^|]*\s+([\d\.]+)/
   artifacts:
     expire_in: 7 days
