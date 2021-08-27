@@ -46,6 +46,27 @@ test unit redis:
       junit: artifacts/test/unit/junit.xml
     untracked: false
     when: always
+  rules:
+    - changes:
+      - packages/redis/**/*.ts
+
+test integration redis:
+  services:
+  - redis:6.2.5-alpine
+  stage: test
+  needs:
+    - job: "test unit redis"
+  script:
+    - yarn test:integration:coverage --ci
+  coverage: /All files[^|]*\|[^|]*\s+([\d\.]+)/
+  artifacts:
+    expire_in: 7 days
+    paths:
+      - artifacts/test/integration/junit.xml
+    reports:
+      junit: artifacts/test/integration/junit.xml
+    untracked: false
+    when: always
   allow_failure: true
   rules:
     - changes:
