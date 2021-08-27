@@ -93,7 +93,7 @@ export const getExtFromFormat = (format?: string): string => {
 }
 export const getExtFromFilename = (filename: string): string => {
 	return filename.includes(".")
-		? filename.split(".")[1]
+		? `.${filename.split(".")[1]}`
 		: ""
 }
 export const getExt = (filename: string, format?: string): string => {
