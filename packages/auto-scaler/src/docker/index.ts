@@ -144,7 +144,12 @@ export class DockerService {
 		}
 	}
 	private readonly getContainerIP = (name: string): string => {
-		const output = execSync(`docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${name}`)
-		return output.toString().trimEnd()
+		try {
+			const output = execSync(`docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${name}`)
+			return output.toString().trimEnd()
+		}
+		catch (error) {
+			return ""
+		}
 	}
 }
