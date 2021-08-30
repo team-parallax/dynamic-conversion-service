@@ -89,6 +89,8 @@ export class RedisService {
 	 */
 	readonly addRequestToQueue = async (conversionRequest: IConversionRequest): Promise<void> => {
 		await this.redisWrapper.sendMessage(JSON.stringify(conversionRequest))
+		const queueDepth = await this.getPendingRequestCount()
+		this.logger.info(`added request to queue [${queueDepth}]`)
 	}
 	/**
 	 * Apply the last status.
@@ -102,7 +104,7 @@ export class RedisService {
 			)
 			const started = result.startedContainers.length
 			const removed = result.removedContainers.length
-			this.logger.info(`Scaling: started ${started}/killed ${removed}`)
+			this.logger.info(`STATE: started ${started} | removed ${removed} containers`)
 			this.lastStatus = null
 			this.updateActiveWorkers(result)
 		}
@@ -133,10 +135,10 @@ export class RedisService {
 		}
 		this.lastStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
 		const {
-			containersToRemove,
-			containersToStart
+			containersToRemove: start,
+			containersToStart: remove
 		} = this.lastStatus
-		this.logger.info(`Health-Check: Up:${containersToStart}/Down:${containersToRemove}`)
+		this.logger.info(`HEALTH: should start ${start} | remove ${remove} containers`)
 	}
 	/**
 	 * Get the current conversion request for the given conversion id.
@@ -247,13 +249,12 @@ export class RedisService {
 			pendingRequests: 0,
 			runningContainers
 		}, runningContainers.map(runningContainer => runningContainer.containerId))
-		this.logger.info(`Removed ${removedContainers.length} containers`)
 	}
 	/**
 	 * Start the queue and health check cron jobs.
 	 */
 	readonly start = (): void => {
-		this.logger.info("Starting intervals")
+		this.logger.info("starting main loop")
 		const ms = 1000
 		// Every 5 seconds
 		const queueProbeInterval = 10
@@ -269,6 +270,10 @@ export class RedisService {
 		let probeCount = 1
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		this.probeInterval = setInterval(async (): Promise<void> => {
+			const shouldApplyState = probeCount % probesPerStateApply === 0
+			// eslint-disable-next-line multiline-ternary
+			const loggerPrefix = shouldApplyState ? "[HEALTH+STATE]" : "[HEALTH]"
+			this.logger.info(`${loggerPrefix}: #${probeCount}`)
 			const probeStart = performance.now()
 			// Checking for dead containers
 			await this.checkHealth()
@@ -283,7 +288,7 @@ export class RedisService {
 			}
 			probeCount++
 			const probeDuration = performance.now() - probeStart
-			this.logger.info(`probe took ${Number(probeDuration).toFixed(0)}ms`)
+			this.logger.info(`${loggerPrefix}: ${Number(probeDuration).toFixed(0)}ms`)
 		}, healthCheckInterval * ms)
 	}
 	/**
@@ -292,6 +297,7 @@ export class RedisService {
 	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
 	 */
 	private readonly fetchFilesFromWorkers = async (): Promise<void> => {
+		this.logger.info("fetching files from finished workers...")
 		const finishedWorkers = this.getWorkers().filter(worker =>
 			isFinished(worker.currentRequest?.conversionStatus))
 		for (const worker of finishedWorkers) {
@@ -351,6 +357,7 @@ export class RedisService {
 	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
 	 */
 	private readonly forwardRequestsToIdleWorkers = async (): Promise<void> => {
+		this.logger.info("forwarding requests to idle workers...")
 		const idleWorkerContainerIds = this.getIdleWorkerIds()
 		const forwardableRequests: IConversionRequest[] = []
 		// Retrieve as many requests as we can handle right now
@@ -408,6 +415,7 @@ export class RedisService {
 	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
 	 */
 	private readonly probeWorkersForStatus = async (): Promise<void> => {
+		this.logger.info("asking busy workers for status update...")
 		const probeWorkers = this.getWorkers().filter(worker => worker.currentRequest !== null)
 		for (const worker of probeWorkers) {
 			if (worker.currentRequest !== null) {

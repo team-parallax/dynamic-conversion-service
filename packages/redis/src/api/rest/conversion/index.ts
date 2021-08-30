@@ -32,7 +32,6 @@ import {
 	IConversionStatus,
 	TApiConvertedCompatResponseV1
 } from "conversion-service/src/abstract/converter/interface"
-import { Logger } from "logger"
 import { RedisService } from "../../../service"
 import { assertStatus, isFinished } from "./util"
 import {
@@ -54,8 +53,6 @@ import fs from "fs"
 @Route("/conversion")
 @Tags("Conversion")
 export class ConversionController extends Controller {
-	@Inject
-	private readonly logger!: Logger
 	private readonly redisService: RedisService = Container.get(RedisService)
 	/**
 	 * Adds the file from the request body to the internal conversion queue.
@@ -66,7 +63,6 @@ export class ConversionController extends Controller {
 	public async convertFile(
 		@Request() request: express.Request
 	): Promise<IConversionProcessingResponse | IUnsupportedConversionFormatError> {
-		this.logger.info("Conversion requested")
 		try {
 			const multipartConversionRequest = await handleMultipartFormData(request)
 			const {
@@ -90,10 +86,6 @@ export class ConversionController extends Controller {
 				externalConversionId: conversionId,
 				workerConversionId: null
 			})
-			const queueDepth = await this.redisService.getPendingRequestCount()
-			this.logger.info(
-				`Added request to queue. Current Depth: ${queueDepth}`
-			)
 			return {
 				conversionId
 			}
@@ -114,7 +106,6 @@ export class ConversionController extends Controller {
 	public async convertFileLegacy(
 		@Body() requestBody: IConversionRequestBody
 	): Promise<IConversionProcessingResponse | IUnsupportedConversionFormatError> {
-		this.logger.info("Conversion requested")
 		try {
 			const conversionRequest: IConversionRequestBody = requestBody
 			if (!requestBody) {
@@ -134,7 +125,6 @@ export class ConversionController extends Controller {
 	 */
 	@Get("/")
 	public async getConversionQueueStatus(): Promise<IConversionQueueStatus> {
-		this.logger.info("Conversion queue status requested")
 		try {
 			const workerInfos = this.redisService.getWorkers()
 			const runningWorkers = workerInfos.filter(w => w.currentRequest !== null)
