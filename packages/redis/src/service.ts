@@ -249,167 +249,30 @@ export class RedisService {
 		const probesPerHealthCheck = Math.ceil(healthCheckInterval / queueProbeInterval)
 		const probesPerStateApply = Math.ceil(stateApplicationInterval / queueProbeInterval)
 		let probeCount = 1
+		const probeCycle = async (): Promise<void> => {
+			// Checking for dead containers
+			await this.pingAllWorkers()
+			// Forwarding requests to workers
+			await this.forwardRequestsToIdleWorkers()
+			// Probe and update worker conversion status
+			await this.probeWorkersForStatus()
+			// Fetch files
+			await this.fetchFilesFromWorkers()
+		}
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		this.probeInterval = setInterval(async (): Promise<void> => {
 			const runningWorkerCount = this.getWorkers().length
 			const pendingRequests = await this.getPendingRequestCount()
 			this.logger.info(`Probe[${probeCount}]: ${runningWorkerCount} containers/${pendingRequests} requests`)
-			const workers = this.getWorkers()
-			// =====================================================================================
-			// =====================================================================================
-			// === Checking for dead containers ====================================================
-			// =====================================================================================
-			for (const worker of workers) {
-				if (!await pingWorker(worker.workerUrl)) {
-					const {
-						containerId,
-						containerName
-					} = worker.containerInfo
-					this.logger.info(`${containerName} did not reply to ping`)
-					try {
-						const {
-							containerId: removedContainerId
-						} = await this.autoScaler.removeContainer(containerId)
-						this.runningWorkers.delete(removedContainerId)
-					}
-					catch (error) {
-						this.runningWorkers.delete(containerId)
-					}
-				}
-				else {
-					if (this.cachedFormats === null) {
-						this.logger.info("no formats in cache")
-						const formats = await getFormatsFromWorker(worker.workerUrl)
-						if (formats) {
-							this.cachedFormats = formats
-							this.logger.info(`successfully cached formats from ${worker.containerInfo.containerName}`)
-						}
-					}
-				}
-			}
-			// =====================================================================================
-			// === Forwarding requests to workers ==================================================
-			// =====================================================================================
-			const idleWorkerContainerIds = this.getIdleWorkerIds()
-			const forwardableRequests: IConversionRequest[] = []
-			// Retrieve as many requests as we can handle right now
-			while (
-				await this.getPendingRequestCount() > 0
-				&& forwardableRequests.length < idleWorkerContainerIds.length
-			) {
-				forwardableRequests.push(await this.popRequest())
-			}
-			for (let i = 0; i < forwardableRequests.length; i++) {
-				const workerId = idleWorkerContainerIds[i]
-				const worker = this.runningWorkers.get(workerId)
-				if (!worker) {
-					throw new InvalidWorkerIdError(workerId)
-				}
-				const request = forwardableRequests[i]
-				const {
-					containerName
-				} = worker.containerInfo
-				const workerConversionId = await forwardRequestToWorker(worker.workerUrl, request)
-				this.updateWorkerConversionStatus(workerId, {
-					...request,
-					conversionStatus: EConversionStatus.Processing,
-					workerConversionId
-				})
-				this.logger.info(`forwarded request ${request.externalConversionId} to ${containerName}`)
-			}
-			// =====================================================================================
-			// === Probe and update worker conversion status =======================================
-			// =====================================================================================
-			const probeWorkers = this.getWorkers().filter(worker => worker.currentRequest !== null)
-			for (const worker of probeWorkers) {
-				if (worker.currentRequest !== null) {
-					if (worker.currentRequest.workerConversionId !== null) {
-						const {
-							workerUrl,
-							currentRequest
-						} = worker
-						const {
-							containerId,
-							containerName
-						} = worker.containerInfo
-						const {
-							workerConversionId
-						} = worker.currentRequest
-						const status = await getConversionStatus(workerUrl, workerConversionId)
-						this.updateWorkerConversionStatus(
-							containerId,
-							{
-								...currentRequest,
-								conversionStatus: status
-							}
-						)
-						this.logger.info(`[${containerName}]: ${status}`)
-					}
-				}
-			}
-			// =====================================================================================
-			// === Fetch files =====================================================================
-			// =====================================================================================
-			const finishedWorkers = this.getWorkers().filter(worker =>
-				isFinished(worker.currentRequest?.conversionStatus))
-			for (const worker of finishedWorkers) {
-				if (worker.currentRequest !== null) {
-					const {
-						currentRequest,
-						workerUrl
-					} = worker
-					if (currentRequest.conversionStatus === "converted") {
-						await getFileFromWorker(
-							workerUrl,
-							// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-							currentRequest.workerConversionId!,
-							currentRequest.externalConversionId,
-							currentRequest.conversionRequestBody.targetFormat
-						)
-						this.logger.info(`fetched result from ${worker.containerInfo.containerName}`)
-						this.finishedRequest.set(
-							currentRequest.externalConversionId,
-							{
-								containerId: worker.containerInfo.containerId,
-								request: currentRequest
-							}
-						)
-					}
-					else if (currentRequest.conversionStatus === "erroneous") {
-						this.finishedRequest.set(
-							currentRequest.externalConversionId,
-							{
-								containerId: worker.containerInfo.containerId,
-								request: currentRequest
-							}
-						)
-					}
-					this.updateWorkerConversionStatus(
-						worker.containerInfo.containerId,
-						null
-					)
-					const ext = getExtFromFormat(
-						currentRequest.conversionRequestBody.originalFormat
-					)
-					const inputPath = join(
-						"input",
-						currentRequest.externalConversionId + ext
-					)
-					await deleteFile(inputPath)
-					this.logger.info(`deleted  ${inputPath}`)
-				}
-			}
-			// =====================================================================================
-			// === Run health-check if required ====================================================
-			// =====================================================================================
+			// Run the standard checks
+			await probeCycle()
+			// Run health-check if required
 			// We reached the number of probes we need until we need
 			// To do a health check
 			if (probeCount % probesPerHealthCheck === 0) {
 				await this.checkHealth()
 			}
-			// =====================================================================================
-			// === Apply state if required -----====================================================
-			// =====================================================================================
+			// Apply state if required
 			// We reached the number of probes we need until we need
 			// To do a state application
 			if (probeCount % probesPerStateApply === 0) {
@@ -417,6 +280,99 @@ export class RedisService {
 			}
 			probeCount++
 		}, queueCheckDelay)
+	}
+	/**
+	 * Fetch the files from workers where the conversion succeeded and
+	 * remove the request from the worker.
+	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
+	 */
+	private readonly fetchFilesFromWorkers = async (): Promise<void> => {
+		const finishedWorkers = this.getWorkers().filter(worker =>
+			isFinished(worker.currentRequest?.conversionStatus))
+		for (const worker of finishedWorkers) {
+			if (worker.currentRequest !== null) {
+				const {
+					currentRequest,
+					workerUrl
+				} = worker
+				const {
+					externalConversionId,
+					workerConversionId
+				} = currentRequest
+				if (currentRequest.conversionStatus === "converted") {
+					await getFileFromWorker(
+						workerUrl,
+						// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+						workerConversionId!,
+						externalConversionId,
+						currentRequest.conversionRequestBody.targetFormat
+					)
+					this.logger.info(`fetched result from ${worker.containerInfo.containerName}`)
+					this.finishedRequest.set(
+						externalConversionId,
+						{
+							containerId: worker.containerInfo.containerId,
+							request: currentRequest
+						}
+					)
+				}
+				else if (currentRequest.conversionStatus === "erroneous") {
+					this.finishedRequest.set(
+						externalConversionId,
+						{
+							containerId: worker.containerInfo.containerId,
+							request: currentRequest
+						}
+					)
+				}
+				this.updateWorkerConversionStatus(
+					worker.containerInfo.containerId,
+					null
+				)
+				const ext = getExtFromFormat(
+					currentRequest.conversionRequestBody.originalFormat
+				)
+				const inputPath = join(
+					"input",
+					currentRequest.externalConversionId + ext
+				)
+				await deleteFile(inputPath)
+				this.logger.info(`deleted  ${inputPath}`)
+			}
+		}
+	}
+	/**
+	 * Dispatch requests from the queue to idle workers.
+	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
+	 */
+	private readonly forwardRequestsToIdleWorkers = async (): Promise<void> => {
+		const idleWorkerContainerIds = this.getIdleWorkerIds()
+		const forwardableRequests: IConversionRequest[] = []
+		// Retrieve as many requests as we can handle right now
+		while (
+			await this.getPendingRequestCount() > 0
+				&& forwardableRequests.length < idleWorkerContainerIds.length
+		) {
+			forwardableRequests.push(await this.popRequest())
+		}
+		for (let i = 0; i < forwardableRequests.length; i++) {
+			const workerId = idleWorkerContainerIds[i]
+			const worker = this.runningWorkers.get(workerId)
+			if (!worker) {
+				throw new InvalidWorkerIdError(workerId)
+			}
+			const request = forwardableRequests[i]
+			const {
+				containerName
+			} = worker.containerInfo
+			const workerConversionId = await forwardRequestToWorker(worker.workerUrl, request)
+			this.updateWorkerConversionStatus(workerId, {
+				...request,
+				conversionStatus: EConversionStatus.Processing,
+				workerConversionId
+			})
+			this.logger.info(`forwarded request ${request.externalConversionId} to ${containerName}`)
+		}
 	}
 	/**
 	 * Get the docker-container id's of idle workers.
@@ -441,6 +397,73 @@ export class RedisService {
 			workerUrls.push(workerInfo.workerUrl)
 		})
 		return workerUrls
+	}
+	/**
+	 * Ping all workers and remove any worker who does not reply.
+	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
+	 */
+	private readonly pingAllWorkers = async (): Promise<void> => {
+		for (const worker of this.getWorkers()) {
+			if (!await pingWorker(worker.workerUrl)) {
+				const {
+					containerId,
+					containerName
+				} = worker.containerInfo
+				this.logger.info(`${containerName} did not reply to ping`)
+				try {
+					const {
+						containerId: removedContainerId
+					} = await this.autoScaler.removeContainer(containerId)
+					this.runningWorkers.delete(removedContainerId)
+				}
+				catch (error) {
+					this.runningWorkers.delete(containerId)
+				}
+			}
+			else {
+				if (this.cachedFormats === null) {
+					this.logger.info("no formats in cache")
+					const formats = await getFormatsFromWorker(worker.workerUrl)
+					if (formats) {
+						this.cachedFormats = formats
+						this.logger.info(`successfully cached formats from ${worker.containerInfo.containerName}`)
+					}
+				}
+			}
+		}
+	}
+	/**
+	 * Probe all busy workers for their status.
+	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
+	 */
+	private readonly probeWorkersForStatus = async (): Promise<void> => {
+		const probeWorkers = this.getWorkers().filter(worker => worker.currentRequest !== null)
+		for (const worker of probeWorkers) {
+			if (worker.currentRequest !== null) {
+				if (worker.currentRequest.workerConversionId !== null) {
+					const {
+						workerUrl,
+						currentRequest
+					} = worker
+					const {
+						containerId,
+						containerName
+					} = worker.containerInfo
+					const {
+						workerConversionId
+					} = worker.currentRequest
+					const status = await getConversionStatus(workerUrl, workerConversionId)
+					this.updateWorkerConversionStatus(
+						containerId,
+						{
+							...currentRequest,
+							conversionStatus: status
+						}
+					)
+					this.logger.info(`[${containerName}]: ${status}`)
+				}
+			}
+		}
 	}
 	/**
 	 * Update the running workers. Remove stopped containers.
