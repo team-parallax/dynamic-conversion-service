@@ -27,6 +27,8 @@ import {
 	getExtFromFormat,
 	getFileFromWorker,
 	getFormatsFromWorker,
+	isHealthy,
+	isUnhealthy,
 	pingWorker
 } from "./util"
 import { isFinished } from "./api/rest/conversion/util"
@@ -124,13 +126,7 @@ export class RedisService {
 			this.logger.info(`[STATUS]: ${containerName} => ${containerStatus} ${containerIp}`)
 		})
 		const unhealthyContainerIds = status.runningContainers
-			.filter(con => {
-				const {
-					containerStatus
-				} = con
-				return containerStatus.includes("unhealthy")
-				|| containerStatus.includes("Exited")
-			})
+			.filter(con => isUnhealthy(con.containerStatus))
 			.map(container => container.containerId)
 		const unhealthyContainerCount = unhealthyContainerIds.length
 		if (unhealthyContainerCount > 0) {
@@ -417,11 +413,7 @@ export class RedisService {
 			const {
 				containerStatus
 			} = workerInfo.containerInfo
-			if (
-				workerInfo.currentRequest === null
-				&& containerStatus.includes("Up")
-				&& containerStatus.includes("healthy")
-			) {
+			if (workerInfo.currentRequest === null && isHealthy(containerStatus)) {
 				idleContainers.push(containerID)
 			}
 		})

@@ -106,3 +106,9 @@ export const getExt = (filename: string, format?: string): string => {
 	}
 	return ext
 }
+export const isHealthy = (containerStatus: string): boolean => {
+	return containerStatus.includes("Up") && containerStatus.includes("healthy")
+}
+export const isUnhealthy = (containerStatus: string): boolean => {
+	return containerStatus.includes("Exited") || containerStatus.includes("unhealthy")
+}
