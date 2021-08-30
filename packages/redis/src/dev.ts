@@ -47,7 +47,7 @@ import { RedisService } from "./service"
 	await redisService.initalize()
 	await redisService.checkHealth()
 	await redisService.applyState()
-	redisService.start()
+	await redisService.start()
 	Container.bind(RedisService)
 		.factory(() => redisService)
 		.scope(Scope.Singleton)

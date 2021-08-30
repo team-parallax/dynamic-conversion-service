@@ -115,6 +115,14 @@ export class RedisService {
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
 		const status = await this.autoScaler.checkContainerStatus(pendingRequests)
+		status.runningContainers.forEach(container => {
+			const {
+				containerIp,
+				containerName,
+				containerStatus
+			} = container
+			this.logger.info(`[STATUS]: ${containerName} => ${containerStatus} ${containerIp}`)
+		})
 		const unhealthyContainerIds = status.runningContainers
 			.filter(con => {
 				const {
@@ -138,6 +146,19 @@ export class RedisService {
 			containersToRemove: start,
 			containersToStart: remove
 		} = this.lastStatus
+		this.lastStatus.runningContainers.forEach(container => {
+			const worker = this.runningWorkers.get(container.containerId)
+			if (!worker) {
+				throw new InvalidWorkerIdError(container.containerId)
+			}
+			this.runningWorkers.set(
+				container.containerId,
+				{
+					...worker,
+					containerInfo: container
+				}
+			)
+		})
 		this.logger.info(`HEALTH: should start ${start} | remove ${remove} containers`)
 	}
 	/**
@@ -241,9 +262,7 @@ export class RedisService {
 		const {
 			runningContainers
 		} = await this.autoScaler.checkContainerStatus(0)
-		const {
-			removedContainers
-		} = await this.autoScaler.applyConfigurationState({
+		await this.autoScaler.applyConfigurationState({
 			containersToRemove: runningContainers.length,
 			containersToStart: 0,
 			pendingRequests: 0,
@@ -253,8 +272,9 @@ export class RedisService {
 	/**
 	 * Start the queue and health check cron jobs.
 	 */
-	readonly start = (): void => {
+	readonly start = async (): Promise<void> => {
 		this.logger.info("starting main loop")
+		await this.checkHealth()
 		const ms = 1000
 		// Every 5 seconds
 		const queueProbeInterval = 10
@@ -375,7 +395,8 @@ export class RedisService {
 			}
 			const request = forwardableRequests[i]
 			const {
-				containerName
+				containerName,
+				containerStatus
 			} = worker.containerInfo
 			const workerConversionId = await forwardRequestToWorker(worker.workerUrl, request)
 			this.updateWorkerConversionStatus(workerId, {
@@ -383,7 +404,7 @@ export class RedisService {
 				conversionStatus: EConversionStatus.Processing,
 				workerConversionId
 			})
-			this.logger.info(`forwarded request ${request.externalConversionId} to ${containerName}`)
+			this.logger.info(`forwarded request ${request.externalConversionId} to ${containerName} (${containerStatus})`)
 		}
 	}
 	/**
@@ -392,8 +413,15 @@ export class RedisService {
 	 */
 	private readonly getIdleWorkerIds = (): string[] => {
 		const idleContainers: string[] = []
-		this.runningWorkers.forEach((containerInfo, containerID) => {
-			if (containerInfo.currentRequest === null) {
+		this.runningWorkers.forEach((workerInfo, containerID) => {
+			const {
+				containerStatus
+			} = workerInfo.containerInfo
+			if (
+				workerInfo.currentRequest === null
+				&& containerStatus.includes("Up")
+				&& containerStatus.includes("healthy")
+			) {
 				idleContainers.push(containerID)
 			}
 		})

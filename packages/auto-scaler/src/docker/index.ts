@@ -113,16 +113,12 @@ export class DockerService {
 			const typedData = container.data as IDockerAPIContainer
 			const [image, tag] = typedData.Image.split(":")
 			const [name] = typedData.Names
-			const {
-				// eslint-disable-next-line @typescript-eslint/naming-convention
-				Status
-			} = typedData
 			return {
 				containerId: container.id,
 				containerImage: image,
 				containerIp: this.getContainerIP(name),
 				containerName: typedData.Names[0],
-				containerStatus: Status,
+				containerStatus: typedData.Status,
 				containerTag: tag
 			}
 		}).filter(container =>
