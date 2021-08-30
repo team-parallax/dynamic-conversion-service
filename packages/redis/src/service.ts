@@ -112,6 +112,25 @@ export class RedisService {
 	 */
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
+		const status = await this.autoScaler.checkContainerStatus(pendingRequests)
+		const unhealthyContainerIds = status.runningContainers
+			.filter(con => {
+				const {
+					containerStatus
+				} = con
+				return containerStatus.includes("unhealthy")
+				|| containerStatus.includes("Exited")
+			})
+			.map(container => container.containerId)
+		const unhealthyContainerCount = unhealthyContainerIds.length
+		if (unhealthyContainerCount > 0) {
+			this.logger.info(`found ${unhealthyContainerCount} unhealthy containers`)
+			for (const containerId of unhealthyContainerIds) {
+				await this.autoScaler.removeContainer(containerId)
+				this.runningWorkers.delete(containerId)
+			}
+			this.logger.info(`removed ${unhealthyContainerCount} unhealthy containers`)
+		}
 		this.lastStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
 		const {
 			containersToRemove,
@@ -239,20 +258,18 @@ export class RedisService {
 		// Every 5 seconds
 		const queueProbeInterval = 10
 		// Convert to ms
-		const queueCheckDelay = queueProbeInterval * ms
 		const {
 			healthCheckInterval,
 			stateApplicationInterval
 		} = this.config.schedulerConfig
 		// To ensure data consitency we run everything in the same interval
 		// Compute how many normal probes we need until the specified
-		// Time for a health check / state apply has elapsed.
-		const probesPerHealthCheck = Math.ceil(healthCheckInterval / queueProbeInterval)
+		// Time for a state apply has elapsed.
 		const probesPerStateApply = Math.ceil(stateApplicationInterval / queueProbeInterval)
 		let probeCount = 1
 		const probeCycle = async (): Promise<void> => {
 			// Checking for dead containers
-			await this.pingAllWorkers()
+			await this.checkHealth()
 			// Forwarding requests to workers
 			await this.forwardRequestsToIdleWorkers()
 			// Probe and update worker conversion status
@@ -263,27 +280,14 @@ export class RedisService {
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		this.probeInterval = setInterval(async (): Promise<void> => {
 			const probeStart = performance.now()
-			const runningWorkerCount = this.getWorkers().length
-			const pendingRequests = await this.getPendingRequestCount()
-			this.logger.info(`Probe[${probeCount}]: ${runningWorkerCount} containers/${pendingRequests} requests`)
-			// Run the standard checks
 			await probeCycle()
-			// Run health-check if required
-			// We reached the number of probes we need until we need
-			// To do a health check
-			if (probeCount % probesPerHealthCheck === 0) {
-				await this.checkHealth()
-			}
-			// Apply state if required
-			// We reached the number of probes we need until we need
-			// To do a state application
 			if (probeCount % probesPerStateApply === 0) {
 				await this.applyState()
 			}
 			probeCount++
 			const probeDuration = performance.now() - probeStart
 			this.logger.info(`probe took ${Number(probeDuration).toFixed(0)}ms`)
-		}, queueCheckDelay)
+		}, healthCheckInterval * ms)
 	}
 	/**
 	 * Fetch the files from workers where the conversion succeeded and
@@ -401,40 +405,6 @@ export class RedisService {
 			workerUrls.push(workerInfo.workerUrl)
 		})
 		return workerUrls
-	}
-	/**
-	 * Ping all workers and remove any worker who does not reply.
-	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
-	 */
-	private readonly pingAllWorkers = async (): Promise<void> => {
-		for (const worker of this.getWorkers()) {
-			if (!await pingWorker(worker.workerUrl)) {
-				const {
-					containerId,
-					containerName
-				} = worker.containerInfo
-				this.logger.info(`${containerName} did not reply to ping`)
-				try {
-					const {
-						containerId: removedContainerId
-					} = await this.autoScaler.removeContainer(containerId)
-					this.runningWorkers.delete(removedContainerId)
-				}
-				catch (error) {
-					this.runningWorkers.delete(containerId)
-				}
-			}
-			else {
-				if (this.cachedFormats === null) {
-					this.logger.info("no formats in cache")
-					const formats = await getFormatsFromWorker(worker.workerUrl)
-					if (formats) {
-						this.cachedFormats = formats
-						this.logger.info(`successfully cached formats from ${worker.containerInfo.containerName}`)
-					}
-				}
-			}
-		}
 	}
 	/**
 	 * Probe all busy workers for their status.

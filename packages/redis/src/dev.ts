@@ -21,8 +21,8 @@ process.env.REDIS_HOST = "127.0.0.1"
 process.env.REDIS_PORT = "6379"
 process.env.REDIS_NS = "redis-service-test"
 process.env.REDIS_QUEUE = "redis-service-test-queue"
-process.env.HEALTH_CHECK_INTERVAL = "20"
-process.env.APPLY_DESIRED_STATE_INTERVAL = "40"
+process.env.HEALTH_CHECK_INTERVAL = "10"
+process.env.APPLY_DESIRED_STATE_INTERVAL = "30"
 // =============================================================
 // || auto-scaler ENVIRONMENT VARIABLES
 // =============================================================
@@ -36,7 +36,10 @@ process.env.DOCKER_SOCKET_PATH = "/var/run/docker.sock"
 // =============================================================
 // It's important to import it here due to issue #87 (see above)
 import { Api } from "./api/rest"
-import { Container, Scope } from "typescript-ioc"
+import {
+	Container,
+	Scope
+} from "typescript-ioc"
 import { RedisService } from "./service"
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async (): Promise<void> => {
