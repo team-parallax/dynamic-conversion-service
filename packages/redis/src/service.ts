@@ -31,6 +31,7 @@ import {
 } from "./util"
 import { isFinished } from "./api/rest/conversion/util"
 import { join } from "path"
+import { performance } from "perf_hooks"
 export class RedisService {
 	/**
 	 * The auto-scaler component managing the docker containers.
@@ -261,6 +262,7 @@ export class RedisService {
 		}
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		this.probeInterval = setInterval(async (): Promise<void> => {
+			const probeStart = performance.now()
 			const runningWorkerCount = this.getWorkers().length
 			const pendingRequests = await this.getPendingRequestCount()
 			this.logger.info(`Probe[${probeCount}]: ${runningWorkerCount} containers/${pendingRequests} requests`)
@@ -279,6 +281,8 @@ export class RedisService {
 				await this.applyState()
 			}
 			probeCount++
+			const probeDuration = performance.now() - probeStart
+			this.logger.info(`probe took ${Number(probeDuration).toFixed(0)}ms`)
 		}, queueCheckDelay)
 	}
 	/**
@@ -475,10 +479,8 @@ export class RedisService {
 		removedContainers,
 		startedContainers
 	}: IContainerStateChange): void => {
-		// Remove removed containers
-		removedContainers.forEach(container =>
-			this.runningWorkers.delete(container.containerId))
-		startedContainers.forEach(container => {
+		removedContainers.forEach(container => this.runningWorkers.delete(container.containerId))
+		startedContainers.forEach(container =>
 			this.runningWorkers.set(
 				container.containerId,
 				{
@@ -486,8 +488,7 @@ export class RedisService {
 					currentRequest: null,
 					workerUrl: `http://${container.containerIp}:3000`
 				}
-			)
-		})
+			))
 	}
 	/**
 	 *
