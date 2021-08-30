@@ -267,7 +267,9 @@ export class RedisService {
 		// Time for a state apply has elapsed.
 		const probesPerStateApply = Math.ceil(stateApplicationInterval / queueProbeInterval)
 		let probeCount = 1
-		const probeCycle = async (): Promise<void> => {
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
+		this.probeInterval = setInterval(async (): Promise<void> => {
+			const probeStart = performance.now()
 			// Checking for dead containers
 			await this.checkHealth()
 			// Forwarding requests to workers
@@ -276,11 +278,6 @@ export class RedisService {
 			await this.probeWorkersForStatus()
 			// Fetch files
 			await this.fetchFilesFromWorkers()
-		}
-		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		this.probeInterval = setInterval(async (): Promise<void> => {
-			const probeStart = performance.now()
-			await probeCycle()
 			if (probeCount % probesPerStateApply === 0) {
 				await this.applyState()
 			}
