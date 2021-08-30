@@ -304,19 +304,27 @@ export class RedisService {
 					externalConversionId,
 					workerConversionId
 				} = currentRequest
+				const {
+					originalFormat,
+					targetFormat
+				} = currentRequest.conversionRequestBody
+				const {
+					containerName,
+					containerId
+				} = worker.containerInfo
 				if (currentRequest.conversionStatus === "converted") {
 					await getFileFromWorker(
 						workerUrl,
 						// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 						workerConversionId!,
 						externalConversionId,
-						currentRequest.conversionRequestBody.targetFormat
+						targetFormat
 					)
-					this.logger.info(`fetched result from ${worker.containerInfo.containerName}`)
+					this.logger.info(`fetched result from ${containerName}`)
 					this.finishedRequest.set(
 						externalConversionId,
 						{
-							containerId: worker.containerInfo.containerId,
+							containerId,
 							request: currentRequest
 						}
 					)
@@ -325,22 +333,14 @@ export class RedisService {
 					this.finishedRequest.set(
 						externalConversionId,
 						{
-							containerId: worker.containerInfo.containerId,
+							containerId,
 							request: currentRequest
 						}
 					)
 				}
-				this.updateWorkerConversionStatus(
-					worker.containerInfo.containerId,
-					null
-				)
-				const ext = getExtFromFormat(
-					currentRequest.conversionRequestBody.originalFormat
-				)
-				const inputPath = join(
-					"input",
-					currentRequest.externalConversionId + ext
-				)
+				this.updateWorkerConversionStatus(containerId, null)
+				const ext = getExtFromFormat(originalFormat)
+				const inputPath = join("input", externalConversionId + ext)
 				await deleteFile(inputPath)
 				this.logger.info(`deleted  ${inputPath}`)
 			}
