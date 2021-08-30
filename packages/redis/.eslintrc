@@ -6,25 +6,6 @@
         "project": "./tsconfig.json"
     },
     "rules": {
-        "import-alias/import-alias": 0,
-        "object-curly-newline": [
-            "error",
-            {
-                "ObjectExpression": "always",
-                "ObjectPattern": {
-                    "multiline": true,
-                    "minProperties": 2
-                },
-                "ImportDeclaration": {
-                    "multiline": true,
-                    "minProperties": 2
-                },
-                "ExportDeclaration": {
-                    "multiline": true,
-                    "minProperties": 2
-                }
-            }
-        ],
-        "object-property-newline": "error"
+        "import-alias/import-alias": 0
     }
 }
