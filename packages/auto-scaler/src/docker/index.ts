@@ -89,6 +89,7 @@ export class DockerService {
 			name: containerName
 		})
 		const startedContainer = await newContainer.start()
+		const typedData = startedContainer.data as IDockerAPIContainer
 		// Docker prefixes a '/' before names
 		const createdContainerName = `/${containerName}`
 		const containerIp = this.getContainerIP(createdContainerName)
@@ -99,28 +100,38 @@ export class DockerService {
 			containerImage: targetImage,
 			containerIp,
 			containerName: createdContainerName,
+			containerStatus: typedData.Status,
 			containerTag: targetTag ?? "latest"
 		}
 	}
 	getRunningContainerInfo = async () : Promise<IContainerInfo[]> => {
-		const runningContainers = await this.docker.container.list()
+		const runningContainers = await this.docker.container.list({
+			"all": 1
+		})
 		return runningContainers.map(container => {
 			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 			const typedData = container.data as IDockerAPIContainer
 			const [image, tag] = typedData.Image.split(":")
 			const [name] = typedData.Names
+			const {
+				// eslint-disable-next-line @typescript-eslint/naming-convention
+				Status
+			} = typedData
 			return {
 				containerId: container.id,
 				containerImage: image,
 				containerIp: this.getContainerIP(name),
 				containerName: typedData.Names[0],
+				containerStatus: Status,
 				containerTag: tag
 			}
 		}).filter(container =>
 			container.containerName.startsWith(`/${this.config.namePrefix}__`))
 	}
 	removeContainer = async (containerId: string) : Promise<IContainerInfo> => {
-		const containers = await this.docker.container.list()
+		const containers = await this.docker.container.list({
+			"all": 1
+		})
 		const filteredContainers = containers.filter(container => container.id === containerId)
 		if (filteredContainers.length !== 1) {
 			throw new ContainerNotFoundError(containerId)
@@ -140,6 +151,7 @@ export class DockerService {
 			containerImage: image,
 			containerIp: removedIp,
 			containerName: name,
+			containerStatus: typedData.Status,
 			containerTag: tag
 		}
 	}

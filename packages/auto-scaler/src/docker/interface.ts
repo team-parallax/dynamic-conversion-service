@@ -3,13 +3,16 @@ export interface IContainerInfo {
 	containerImage?: string,
 	containerIp: string,
 	containerName: string,
+	containerStatus: string,
 	containerTag?: string
 }
 export interface IDockerAPIContainer {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	Image: string,
 	// eslint-disable-next-line @typescript-eslint/naming-convention
-	Names: string[]
+	Names: string[],
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	Status: string
 }
 export interface IDockerAPIImage {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
