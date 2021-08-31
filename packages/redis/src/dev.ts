@@ -26,7 +26,7 @@ process.env.APPLY_DESIRED_STATE_INTERVAL = "30"
 // =============================================================
 // || auto-scaler ENVIRONMENT VARIABLES
 // =============================================================
-process.env.TASKS_PER_CONTAINER = "1"
+process.env.TASKS_PER_CONTAINER = "2"
 process.env.MAX_WORKER_CONTAINERS = "10"
 process.env.MIN_WORKER_CONTAINERS = "2"
 process.env.CONTAINER_NAME_PREFIX = "redis-dev-mode-container_"

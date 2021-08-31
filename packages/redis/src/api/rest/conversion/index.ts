@@ -127,31 +127,22 @@ export class ConversionController extends Controller {
 	public async getConversionQueueStatus(): Promise<IConversionQueueStatus> {
 		try {
 			const workerInfos = this.redisService.getWorkers()
-			const runningWorkers = workerInfos.filter(w => w.currentRequest !== null)
+			const runningWorkers = workerInfos.filter(w => w.requests.length > 0)
 			const conversions: IConversionStatus[] = []
-			runningWorkers.forEach(rW => {
-				const {
-					currentRequest
-				} = rW
-				if (currentRequest === null) {
-					return
+			for (const worker of runningWorkers) {
+				for (const request of worker.requests) {
+					conversions.push({
+						conversionId: request.externalConversionId,
+						path: request.conversionRequestBody.filename,
+						retries: 0,
+						// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+						sourceFormat: request.conversionRequestBody.originalFormat!,
+						status: assertStatus(request.conversionStatus),
+						targetFormat: request.conversionRequestBody.targetFormat
+					})
 				}
-				const {
-					conversionStatus,
-					externalConversionId,
-					conversionRequestBody
-				} = currentRequest
-				conversions.push({
-					conversionId: externalConversionId,
-					path: conversionRequestBody.filename,
-					retries: 0,
-					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-					sourceFormat: conversionRequestBody.originalFormat!,
-					status: assertStatus(conversionStatus),
-					targetFormat: conversionRequestBody.targetFormat
-				})
-			})
-			const inProcessConversions = runningWorkers.length
+			}
+			const inProcessConversions = conversions.length
 			const inQueueConversions = await this.redisService.getPendingRequestCount()
 			return {
 				conversions,

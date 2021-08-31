@@ -9,7 +9,8 @@ export interface IContainerCheck {
 }
 export interface IWorkerInfo {
 	containerInfo: IContainerInfo,
-	currentRequest: IConversionRequest | null,
+	// CurrentRequest: IConversionRequest | null,
+	requests: IConversionRequest[],
 	workerUrl: string
 }
 export interface IConversionRequest {
