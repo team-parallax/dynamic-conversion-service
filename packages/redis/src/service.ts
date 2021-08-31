@@ -140,8 +140,8 @@ export class RedisService {
 		}
 		this.lastStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
 		const {
-			containersToRemove: start,
-			containersToStart: remove
+			containersToRemove: remove,
+			containersToStart: start
 		} = this.lastStatus
 		this.lastStatus.runningContainers.forEach(container => {
 			if (!this.workers[container.containerId]) {
