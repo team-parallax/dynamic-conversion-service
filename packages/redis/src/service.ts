@@ -31,11 +31,6 @@ import {
 } from "./util"
 import { join } from "path"
 import { performance } from "perf_hooks"
-// eslint-disable-next-line @typescript-eslint/naming-convention
-const TASKS_PER_CONTAINER = parseInt(
-	// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-	process.env.TASKS_PER_CONTAINER!
-)
 export class RedisService {
 	/**
 	 * The auto-scaler component managing the docker containers.
@@ -86,7 +81,6 @@ export class RedisService {
 		this.autoScaler = new AutoScaler(autoScalerConfig)
 		this.workers = {}
 		this.finishedRequest = new Map()
-		console.log(TASKS_PER_CONTAINER)
 	}
 	/**
 	 * Add the given request to the queue to be processed later.
@@ -359,12 +353,15 @@ export class RedisService {
 	 */
 	private readonly forwardRequestsToIdleWorkers = async (): Promise<void> => {
 		this.logger.info("forwarding requests to free workers...")
+		const {
+			tasksPerContainer
+		} = this.config.autoScalerConfig
 		const workerIds = Object.keys(this.workers)
 		for (const workerId of workerIds) {
-			if (this.workers[workerId].requests.length === TASKS_PER_CONTAINER) {
+			if (this.workers[workerId].requests.length === tasksPerContainer) {
 				continue
 			}
-			while (this.workers[workerId].requests.length < TASKS_PER_CONTAINER
+			while (this.workers[workerId].requests.length < tasksPerContainer
 				&& await this.getPendingRequestCount() > 0) {
 				const request = await this.popRequest()
 				const workerConversionId = await forwardRequestToWorker(
@@ -389,8 +386,11 @@ export class RedisService {
 	 * @returns the container id's of idle workers
 	 */
 	private readonly getIdleWorkerIds = (): string[] => {
+		const {
+			tasksPerContainer
+		} = this.config.autoScalerConfig
 		return Object.keys(this.workers).filter(workerId => {
-			return this.workers[workerId].requests.length < TASKS_PER_CONTAINER
+			return this.workers[workerId].requests.length < tasksPerContainer
 			&& isHealthy(this.workers[workerId].containerInfo.containerStatus)
 		})
 			.map(workerId => workerId)
