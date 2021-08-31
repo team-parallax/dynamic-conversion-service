@@ -378,6 +378,11 @@ export class RedisService {
 			}
 		}
 	}
+	/**
+	 * Utility function to get the container name of the worker
+	 * @param workerId The id of the worker to get the container name for
+	 * @returns the name of the container worker
+	 */
 	private readonly getContainerName = (workerId: string): string => {
 		return this.workers[workerId].containerInfo.containerName
 	}
@@ -395,6 +400,11 @@ export class RedisService {
 		})
 			.map(workerId => workerId)
 	}
+	/**
+	 * Get the number of request the given worker has.
+	 * @param workerId The workerId of the worker
+	 * @returns the number of requests the worker is currently processing
+	 */
 	private readonly getRequestCount = (workerId: string): number => {
 		return this.workers[workerId].requests.length
 	}
@@ -430,6 +440,12 @@ export class RedisService {
 			}
 		}
 	}
+	/**
+	 * Remove the given external id from the worker.
+	 * This should only happen if a conversion is finished (converted or error)
+	 * @param workerId The worker to remove the request from
+	 * @param externalConversionId The external converison id from the request
+	 */
 	private readonly removeRequestFromWorker = (workerId: string, externalConversionId: string)
 	: void => {
 		this.workers[workerId].requests = this.workers[workerId].requests.filter(
@@ -456,9 +472,9 @@ export class RedisService {
 		})
 	}
 	/**
-	 *
-	 * @param workerId
-	 * @param conversionRequest
+	 * Update the status of the request processed by the given worker
+	 * @param workerId The id of the worker
+	 * @param conversionRequest The request to update
 	 */
 	private readonly updateWorkerConversionStatus = (
 		workerId: string,
