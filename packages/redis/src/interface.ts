@@ -22,3 +22,6 @@ export interface IFinishedRequest {
 	containerId: string,
 	request: IConversionRequest
 }
+export interface IWorkers {
+	[containerId: string]: IWorkerInfo
+}

@@ -11,7 +11,8 @@ import {
 import {
 	IConversionRequest,
 	IFinishedRequest,
-	IWorkerInfo
+	IWorkerInfo,
+	IWorkers
 } from "./interface"
 import {
 	IRedisServiceConfiguration,
@@ -68,9 +69,9 @@ export class RedisService {
 	 */
 	private readonly redisWrapper: RedisWrapper
 	/**
-	 * The map of currently running containers.
+	 * The object to track currently running workers.
 	 */
-	private readonly runningWorkers: Map<string, IWorkerInfo>
+	private readonly workers: IWorkers
 	constructor() {
 		this.config = getRedisConfigFromEnv()
 		this.logger = new Logger({
@@ -82,7 +83,7 @@ export class RedisService {
 		} = this.config
 		this.redisWrapper = new RedisWrapper(redisConfig, this.logger)
 		this.autoScaler = new AutoScaler(autoScalerConfig)
-		this.runningWorkers = new Map()
+		this.workers = {}
 		this.finishedRequest = new Map()
 	}
 	/**
@@ -133,7 +134,7 @@ export class RedisService {
 			this.logger.info(`found ${unhealthyContainerCount} unhealthy containers`)
 			for (const containerId of unhealthyContainerIds) {
 				await this.autoScaler.removeContainer(containerId)
-				this.runningWorkers.delete(containerId)
+				delete this.workers[containerId]
 			}
 			this.logger.info(`removed ${unhealthyContainerCount} unhealthy containers`)
 		}
@@ -143,17 +144,13 @@ export class RedisService {
 			containersToStart: remove
 		} = this.lastStatus
 		this.lastStatus.runningContainers.forEach(container => {
-			const worker = this.runningWorkers.get(container.containerId)
-			if (!worker) {
+			if (!this.workers[container.containerId]) {
 				throw new InvalidWorkerIdError(container.containerId)
 			}
-			this.runningWorkers.set(
-				container.containerId,
-				{
-					...worker,
-					containerInfo: container
-				}
-			)
+			this.workers[container.containerId] = {
+				...this.workers[container.containerId],
+				containerInfo: container
+			}
 		})
 		this.logger.info(`HEALTH: should start ${start} | remove ${remove} containers`)
 	}
@@ -167,15 +164,17 @@ export class RedisService {
 		if (this.finishedRequest.has(conversionId)) {
 			return this.finishedRequest.get(conversionId)?.request
 		}
-		let conversionRequest: IConversionRequest | undefined = undefined
-		this.runningWorkers.forEach(workerInfo => {
-			if (workerInfo.currentRequest !== null) {
-				if (workerInfo.currentRequest.externalConversionId === conversionId) {
-					conversionRequest = workerInfo.currentRequest
+		let conversionRequest: IConversionRequest | null = null
+		Object.keys(this.workers).forEach(workerId => {
+			if (this.workers[workerId].currentRequest !== null) {
+				if (this.workers[workerId].currentRequest?.externalConversionId === conversionId) {
+					conversionRequest = this.workers[workerId].currentRequest
 				}
 			}
 		})
-		return conversionRequest
+		return conversionRequest === null
+			? undefined
+			: conversionRequest
 	}
 	/**
 	 * Get the supported formats of the workers.
@@ -213,11 +212,7 @@ export class RedisService {
 	 * @returns all currently runniung workers
 	 */
 	readonly getWorkers = (): IWorkerInfo[] => {
-		const workerInfos: IWorkerInfo[] = []
-		this.runningWorkers.forEach(workerInfo => {
-			workerInfos.push(workerInfo)
-		})
-		return workerInfos
+		return Object.keys(this.workers).map(workerId => this.workers[workerId])
 	}
 	/**
 	 * Initialize redis service.
@@ -229,9 +224,8 @@ export class RedisService {
 	 * Ping the first available worker.
 	 */
 	readonly pingRandomWorker = async (): Promise<boolean> => {
-		const workerUrls: string[] = []
-		this.runningWorkers.forEach(workerInfo =>
-			workerUrls.push(workerInfo.workerUrl))
+		const workerUrls = Object.keys(this.workers)
+			.map(workerId => this.workers[workerId].workerUrl)
 		const promises = workerUrls.map(async url => pingWorker(url))
 		const result = await Promise.all(promises)
 		return result.filter(res => res).length > 0
@@ -385,21 +379,23 @@ export class RedisService {
 		}
 		for (let i = 0; i < forwardableRequests.length; i++) {
 			const workerId = idleWorkerContainerIds[i]
-			const worker = this.runningWorkers.get(workerId)
-			if (!worker) {
+			if (!this.workers[workerId]) {
 				throw new InvalidWorkerIdError(workerId)
 			}
 			const request = forwardableRequests[i]
-			const {
-				containerName,
-				containerStatus
-			} = worker.containerInfo
-			const workerConversionId = await forwardRequestToWorker(worker.workerUrl, request)
+			const workerConversionId = await forwardRequestToWorker(
+				this.workers[workerId].workerUrl,
+				request
+			)
 			this.updateWorkerConversionStatus(workerId, {
 				...request,
 				conversionStatus: EConversionStatus.Processing,
 				workerConversionId
 			})
+			const {
+				containerName,
+				containerStatus
+			} = this.workers[workerId].containerInfo
 			this.logger.info(`forwarded request ${request.externalConversionId} to ${containerName} (${containerStatus})`)
 		}
 	}
@@ -408,27 +404,20 @@ export class RedisService {
 	 * @returns the container id's of idle workers
 	 */
 	private readonly getIdleWorkerIds = (): string[] => {
-		const idleContainers: string[] = []
-		this.runningWorkers.forEach((workerInfo, containerID) => {
-			const {
-				containerStatus
-			} = workerInfo.containerInfo
-			if (workerInfo.currentRequest === null && isHealthy(containerStatus)) {
-				idleContainers.push(containerID)
-			}
+		return Object.keys(this.workers).filter(workerId => {
+			return this.workers[workerId].currentRequest === null
+			&& isHealthy(this.workers[workerId].containerInfo.containerStatus)
 		})
-		return idleContainers
+			.map(workerId => workerId)
 	}
 	/**
 	 * Get the docker-container ip's.
 	 * @returns the ip's of the workers
 	 */
 	private readonly getWorkerUrls = (): string[] => {
-		const workerUrls: string[] = []
-		this.runningWorkers.forEach(workerInfo => {
-			workerUrls.push(workerInfo.workerUrl)
+		return Object.keys(this.workers).map(workerId => {
+			return this.workers[workerId].workerUrl
 		})
-		return workerUrls
 	}
 	/**
 	 * Probe all busy workers for their status.
@@ -474,16 +463,14 @@ export class RedisService {
 		removedContainers,
 		startedContainers
 	}: IContainerStateChange): void => {
-		removedContainers.forEach(container => this.runningWorkers.delete(container.containerId))
-		startedContainers.forEach(container =>
-			this.runningWorkers.set(
-				container.containerId,
-				{
-					containerInfo: container,
-					currentRequest: null,
-					workerUrl: `http://${container.containerIp}:3000`
-				}
-			))
+		removedContainers.forEach(container => delete this.workers[container.containerId])
+		startedContainers.forEach(container => {
+			this.workers[container.containerId] = {
+				containerInfo: container,
+				currentRequest: null,
+				workerUrl: `http://${container.containerIp}:3000`
+			}
+		})
 	}
 	/**
 	 *
@@ -494,17 +481,15 @@ export class RedisService {
 		workerId: string,
 		conversionRequest: IConversionRequest | null
 	): void => {
-		let workerInfo = this.runningWorkers.get(workerId)
-		if (!workerInfo) {
+		if (!this.workers[workerId]) {
 			throw new InvalidWorkerIdError(workerId)
 		}
-		workerInfo = {
-			...workerInfo,
+		this.workers[workerId] = {
+			...this.workers[workerId],
 			currentRequest: conversionRequest
 		}
-		this.runningWorkers.set(workerId, workerInfo)
 		if (conversionRequest === null) {
-			this.logger.info(`${workerInfo.containerInfo.containerName} is now idle`)
+			this.logger.info(`${this.workers[workerId].containerInfo.containerName} is now idle`)
 		}
 	}
 }
