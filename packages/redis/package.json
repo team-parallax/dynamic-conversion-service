@@ -13,6 +13,7 @@
   "license": "MIT",
   "main": "src/index.ts",
   "scripts": {
+    "build:docker": "docker build -t teamparallax/dynamic-conversion-service -f ./Dockerfile .",
     "lint": "yarn eslint src --ext .ts",
     "lint:fix": "yarn eslint src --ext .ts --fix",
     "start": "yarn ts-node src/index.ts",
