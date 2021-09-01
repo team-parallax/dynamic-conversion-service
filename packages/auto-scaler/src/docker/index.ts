@@ -22,7 +22,9 @@ export class DockerService {
 	constructor(config: IDockerConfiguration, logger: Logger) {
 		this.config = config
 		const {
-			socketPath, host, port
+			socketPath,
+			host,
+			port
 		} = this.config
 		const useSocket = socketPath && (!host && !port)
 		const useHostPort = host && port && !socketPath
@@ -70,7 +72,10 @@ export class DockerService {
 		newTag?: string
 	) : Promise<IContainerInfo> => {
 		const {
-			imageName, namePrefix, tag, envVars = []
+			imageName,
+			namePrefix,
+			tag,
+			envVars = []
 		} = this.config
 		const needPull = !this.hasImage || newImageName !== undefined || newTag !== undefined
 		const targetImage = newImageName ?? imageName
