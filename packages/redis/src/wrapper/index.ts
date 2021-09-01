@@ -53,7 +53,7 @@ export class RedisWrapper {
 			await this.createQueue(queue)
 		}
 		else {
-			this.logger.info(`found exisiting queue with name: ${queue}. Removing...`)
+			this.logger.info(`found existing queue with name: ${queue}. Removing...`)
 			await this.deleteQueue(queue)
 			await this.createQueue(queue)
 		}
