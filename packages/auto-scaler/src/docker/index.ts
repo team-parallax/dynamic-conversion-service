@@ -140,18 +140,18 @@ export class DockerService {
 		const [container] = filteredContainers
 		const typedData = container.data as IDockerApiContainer
 		const [image, tag] = typedData.Image.split(":")
-		const [name] = typedData.Names
-		const removedIp = this.getContainerIp(name)
+		const [containerName] = typedData.Names
+		const removedIp = this.getContainerIp(containerName)
 		const stoppedContainer = await container.stop()
 		await stoppedContainer.delete({
 			force: true
 		})
-		this.logger.info(`removed container: ${name} (${removedIp})`)
+		this.logger.info(`removed container: ${containerName} (${removedIp})`)
 		return {
 			containerId: container.id,
 			containerImage: image,
 			containerIp: removedIp,
-			containerName: name,
+			containerName,
 			containerStatus: typedData.Status,
 			containerTag: tag
 		}
