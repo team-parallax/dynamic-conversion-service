@@ -75,13 +75,12 @@ export const getFileFromWorker = async (
 	resp.body.pipe(outStream)
 }
 export const getExtFromFormat = (format?: string): string => {
-	let ext = ""
-	if (format) {
-		ext = format.startsWith(".")
-			? format
-			: `.${format}`
+	if (!format) {
+		return ""
 	}
-	return ext
+	return format.startsWith(".")
+		? format
+		: `.${format}`
 }
 export const getExtFromFilename = (filename: string): string => {
 	return filename.includes(".")
@@ -94,7 +93,7 @@ export const getExt = (filename: string, format?: string): string => {
 		ext = getExtFromFilename(filename)
 	}
 	if (ext === "") {
-		throw new Error("could not determine file extension")
+		throw new InvalidFormatError(filename, format)
 	}
 	return ext
 }
