@@ -5,6 +5,6 @@ export class InvalidWorkerIdError extends Error {
 }
 export class InvalidFormatError extends Error {
 	constructor(filename: string, originalFormat?:string) {
-		super(`could not determine extension from ${filename} or ${originalFormat}`)
+		super(`could not determine extension from filename (${filename}) or original-format parameter (${originalFormat})`)
 	}
 }
