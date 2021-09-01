@@ -62,7 +62,7 @@ export class DockerService {
 				tag: targetTag
 			}) as Stream
 			await promisifyStream(stream)
-			this.logger.info(`pulled image: ${imageId}:${targetTag}`)
+			this.logger.info(`pulled image: ${targetImageString}`)
 		}
 	}
 	createContainer = async (
