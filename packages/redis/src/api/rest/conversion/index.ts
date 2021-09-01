@@ -59,9 +59,9 @@ export class ConversionController extends Controller {
 				file
 			} = multipartConversionRequest
 			// Temporary solution since I don't know how it normally works
-			const conversionId = uuidV4()
+			const externalConversionId = uuidV4()
 			const ext = getExt(filename, originalFormat)
-			await writeToFile(join("input", `${conversionId}${ext}`), file)
+			await writeToFile(join("input", `${externalConversionId}${ext}`), file)
 			await this.redisService.addRequestToQueue({
 				conversionRequestBody: {
 					file: "",
@@ -70,11 +70,11 @@ export class ConversionController extends Controller {
 					targetFormat
 				},
 				conversionStatus: EConversionStatus.InQueue,
-				externalConversionId: conversionId,
+				externalConversionId,
 				workerConversionId: null
 			})
 			return {
-				conversionId
+				conversionId: externalConversionId
 			}
 		}
 		catch (error) {
