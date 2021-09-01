@@ -60,15 +60,12 @@ test integration redis:
     - job: "test unit redis"
   script:
     - yarn test:integration --ci
-  coverage: /All files[^|]*\|[^|]*\s+([\d\.]+)/
   artifacts:
     expire_in: 7 days
     paths:
       - artifacts/test/integration/junit.xml
     reports:
       junit: artifacts/test/integration/junit.xml
-    untracked: false
-    when: always
   allow_failure: true
   rules:
     - changes:
