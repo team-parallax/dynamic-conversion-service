@@ -6,7 +6,7 @@ export interface IContainerInfo {
 	containerStatus: string,
 	containerTag?: string
 }
-export interface IDockerAPIContainer {
+export interface IDockerApiContainer {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	Image: string,
 	// eslint-disable-next-line @typescript-eslint/naming-convention
@@ -14,7 +14,7 @@ export interface IDockerAPIContainer {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	Status: string
 }
-export interface IDockerAPIImage {
+export interface IDockerApiImage {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	Id: string,
 	// eslint-disable-next-line @typescript-eslint/naming-convention

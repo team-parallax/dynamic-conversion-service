@@ -5,8 +5,8 @@ import {
 import { Docker } from "node-docker-api"
 import {
 	IContainerInfo,
-	IDockerAPIContainer,
-	IDockerAPIImage
+	IDockerApiContainer,
+	IDockerApiImage
 } from "./interface"
 import { IDockerConfiguration } from "../config"
 import { Logger } from "logger/src"
@@ -49,7 +49,7 @@ export class DockerService {
 		const localImages = await this.docker.image.list()
 		let isAvailable = false
 		localImages.forEach(localImage => {
-			const imageData = localImage.data as IDockerAPIImage
+			const imageData = localImage.data as IDockerApiImage
 			const [repoTag] = imageData.RepoTags
 			if (repoTag === targetString) {
 				isAvailable = true
@@ -89,7 +89,7 @@ export class DockerService {
 			name: containerName
 		})
 		const startedContainer = await newContainer.start()
-		const typedData = startedContainer.data as IDockerAPIContainer
+		const typedData = startedContainer.data as IDockerApiContainer
 		// Docker prefixes a '/' before names
 		const createdContainerName = `/${containerName}`
 		const containerIp = this.getContainerIp(createdContainerName)
@@ -110,7 +110,7 @@ export class DockerService {
 		})
 		return runningContainers.map(container => {
 			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-			const typedData = container.data as IDockerAPIContainer
+			const typedData = container.data as IDockerApiContainer
 			const [image, tag] = typedData.Image.split(":")
 			const [name] = typedData.Names
 			return {
@@ -133,7 +133,7 @@ export class DockerService {
 			throw new ContainerNotFoundError(containerId)
 		}
 		const [container] = filteredContainers
-		const typedData = container.data as IDockerAPIContainer
+		const typedData = container.data as IDockerApiContainer
 		const [image, tag] = typedData.Image.split(":")
 		const [name] = typedData.Names
 		const removedIp = this.getContainerIp(name)
