@@ -1,7 +1,7 @@
 import {
 	ContainerNotFoundError,
 	InvalidDockerConnectionOptions
-} from "./execption"
+} from "./exception"
 import { Docker } from "node-docker-api"
 import {
 	IContainerInfo,

@@ -1,6 +1,6 @@
 import "jest"
 import { AutoScaler } from "../src/index"
-import { ContainerNotFoundError } from "../src/docker/execption"
+import { ContainerNotFoundError } from "../src/docker/exception"
 import { IContainerStatus } from "../src/interface"
 import { IDockerConfiguration } from "../src/config"
 const dockerTestTimeout = 100000
