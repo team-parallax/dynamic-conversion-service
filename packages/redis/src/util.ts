@@ -2,6 +2,7 @@ import {
 	EConversionStatus, IApiConversionFormatResponse, IConversionStatus
 } from "./api/conversion-client"
 import { IConversionRequest } from "./interface"
+import { InvalidFormatError } from "./exception"
 import { createWriteStream } from "fs"
 import { join } from "path"
 import { readFileToBuffer } from "conversion-service/src/service/file-io"
@@ -32,18 +33,9 @@ export const forwardRequestToWorker = async (
 		filename
 	} = request.conversionRequestBody
 	let ext = ""
-	if (originalFormat) {
-		ext = originalFormat.startsWith(".")
-			? originalFormat
-			: `.${originalFormat}`
-	}
-	else {
-		ext = filename.includes(".")
-			? filename.split(".")[1]
-			: ""
-	}
+	ext = getExt(filename, originalFormat)
 	if (ext === "") {
-		throw new Error("Input File extensions could not be determined")
+		throw new InvalidFormatError(filename, originalFormat)
 	}
 	const fileLocation = join("input", request.externalConversionId + ext)
 	const buffer = await readFileToBuffer(fileLocation)

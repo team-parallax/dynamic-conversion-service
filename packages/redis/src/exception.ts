@@ -3,3 +3,8 @@ export class InvalidWorkerIdError extends Error {
 		super(`No worker with ID: ${workerId}`)
 	}
 }
+export class InvalidFormatError extends Error {
+	constructor(filename: string, originalFormat?:string) {
+		super(`could not determine extension from ${filename} or ${originalFormat}`)
+	}
+}
