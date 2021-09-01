@@ -92,7 +92,7 @@ export class DockerService {
 		const typedData = startedContainer.data as IDockerAPIContainer
 		// Docker prefixes a '/' before names
 		const createdContainerName = `/${containerName}`
-		const containerIp = this.getContainerIP(createdContainerName)
+		const containerIp = this.getContainerIp(createdContainerName)
 		this.logger.info(`created container: ${createdContainerName} (${containerIp})`)
 		this.containerCounter++
 		return {
@@ -116,7 +116,7 @@ export class DockerService {
 			return {
 				containerId: container.id,
 				containerImage: image,
-				containerIp: this.getContainerIP(name),
+				containerIp: this.getContainerIp(name),
 				containerName: typedData.Names[0],
 				containerStatus: typedData.Status,
 				containerTag: tag
@@ -136,7 +136,7 @@ export class DockerService {
 		const typedData = container.data as IDockerAPIContainer
 		const [image, tag] = typedData.Image.split(":")
 		const [name] = typedData.Names
-		const removedIp = this.getContainerIP(name)
+		const removedIp = this.getContainerIp(name)
 		const stoppedContainer = await container.stop()
 		await stoppedContainer.delete({
 			force: true
@@ -151,7 +151,7 @@ export class DockerService {
 			containerTag: tag
 		}
 	}
-	private readonly getContainerIP = (name: string): string => {
+	private readonly getContainerIp = (name: string): string => {
 		try {
 			const output = execSync(`docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${name}`)
 			return output.toString().trimEnd()
