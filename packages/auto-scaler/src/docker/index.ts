@@ -45,15 +45,15 @@ export class DockerService {
 	}
 	checkImage = async (imageId: string, tag?: string): Promise<void> => {
 		const targetTag = tag ?? "latest"
-		const targetString = `${imageId}:${targetTag}`
+		const targetImageString = `${imageId}:${targetTag}`
 		const localImages = await this.docker.image.list()
 		let isAvailable = false
 		localImages.forEach(localImage => {
 			const imageData = localImage.data as IDockerApiImage
 			const [repoTag] = imageData.RepoTags
-			if (repoTag === targetString) {
+			if (repoTag === targetImageString) {
 				isAvailable = true
-				this.logger.info(`found image '${targetString}' locally`)
+				this.logger.info(`found image '${targetImageString}' locally`)
 			}
 		})
 		if (!isAvailable) {
