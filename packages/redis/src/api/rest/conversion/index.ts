@@ -1,5 +1,3 @@
-/* eslint-disable unused-imports/no-unused-imports-ts */
-/* eslint-disable no-unreachable */
 import {
 	Body,
 	Controller,
@@ -13,11 +11,8 @@ import {
 	Route,
 	Tags
 } from "tsoa"
-import {
-	Container,
-	Inject
-} from "typescript-ioc"
-import { EConversionStatus } from "../../../api/conversion-client"
+import { Container } from "typescript-ioc"
+import { EConversionStatus } from "redis/src/api/conversion-client"
 import {
 	EHttpResponseCodes,
 	InvalidRequestBodyError
@@ -28,26 +23,18 @@ import {
 	IConversionRequestBody,
 	IUnsupportedConversionFormatError
 } from "conversion-service/src/service/conversion/interface"
+import { IConversionStatus } from "conversion-service/src/abstract/converter/interface"
+import { RedisService } from "redis/src/service"
+import { assertStatus } from "./util"
+import { getExt } from "../../../util"
+import { getType } from "mime"
 import {
-	IConversionStatus,
-	TApiConvertedCompatResponseV1
-} from "conversion-service/src/abstract/converter/interface"
-import { RedisService } from "../../../service"
-import { assertStatus, isFinished } from "./util"
-import {
-	createDirectoryIfNotPresent, readFromFileSync, writeToFile
-} from "conversion-service/src/service/file-io"
-import {
-	getConvertedFileNameAndPath,
 	handleError,
 	handleMultipartFormData
 } from "conversion-service/src/service/conversion/util"
-import {
-	getExt, getExtFromFilename, getExtFromFormat
-} from "../../../util"
-import { getType } from "mime"
 import { join } from "path"
 import { v4 as uuidV4 } from "uuid"
+import { writeToFile } from "conversion-service/src/service/file-io"
 import express from "express"
 import fs from "fs"
 @Route("/conversion")
