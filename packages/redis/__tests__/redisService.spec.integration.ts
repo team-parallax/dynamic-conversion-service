@@ -59,7 +59,7 @@ describe("redis-service should pass all tests", () => {
 		const requestCount = await redisService.getPendingRequestCount()
 		expect(requestCount).toEqual(expectedRequestCount)
 	})
-	it("should exit without error", async (): Promise<void> => {
+	it.skip("should exit without error", async (): Promise<void> => {
 		await expect(redisService.quit()).resolves.not.toThrowError()
 	})
 })

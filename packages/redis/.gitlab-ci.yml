@@ -66,7 +66,6 @@ test integration redis:
       - artifacts/test/integration/junit.xml
     reports:
       junit: artifacts/test/integration/junit.xml
-  allow_failure: true
   rules:
     - changes:
       - packages/redis/**/*.ts
