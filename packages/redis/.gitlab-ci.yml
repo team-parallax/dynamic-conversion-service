@@ -4,6 +4,7 @@ default:
 stages:
   - prepare
   - test
+  - test integration
 
 # Workflow rules for MR-Pipelines taken from docs at docs.gitlab.com:
 # https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
@@ -46,6 +47,26 @@ test unit redis:
       junit: artifacts/test/unit/junit.xml
     untracked: false
     when: always
+  rules:
+    - changes:
+      - packages/redis/**/*.ts
+
+test integration redis:
+  extends: "test unit redis"
+  services:
+  - redis:6.2.5-alpine
+  stage: "test integration"
+  needs:
+    - job: "test unit redis"
+  script:
+    - yarn test:integration --ci
+  artifacts:
+    expire_in: 7 days
+    paths:
+      - artifacts/test/integration/junit.xml
+    reports:
+      junit: artifacts/test/integration/junit.xml
+  allow_failure: true
   rules:
     - changes:
       - packages/redis/**/*.ts

@@ -46,7 +46,6 @@ export class AutoScaler {
 				)
 				startedContainers.push(containerInfo)
 			}
-			this.logger.info(`started ${startedContainers.length} containers`)
 		}
 		const removedContainers: IContainerInfo[] = []
 		if (containersToRemove && idleContainerIds) {
@@ -58,7 +57,6 @@ export class AutoScaler {
 				)
 				removedContainers.push(containerInfo)
 			}
-			this.logger.info(`removed ${removedContainers.length} containers`)
 		}
 		return {
 			removedContainers,
@@ -99,6 +97,12 @@ export class AutoScaler {
 		minContainers: number
 	): IComputedScalingResult => {
 		// Nothing to do here
+		if (pendingRequests === 0 && runningContainers === 0) {
+			return {
+				remove: 0,
+				start: minContainers
+			}
+		}
 		if (pendingRequests === 0) {
 			return {
 				remove: 0,

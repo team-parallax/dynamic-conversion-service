@@ -52,6 +52,11 @@ export class RedisWrapper {
 		if (!existingQueues.includes(queue)) {
 			await this.createQueue(queue)
 		}
+		else {
+			this.logger.info(`found existing queue with name: ${queue}. Removing...`)
+			await this.deleteQueue(queue)
+			await this.createQueue(queue)
+		}
 		this.isInitialized = true
 	}
 	readonly quit = async (): Promise<void> => {
@@ -117,7 +122,7 @@ export class RedisWrapper {
 					return reject(new RedisWrapperQueueCreateError(queue))
 				}
 				if (resp === 1) {
-					this.logger.info(`created queue : ${queue}`)
+					this.logger.info(`created queue: ${queue}`)
 					return resolve()
 				}
 				return reject()
@@ -134,7 +139,7 @@ export class RedisWrapper {
 					return reject(new RedisWrapperQueueDeleteError(queue))
 				}
 				if (resp === 1) {
-					this.logger.info(`deleted queue : ${queue}`)
+					this.logger.info(`deleted queue: ${queue}`)
 					return resolve()
 				}
 				return reject()
@@ -148,6 +153,7 @@ export class RedisWrapper {
 					this.logger.error(err)
 					return reject(new RedisWrapperQueueListError())
 				}
+				this.logger.debug(`found ${queues.length} redis-queues`)
 				return resolve(queues)
 			})
 		})

@@ -42,7 +42,7 @@
     }
   },
   "lint-staged": {
-    "*.ts": "eslint --cache --fix"
+    "*.ts": "yarn eslint -c ./.eslintrc.json --fix"
   },
   "workspaces": [
     "packages/*"

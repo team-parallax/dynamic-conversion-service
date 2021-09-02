@@ -1,8 +1,16 @@
 import { EConversionStatus } from "../src/api/conversion-client"
 import { IConversionRequest } from "../src/interface"
-import { RedisService } from "../src"
+import { RedisService } from "../src/service"
 describe("redis-service should pass all tests", () => {
 	beforeAll(() => {
+		process.env.WEBSERVICE_PORT = "3000"
+		process.env.FFMPEG_PATH = "/opt/ffmpeg/bin/ffmpeg"
+		process.env.IMAGE_MAGICK_PATH = "usr/bin/convert"
+		process.env.UNOCONV_PATH = "/usr/bin/unoconv"
+		process.env.MAX_CONVERSION_TIME = "90000"
+		process.env.MAX_CONVERSION_TRIES = "5"
+		process.env.CONVERTER_DOCUMENT_PRIORITY = "unoconv,imageMagick"
+		process.env.CONVERTER_MEDIA_PRIORITY = "ffmpeg,imageMagick,unoconv"
 		process.env.TASKS_PER_CONTAINER = "5"
 		process.env.MAX_WORKER_CONTAINERS = "10"
 		process.env.MIN_WORKER_CONTAINERS = "5"
@@ -14,17 +22,20 @@ describe("redis-service should pass all tests", () => {
 		process.env.REDIS_PORT = "6379"
 		process.env.REDIS_NS = "redis-service-test"
 		process.env.REDIS_QUEUE = "redis-service-test-queue"
+		process.env.HEALTH_CHECK_INTERVAL = "120"
+		process.env.APPLY_DESIRED_STATE_INTERVAL = "600"
 	})
 	let redisService: RedisService
 	const dummyRequest: IConversionRequest = {
-		converionStatus: EConversionStatus.Processing,
-		conversionId: "random-id",
 		conversionRequestBody: {
 			file: "foo.bar",
 			filename: "foo.bar",
 			originalFormat: "baz",
 			targetFormat: "bar"
-		}
+		},
+		conversionStatus: EConversionStatus.Processing,
+		externalConversionId: "random-id-external",
+		workerConversionId: "random-id"
 	}
 	it("should initialize without error", async (): Promise<void> => {
 		redisService = new RedisService()
