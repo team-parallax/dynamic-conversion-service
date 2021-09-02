@@ -1,8 +1,15 @@
 import {
-	EConversionStatus, IApiConversionFormatResponse, IConversionStatus
+	EConversionStatus,
+	IApiConversionFormatResponse,
+	IConversionStatus
 } from "./api/conversion-client"
+import {
+	FormatRetrievalError,
+	InvalidFormatError,
+	RequestFormatError,
+	StatusUpdateError
+} from "./exception"
 import { IConversionRequest } from "./interface"
-import { InvalidFormatError } from "./exception"
 import { createWriteStream } from "fs"
 import { join } from "path"
 import { readFileToBuffer } from "conversion-service/src/service/file-io"
@@ -12,17 +19,24 @@ export const wait = async (duration: number): Promise<void> => {
 	return await new Promise((resolve, reject) => setTimeout(resolve, duration))
 }
 export const pingWorker = async (workerUrl: string): Promise<boolean> => {
-	const response = await fetch(`${workerUrl}/ping`)
-		.then(async r => r.text())
-		.catch(() => "not pong")
-	return response === "\"pong\""
+	try {
+		const resp = await fetch(`${workerUrl}/ping`)
+		const respText = await resp.text()
+		return respText === "\"pong\""
+	}
+	catch (error) {
+		return false
+	}
 }
 export const getFormatsFromWorker = async (workerUrl:string)
 : Promise<IApiConversionFormatResponse | undefined> => {
-	return await fetch(`${workerUrl}/formats`)
-		.then(async r => r.json())
-		.then(formats => formats as IApiConversionFormatResponse)
-		.catch(() => undefined)
+	try {
+		const resp = await fetch(`${workerUrl}/formats`)
+		return await resp.json() as IApiConversionFormatResponse
+	}
+	catch (error) {
+		throw new FormatRetrievalError(workerUrl)
+	}
 }
 export const forwardRequestToWorker = async (
 	workerUrl:string,
@@ -46,18 +60,28 @@ export const forwardRequestToWorker = async (
 	})
 	formData.append("originalFormat", originalFormat ?? filename.split(".")[1])
 	formData.append("targetFormat", targetFormat)
-	const resp = await fetch(`${workerUrl}/conversion/v2`, {
-		body: formData,
-		method: "POST"
-	}).then(async r => r.json())
-		.then(conversionId => conversionId as {conversionId: string})
-	return resp.conversionId
+	try {
+		const resp = await fetch(`${workerUrl}/conversion/v2`, {
+			body: formData,
+			method: "POST"
+		})
+		const statusReponse = await resp.json() as {conversionId: string}
+		return statusReponse.conversionId
+	}
+	catch (error) {
+		throw new RequestFormatError(workerUrl)
+	}
 }
 export const getConversionStatus = async (workerUrl:string, conversionId:string):
  Promise<EConversionStatus> => {
-	return await fetch(`${workerUrl}/conversion/${conversionId}?v2=true`)
-		.then(async r => r.json())
-		.then(status => (status as IConversionStatus).status)
+	try {
+		const resp = await fetch(`${workerUrl}/conversion/${conversionId}?v2=true`)
+		const statusResponse = await resp.json() as IConversionStatus
+		return statusResponse.status
+	}
+	catch (error) {
+		throw new StatusUpdateError(workerUrl)
+	}
 }
 export const getFileFromWorker = async (
 	workerUrl: string,
