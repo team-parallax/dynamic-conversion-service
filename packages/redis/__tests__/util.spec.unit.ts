@@ -1,5 +1,9 @@
 import {
-	getExt, getExtFromFilename, getExtFromFormat, isHealthy, isUnhealthy
+	getExt,
+	getExtFromFilename,
+	getExtFromFormat,
+	isHealthy,
+	isUnhealthy
 } from "../src/util"
 describe("utility functions should work", () => {
 	describe("getExtFromFormat should work", () => {
@@ -28,6 +32,10 @@ describe("utility functions should work", () => {
 			const filename = "foobar"
 			const ext = getExtFromFilename(filename)
 			expect(ext).toEqual("")
+		})
+		it("should handle uncommon formats", () => {
+			expect(getExtFromFilename("foo.bar.baz")).toEqual(".baz")
+			expect(getExtFromFilename("foo.bar.baz.boo")).toEqual(".boo")
 		})
 	})
 	describe("getExt should work", () => {
@@ -58,6 +66,12 @@ describe("utility functions should work", () => {
 			const filename = "foobar"
 			const fmt = undefined
 			expect(() => getExt(filename, fmt)).toThrowError()
+		})
+		it("should handle uncommon formats", () => {
+			expect(getExt("foo.bar.baz")).toEqual(".baz")
+			expect(getExt("foo.bar.baz", ".baz")).toEqual(".baz")
+			expect(getExt("foo", ".boo")).toEqual(".boo")
+			expect(getExt("foo", "boo")).toEqual(".boo")
 		})
 	})
 	describe("isHealthy should pass all tests", () => {

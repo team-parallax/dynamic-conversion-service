@@ -11,7 +11,10 @@ import {
 } from "./exception"
 import { IConversionRequest } from "./interface"
 import { createWriteStream } from "fs"
-import { join } from "path"
+import {
+	extname,
+	join
+} from "path"
 import { readFileToBuffer } from "conversion-service/src/service/file-io"
 import FormData from "form-data"
 import fetch from "node-fetch"
@@ -107,9 +110,7 @@ export const getExtFromFormat = (format?: string): string => {
 		: `.${format}`
 }
 export const getExtFromFilename = (filename: string): string => {
-	return filename.includes(".")
-		? `.${filename.split(".")[1]}`
-		: ""
+	return extname(filename)
 }
 export const getExt = (filename: string, format?: string): string => {
 	let ext = getExtFromFormat(format)
