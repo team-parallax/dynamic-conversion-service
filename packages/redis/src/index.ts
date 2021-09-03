@@ -8,7 +8,7 @@ import { RedisService } from "./service"
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async (): Promise<void> => {
 	const redisService = new RedisService()
-	await redisService.initalize()
+	await redisService.initialize()
 	await redisService.checkHealth()
 	await redisService.applyState()
 	await redisService.start()

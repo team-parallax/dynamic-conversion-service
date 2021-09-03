@@ -20,6 +20,7 @@
     "start-dev": "yarn ts-node src/dev.ts",
     "test": "yarn jest --config ./jest.config.js --detectOpenHandles",
     "test:integration": "yarn jest integration --config ./jest.config.js --detectOpenHandles",
+    "test:integration:coverage": "yarn test:integration --coverage --reporters=default --reporters=jest-junit",
     "test:unit": "yarn jest unit --config ./jest.config.js --detectOpenHandles",
     "test:unit:coverage": "yarn test:unit --coverage --reporters=default --reporters=jest-junit",
     "test:types": "yarn tsc --noEmit"
