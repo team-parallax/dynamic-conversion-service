@@ -1,3 +1,5 @@
+/* eslint-disable object-curly-newline */
+/* eslint-disable @typescript-eslint/naming-convention */
 import {
 	ContainerNotFoundError,
 	InvalidDockerConnectionOptions
@@ -5,13 +7,12 @@ import {
 import { Docker } from "node-docker-api"
 import {
 	IContainerInfo,
-	IDockerApiContainer,
-	IDockerApiImage
+	IDockerApiImage,
+	IDockerContainerStatus
 } from "./interface"
 import { IDockerConfiguration } from "../config"
 import { Logger } from "logger/src"
 import { Stream } from "stream"
-import { execSync } from "child_process"
 import { promisifyStream } from "./util"
 export class DockerService {
 	private readonly config: IDockerConfiguration
@@ -86,26 +87,30 @@ export class DockerService {
 		}
 		const containerName = `${namePrefix}__${this.containerCounter}`
 		const newContainer = await this.docker.container.create({
-			// eslint-disable-next-line @typescript-eslint/naming-convention
 			Env: envVars,
-			// eslint-disable-next-line @typescript-eslint/naming-convention
 			Image: `${targetImage}:${targetTag}`,
-			// eslint-disable-next-line @typescript-eslint/naming-convention
 			name: containerName
 		})
 		const startedContainer = await newContainer.start()
-		const typedData = startedContainer.data as IDockerApiContainer
 		// Docker prefixes a '/' before names
 		const createdContainerName = `/${containerName}`
-		const containerIp = this.getContainerIp(createdContainerName)
-		this.logger.info(`created container: ${createdContainerName} (${containerIp})`)
+		const { data: containerStatusDataRaw } = await startedContainer.status()
+		const containerState = containerStatusDataRaw as IDockerContainerStatus
+		const { Status } = containerState.State
+		let healthStatus = "unhealthy"
+		if (containerState.State.Health) {
+			healthStatus = containerState.State.Health.Status
+		}
+		const { IPAddress } = containerState.NetworkSettings
+		this.logger.info(`created container: ${createdContainerName}`)
 		this.containerCounter++
 		return {
+			containerHealthStatus: healthStatus,
 			containerId: startedContainer.id,
 			containerImage: targetImage,
-			containerIp,
+			containerIp: IPAddress,
 			containerName: createdContainerName,
-			containerStatus: typedData.Status,
+			containerStatus: Status,
 			containerTag: targetTag ?? "latest"
 		}
 	}
@@ -113,56 +118,59 @@ export class DockerService {
 		const runningContainers = await this.docker.container.list({
 			"all": 1
 		})
-		return runningContainers.map(container => {
-			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-			const typedData = container.data as IDockerApiContainer
-			const [image, tag] = typedData.Image.split(":")
-			const [name] = typedData.Names
-			return {
-				containerId: container.id,
-				containerImage: image,
-				containerIp: this.getContainerIp(name),
-				containerName: typedData.Names[0],
-				containerStatus: typedData.Status,
-				containerTag: tag
+		const targetContainers: IContainerInfo[] = []
+		for (const container of runningContainers) {
+			// eslint-disable-next-line no-await-in-loop
+			const { data: containerStatusDataRaw } = await container.status()
+			const containerState = containerStatusDataRaw as IDockerContainerStatus
+			const { Status } = containerState.State
+			let healthStatus = "unhealthy"
+			if (containerState.State.Health) {
+				healthStatus = containerState.State.Health.Status
 			}
-		}).filter(container =>
-			container.containerName.startsWith(`/${this.config.namePrefix}__`))
+			const { IPAddress } = containerState.NetworkSettings
+			if (containerState.Name.startsWith(`/${this.config.namePrefix}__`)) {
+				const [image, tag] = containerState.Config.Image
+				targetContainers.push({
+					containerHealthStatus: healthStatus,
+					containerId: container.id,
+					containerImage: image,
+					containerIp: IPAddress,
+					containerName: containerState.Name,
+					containerStatus: Status,
+					containerTag: tag
+				})
+			}
+		}
+		return targetContainers
 	}
 	removeContainer = async (containerId: string) : Promise<IContainerInfo> => {
-		const containers = await this.docker.container.list({
-			"all": 1
-		})
+		const containers = await this.docker.container.list({ "all": 1 })
 		const filteredContainers = containers.filter(container => container.id === containerId)
 		if (filteredContainers.length !== 1) {
 			throw new ContainerNotFoundError(containerId)
 		}
 		const [container] = filteredContainers
-		const typedData = container.data as IDockerApiContainer
-		const [image, tag] = typedData.Image.split(":")
-		const [containerName] = typedData.Names
-		const removedIp = this.getContainerIp(containerName)
+		const containerState = (await container.status()).data as IDockerContainerStatus
+		const [image, tag] = containerState.Config.Image.split(":")
+		const containerName = containerState.Name
 		const stoppedContainer = await container.stop()
-		await stoppedContainer.delete({
-			force: true
-		})
-		this.logger.info(`removed container: ${containerName} (${removedIp})`)
+		await stoppedContainer.delete({ force: true	})
+		const { Status } = containerState.State
+		let healthStatus = "unhealthy"
+		if (containerState.State.Health) {
+			healthStatus = containerState.State.Health.Status
+		}
+		const { IPAddress } = containerState.NetworkSettings
+		this.logger.info(`removed container: ${containerName}`)
 		return {
+			containerHealthStatus: healthStatus,
 			containerId: container.id,
 			containerImage: image,
-			containerIp: removedIp,
+			containerIp: IPAddress,
 			containerName,
-			containerStatus: typedData.Status,
+			containerStatus: Status,
 			containerTag: tag
-		}
-	}
-	private readonly getContainerIp = (name: string): string => {
-		try {
-			const output = execSync(`docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${name}`)
-			return output.toString().trimEnd()
-		}
-		catch (error) {
-			return ""
 		}
 	}
 }

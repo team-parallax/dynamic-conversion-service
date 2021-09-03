@@ -123,8 +123,8 @@ export const getExt = (filename: string, format?: string): string => {
 	return ext
 }
 export const isHealthy = (containerStatus: string): boolean => {
-	return containerStatus.includes("Up") && containerStatus.includes("healthy")
+	return containerStatus === "healthy" || containerStatus === "starting"
 }
 export const isUnhealthy = (containerStatus: string): boolean => {
-	return containerStatus.includes("Exited") || containerStatus.includes("unhealthy")
+	return !isHealthy(containerStatus)
 }

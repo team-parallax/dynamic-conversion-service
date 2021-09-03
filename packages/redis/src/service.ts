@@ -103,7 +103,7 @@ export class RedisService {
 			)
 			const started = result.startedContainers.length
 			const removed = result.removedContainers.length
-			this.logger.info(`STATE: started ${started} | removed ${removed} containers`)
+			this.logger.info(`STATE: [${started} started][${removed} removed]`)
 			this.lastStatus = null
 			this.updateActiveWorkers(result)
 		}
@@ -119,13 +119,14 @@ export class RedisService {
 				containerId: id,
 				containerIp: ip,
 				containerName: name,
-				containerStatus: status
+				containerStatus: status,
+				containerHealthStatus: health
 			} = container
 			const requestCount = this.getRequestCount(id)
-			this.logger.info(`[STATUS]:${name} [${requestCount}] => ${status} ${ip}`)
+			this.logger.info(`[STATUS]:${name} [${requestCount}] => ${status}|${health} ${ip}`)
 		})
 		const unhealthyContainerIds = status.runningContainers
-			.filter(con => isUnhealthy(con.containerStatus))
+			.filter(con => isUnhealthy(con.containerHealthStatus))
 			.map(container => container.containerId)
 		const unhealthyContainerCount = unhealthyContainerIds.length
 		if (unhealthyContainerCount > 0) {
@@ -189,8 +190,10 @@ export class RedisService {
 			return this.cachedFormats
 		}
 		else {
-			// This has a really, really low change of happening so
-			// A custom error is not required
+			/*
+			* This has a really, really low chance of happening so
+			* A custom error is not required
+			*/
 			throw new Error("no worker replied with formats")
 		}
 	}
@@ -211,7 +214,7 @@ export class RedisService {
 	/**
 	 * Initialize redis service.
 	 */
-	readonly initalize = async (): Promise<void> => {
+	readonly initialize = async (): Promise<void> => {
 		await this.redisWrapper.initialize()
 	}
 	/**
@@ -239,19 +242,23 @@ export class RedisService {
 	readonly quit = async (): Promise<void> => {
 		this.logger.info("Commencing redis-service cleanup")
 		if (this.probeInterval !== null) {
-			clearInterval(this.probeInterval)
+			global.clearInterval(this.probeInterval)
 		}
 		this.logger.info("stopped queue check cron job")
 		await this.redisWrapper.quit()
 		const {
 			runningContainers
 		} = await this.autoScaler.checkContainerStatus(0)
-		await this.autoScaler.applyConfigurationState({
-			containersToRemove: runningContainers.length,
-			containersToStart: 0,
-			pendingRequests: 0,
-			runningContainers
-		}, runningContainers.map(runningContainer => runningContainer.containerId))
+		const runningContainerIds = runningContainers.map(container => container.containerId)
+		await this.autoScaler.applyConfigurationState(
+			{
+				containersToRemove: runningContainers.length,
+				containersToStart: 0,
+				pendingRequests: 0,
+				runningContainers
+			},
+			runningContainerIds
+		)
 	}
 	/**
 	 * Start the queue and health check cron jobs.
@@ -260,32 +267,33 @@ export class RedisService {
 		this.logger.info("starting main loop")
 		await this.checkHealth()
 		const ms = 1000
-		// Every 5 seconds
 		const queueProbeInterval = 10
-		// Convert to ms
 		const {
 			healthCheckInterval,
 			stateApplicationInterval
 		} = this.config.schedulerConfig
-		// To ensure data consitency we run everything in the same interval
-		// Compute how many normal probes we need until the specified
-		// Time for a state apply has elapsed.
+		/*
+		* To ensure data consistency we run everything in the same interval
+		* Compute how many normal probes we need until the specified
+		* Time for a state apply has elapsed.
+		*/
 		const probesPerStateApply = Math.ceil(stateApplicationInterval / queueProbeInterval)
 		let probeCount = 1
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		this.probeInterval = setInterval(async (): Promise<void> => {
+		this.probeInterval = global.setInterval(async (): Promise<void> => {
 			const shouldApplyState = probeCount % probesPerStateApply === 0
-			// eslint-disable-next-line multiline-ternary
-			const loggerPrefix = shouldApplyState ? "[HEALTH+STATE]" : "[HEALTH]"
+			const loggerPrefix = shouldApplyState
+				? "[HEALTH+STATE]"
+				: "[HEALTH]"
 			this.logger.info(`${loggerPrefix}: #${probeCount}`)
 			const probeStart = performance.now()
-			// Checking for dead containers
+			/* Checking for dead/unhealthy containers */
 			await this.checkHealth()
-			// Forwarding requests to workers
+			/* Forwarding requests to workers */
 			await this.forwardRequestsToIdleWorkers()
-			// Probe and update worker conversion status
+			/* Probe and update worker conversion status */
 			await this.probeWorkersForStatus()
-			// Fetch files
+			/* Fetch files */
 			await this.fetchFilesFromWorkers()
 			if (probeCount % probesPerStateApply === 0) {
 				await this.applyState()
@@ -394,11 +402,14 @@ export class RedisService {
 		const {
 			tasksPerContainer
 		} = this.config.autoScalerConfig
-		return Object.keys(this.workers).filter(workerId => {
-			return this.workers[workerId].requests.length < tasksPerContainer
-			&& isHealthy(this.workers[workerId].containerInfo.containerStatus)
+		const filteredIdleWorkers = Object.keys(this.workers).filter(workerId => {
+			const workerRequests = this.workers[workerId].requests
+			const hasLessRequestsThanAllowed = workerRequests.length < tasksPerContainer
+			return hasLessRequestsThanAllowed && isHealthy(
+				this.workers[workerId].containerInfo.containerStatus
+			)
 		})
-			.map(workerId => workerId)
+		return filteredIdleWorkers.map(workerId => workerId)
 	}
 	/**
 	 * Get the number of request the given worker has.
@@ -446,11 +457,14 @@ export class RedisService {
 	 * @param workerId The worker to remove the request from
 	 * @param externalConversionId The external converison id from the request
 	 */
-	private readonly removeRequestFromWorker = (workerId: string, externalConversionId: string)
-	: void => {
-		this.workers[workerId].requests = this.workers[workerId].requests.filter(
+	private readonly removeRequestFromWorker = (
+		workerId: string,
+		externalConversionId: string
+	): void => {
+		const filteredWorkerRequests = this.workers[workerId].requests.filter(
 			request => request.externalConversionId !== externalConversionId
 		)
+		this.workers[workerId].requests = filteredWorkerRequests
 	}
 	/**
 	 * Update the running workers. Remove stopped containers.
@@ -458,10 +472,12 @@ export class RedisService {
 	 * after 3 retries.
 	 * @param IContainerStateChange the result of applying the new container state
 	 */
-	private readonly updateActiveWorkers = ({
-		removedContainers,
-		startedContainers
-	}: IContainerStateChange): void => {
+	private readonly updateActiveWorkers = (
+		{
+			removedContainers,
+			startedContainers
+		}: IContainerStateChange
+	): void => {
 		removedContainers.forEach(container => delete this.workers[container.containerId])
 		startedContainers.forEach(container => {
 			this.workers[container.containerId] = {
@@ -483,16 +499,17 @@ export class RedisService {
 		if (!this.workers[workerId]) {
 			throw new InvalidWorkerIdError(workerId)
 		}
+		const workerRequests = this.workers[workerId].requests.map(request => {
+			if (request.workerConversionId === conversionRequest.workerConversionId) {
+				return conversionRequest
+			}
+			else {
+				return request
+			}
+		})
 		this.workers[workerId] = {
 			...this.workers[workerId],
-			requests: this.workers[workerId].requests.map(request => {
-				if (request.workerConversionId === conversionRequest.workerConversionId) {
-					return conversionRequest
-				}
-				else {
-					return request
-				}
-			})
+			requests: workerRequests
 		}
 	}
 }

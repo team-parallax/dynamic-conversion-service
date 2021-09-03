@@ -59,7 +59,7 @@ test integration redis:
   needs:
     - job: "test unit redis"
   script:
-    - yarn test:integration --ci
+    - yarn test:integration:coverage --ci
   artifacts:
     expire_in: 7 days
     paths:
