@@ -89,7 +89,7 @@ export class RedisService {
 	readonly addRequestToQueue = async (conversionRequest: IConversionRequest): Promise<void> => {
 		await this.redisWrapper.sendMessage(JSON.stringify(conversionRequest))
 		const queueDepth = await this.getPendingRequestCount()
-		this.logger.info(`added request to queue [${queueDepth}]`)
+		this.logger.info(`added request ${conversionRequest.externalConversionId} to queue [${queueDepth}]`)
 	}
 	/**
 	 * Apply the last status.
@@ -360,16 +360,22 @@ export class RedisService {
 	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
 	 */
 	private readonly forwardRequestsToIdleWorkers = async (): Promise<void> => {
+		this.logger.info(`${await this.getPendingRequestCount()} in queue`)
 		this.logger.info("forwarding requests to free workers...")
 		const {
 			tasksPerContainer
 		} = this.config.autoScalerConfig
-		const workerIds = Object.keys(this.workers)
+		// Sort workers by request count ascending
+		const workerIds = Object.keys(this.workers).sort((a, b) => {
+			const workerARequestCount = this.workers[a].requests.length
+			const workerBRequestCount = this.workers[b].requests.length
+			return workerARequestCount - workerBRequestCount
+		})
 		for (const workerId of workerIds) {
 			if (this.workers[workerId].requests.length === tasksPerContainer) {
 				continue
 			}
-			while (this.workers[workerId].requests.length < tasksPerContainer
+			if (this.workers[workerId].requests.length < tasksPerContainer
 				&& await this.getPendingRequestCount() > 0) {
 				const request = await this.popRequest()
 				const workerConversionId = await forwardRequestToWorker(
@@ -447,7 +453,11 @@ export class RedisService {
 					conversionStatus: status
 				})
 				const containerName = this.getContainerName(workerId)
-				this.logger.info(`${containerName}::${request.externalConversionId} => ${status} `)
+				const {
+					externalConversionId,
+					workerConversionId
+				} = request
+				this.logger.info(`${containerName}::${externalConversionId} || ${workerConversionId} => ${status} `)
 			}
 		}
 	}
