@@ -97,6 +97,8 @@ export class RedisService {
 	 */
 	readonly applyState = async (): Promise<void> => {
 		if (this.lastStatus !== null) {
+			const idleWorkerIds = this.getIdleWorkerIds()
+			idleWorkerIds.forEach(id => this.logger.info(`[${this.getContainerName(id)}]:: IDLE`))
 			const result = await this.autoScaler.applyConfigurationState(
 				this.lastStatus,
 				this.getIdleWorkerIds()
@@ -113,7 +115,10 @@ export class RedisService {
 	 */
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
-		const status = await this.autoScaler.checkContainerStatus(pendingRequests)
+		const inProgressRequestCount = this.getInProgressRequestCount()
+		const status = await this.autoScaler.checkContainerStatus(
+			pendingRequests + inProgressRequestCount
+		)
 		status.runningContainers.forEach(container => {
 			const {
 				containerId: id,
@@ -142,7 +147,10 @@ export class RedisService {
 				}
 			}
 		}
-		this.lastStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
+		const inProgressRequestCountAfterHealthCheck = this.getInProgressRequestCount()
+		this.lastStatus = await this.autoScaler.checkContainerStatus(
+			pendingRequests
+		)
 		const {
 			containersToRemove: remove,
 			containersToStart: start
@@ -201,6 +209,10 @@ export class RedisService {
 			*/
 			throw new Error("no worker replied with formats")
 		}
+	}
+	readonly getInProgressRequestCount = (): number => {
+		return this.getWorkers().map(w => w.requests.length)
+			.reduce((a, b) => a + b, 0)
 	}
 	/**
 	 * Get the number of pending requests within the queue.
@@ -413,17 +425,12 @@ export class RedisService {
 	 * @returns the container id's of idle workers
 	 */
 	private readonly getIdleWorkerIds = (): string[] => {
-		const {
-			tasksPerContainer
-		} = this.config.autoScalerConfig
-		const filteredIdleWorkers = Object.keys(this.workers).filter(workerId => {
+		return Object.keys(this.workers).filter(workerId => {
 			const workerRequests = this.workers[workerId].requests
-			const hasLessRequestsThanAllowed = workerRequests.length < tasksPerContainer
-			return hasLessRequestsThanAllowed && isHealthy(
-				this.workers[workerId].containerInfo.containerStatus
-			)
+			return isHealthy(
+				this.workers[workerId].containerInfo.containerHealthStatus
+			) && workerRequests.length === 0
 		})
-		return filteredIdleWorkers.map(workerId => workerId)
 	}
 	/**
 	 * Get the number of request the given worker has.

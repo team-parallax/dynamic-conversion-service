@@ -105,7 +105,7 @@ export class AutoScaler {
 		}
 		if (pendingRequests === 0) {
 			return {
-				remove: 0,
+				remove: runningContainers - minContainers,
 				start: 0
 			}
 		}
