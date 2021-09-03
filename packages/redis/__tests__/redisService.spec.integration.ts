@@ -2,7 +2,8 @@ import { EConversionStatus } from "../src/api/conversion-client"
 import { IConversionRequest } from "../src/interface"
 import { RedisService } from "../src/service"
 describe("redis-service should pass all tests", () => {
-	beforeAll(() => {
+	let redisService: RedisService
+	beforeAll(async (): Promise<void> => {
 		process.env.WEBSERVICE_PORT = "3000"
 		process.env.FFMPEG_PATH = "/opt/ffmpeg/bin/ffmpeg"
 		process.env.IMAGE_MAGICK_PATH = "usr/bin/convert"
@@ -24,8 +25,18 @@ describe("redis-service should pass all tests", () => {
 		process.env.REDIS_QUEUE = "redis-service-test-queue"
 		process.env.HEALTH_CHECK_INTERVAL = "120"
 		process.env.APPLY_DESIRED_STATE_INTERVAL = "600"
+		redisService = new RedisService()
+		await redisService.initialize()
 	})
-	let redisService: RedisService
+	afterAll(async (): Promise<void> => {
+		try {
+			await redisService.quit()
+		}
+		catch (error) {
+			// eslint-disable-next-line no-console
+			console.log(error)
+		}
+	})
 	const dummyRequest: IConversionRequest = {
 		conversionRequestBody: {
 			file: "foo.bar",
@@ -37,10 +48,6 @@ describe("redis-service should pass all tests", () => {
 		externalConversionId: "random-id-external",
 		workerConversionId: "random-id"
 	}
-	it("should initialize without error", async (): Promise<void> => {
-		redisService = new RedisService()
-		await expect(redisService.initalize()).resolves.not.toThrowError()
-	})
 	it("should send a request", async () => {
 		await expect(redisService.addRequestToQueue(dummyRequest))
 			.resolves.not.toThrowError()
@@ -58,8 +65,5 @@ describe("redis-service should pass all tests", () => {
 		const expectedRequestCount = 0
 		const requestCount = await redisService.getPendingRequestCount()
 		expect(requestCount).toEqual(expectedRequestCount)
-	})
-	it.skip("should exit without error", async (): Promise<void> => {
-		await expect(redisService.quit()).resolves.not.toThrowError()
 	})
 })

@@ -76,22 +76,21 @@ describe("utility functions should work", () => {
 	})
 	describe("isHealthy should pass all tests", () => {
 		it("should handle valid cases", () => {
-			expect(isHealthy("Up 10 seconds (healthy)")).toBe(true)
-			expect(isHealthy("Up less than a second (healthy)")).toBe(true)
+			expect(isHealthy("healthy")).toBe(true)
 		})
 		it("should handle invalid cases", () => {
-			expect(isHealthy("Up 10 seconds (health: starting)")).toBe(false)
-			expect(isHealthy("Exited (1) 3 seconds ago")).toBe(false)
+			expect(isHealthy("unhealthy")).toBe(false)
+			expect(isHealthy("dead")).toBe(false)
+			expect(isHealthy("")).toBe(false)
 		})
 	})
 	describe("isUnhealthy should pass all tests", () => {
 		it("should handle valid cases", () => {
-			expect(isUnhealthy("Exited (1) 3 seconds ago")).toBe(true)
-			expect(isUnhealthy("Exited (1) 15 seconds ago")).toBe(true)
+			expect(isUnhealthy("unhealthy")).toBe(true)
 		})
 		it("should handle invalid cases", () => {
-			expect(isUnhealthy("Up 10 seconds (health: starting)")).toBe(false)
-			expect(isUnhealthy("Up less than a second (health: starting)")).toBe(false)
+			expect(isUnhealthy("healthy")).toBe(false)
+			expect(isUnhealthy("starting")).toBe(false)
 		})
 	})
 })
