@@ -4,11 +4,11 @@ A wrapper around a redis message queue.
 
 # Requirements
 
-Requires a running `redis-server`. [See here.](https://redis.io/)  
+Requires a running `redis-server`. [See here.](https://redis.io/)
 For simplicity you can use this docker command:
 
 ```console
-docker run --name redis-testing -p 6379:6379 -d redis:6.2.5-alpine 
+docker run --name redis-testing -p 6379:6379 -d redis:6.2.5-alpine
 ```
 
 In order to make use of the `docker-compose up` command you need to create a `docker-compose.yml`
