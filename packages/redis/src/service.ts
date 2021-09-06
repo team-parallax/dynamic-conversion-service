@@ -211,7 +211,7 @@ export class RedisService {
 		}
 	}
 	readonly getInProgressRequestCount = (): number => {
-		return this.getWorkers().map(w => w.requests.length)
+		return this.getWorkers().map(worker => worker.requests.length)
 			.reduce((a, b) => a + b, 0)
 	}
 	/**
