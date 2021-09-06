@@ -90,7 +90,7 @@ export class RedisService {
 	readonly addRequestToQueue = async (conversionRequest: IConversionRequest): Promise<void> => {
 		await this.redisWrapper.sendMessage(JSON.stringify(conversionRequest))
 		const queueDepth = await this.getPendingRequestCount()
-		this.logger.info(`added request ${conversionRequest.externalConversionId} to queue [${queueDepth}]`)
+		this.logger.info(`[API]:: added request ${conversionRequest.externalConversionId} [${queueDepth}]`)
 	}
 	/**
 	 * Apply the last status.
@@ -98,15 +98,13 @@ export class RedisService {
 	 */
 	readonly applyState = async (): Promise<void> => {
 		if (this.lastStatus !== null) {
-			const idleWorkerIds = this.getIdleWorkerIds()
-			idleWorkerIds.forEach(id => this.logger.info(`[${this.getContainerName(id)}]:: IDLE`))
 			const result = await this.autoScaler.applyConfigurationState(
 				this.lastStatus,
 				this.getIdleWorkerIds()
 			)
 			const started = result.startedContainers.length
 			const removed = result.removedContainers.length
-			this.logger.info(`STATE: [${started} started][${removed} removed]`)
+			this.logger.info(`[APPLIED STATE]:: [${started} started][${removed} removed]`)
 			this.lastStatus = null
 			this.updateActiveWorkers(result)
 		}
@@ -123,7 +121,6 @@ export class RedisService {
 		for (const container of status.runningContainers) {
 			const {
 				containerId: id,
-				containerIp: ip,
 				containerName: name,
 				containerStatus: status,
 				containerHealthStatus: health
@@ -131,12 +128,12 @@ export class RedisService {
 			// Remove any dangling containers
 			// This mostly is relevant on launch (i.e. initial health check)
 			if (!this.workers[id]) {
-				this.logger.info(`found dangling container ${name}, removing`)
+				this.logger.info(`[HEALTH]:: found dangling container ${name}, removing`)
 				await this.autoScaler.removeContainer(id)
 			}
 			else {
 				const requestCount = this.getRequestCount(id)
-				this.logger.info(`[STATUS]:${name} [${requestCount}] => ${status}|${health} ${ip}`)
+				this.logger.info(`[HEALTH]:: [${name}][${status}|${health}]:: processing [${requestCount}] requests`)
 			}
 		}
 		const unhealthyContainerIds = status.runningContainers
@@ -144,7 +141,7 @@ export class RedisService {
 			.map(container => container.containerId)
 		const unhealthyContainerCount = unhealthyContainerIds.length
 		if (unhealthyContainerCount > 0) {
-			this.logger.info(`found ${unhealthyContainerCount} unhealthy containers`)
+			this.logger.info(`[HEALTH]:: found ${unhealthyContainerCount} unhealthy containers`)
 			for (const containerId of unhealthyContainerIds) {
 				this.logger.info(`[${this.getContainerName(containerId)}]:: is unhealthy => removing`)
 				await this.autoScaler.removeContainer(containerId)
@@ -168,7 +165,7 @@ export class RedisService {
 				containerInfo: container
 			}
 		})
-		this.logger.info(`[HEALTH]: should start ${start} | remove ${remove} containers`)
+		this.logger.info(`[HEALTH]:: should start ${start} | remove ${remove} containers`)
 	}
 	/**
 	 * Get the current conversion request for the given conversion id.
@@ -199,7 +196,7 @@ export class RedisService {
 			this.logger.info("using cached formats")
 			return this.cachedFormats
 		}
-		this.logger.info("fetching formats from workers")
+		this.logger.info("[FORMATS]:: fetching formats from workers")
 		const [workerUrl] = this.getWorkerUrls()
 		const formats = await getFormatsFromWorker(workerUrl)
 		if (formats) {
@@ -261,11 +258,11 @@ export class RedisService {
 	 * Clean-up and quit the redis-service.
 	 */
 	readonly quit = async (): Promise<void> => {
-		this.logger.info("Commencing redis-service cleanup")
+		this.logger.info("[EXIT]:: Commencing redis-service cleanup")
 		if (this.probeInterval !== null) {
 			global.clearInterval(this.probeInterval)
 		}
-		this.logger.info("stopped queue check cron job")
+		this.logger.info("[EXIT]:: stopped queue check cron job")
 		await this.redisWrapper.quit()
 		const {
 			runningContainers
@@ -285,7 +282,7 @@ export class RedisService {
 	 * Start the queue and health check cron jobs.
 	 */
 	readonly start = async (): Promise<void> => {
-		this.logger.info("starting main loop")
+		this.logger.info("[START]:: starting main loop")
 		await this.checkHealth()
 		const ms = 1000
 		const queueProbeInterval = 10
@@ -293,6 +290,7 @@ export class RedisService {
 			healthCheckInterval,
 			stateApplicationInterval
 		} = this.config.schedulerConfig
+		this.logger.info(`[START]:: probing every ${healthCheckInterval}s, applying state every ${stateApplicationInterval}s`)
 		/*
 		* To ensure data consistency we run everything in the same interval
 		* Compute how many normal probes we need until the specified
@@ -306,7 +304,7 @@ export class RedisService {
 			const loggerPrefix = shouldApplyState
 				? "[HEALTH+STATE]"
 				: "[HEALTH]"
-			this.logger.info(`${loggerPrefix}: #${probeCount}`)
+			this.logger.info(`${loggerPrefix}: starting probe #${probeCount}`)
 			const probeStart = performance.now()
 			/* Checking for dead/unhealthy containers */
 			await this.checkHealth()
@@ -316,12 +314,13 @@ export class RedisService {
 			await this.probeWorkersForStatus()
 			/* Fetch files */
 			await this.fetchFilesFromWorkers()
-			if (probeCount % probesPerStateApply === 0) {
+			if (shouldApplyState) {
 				await this.applyState()
 			}
 			probeCount++
 			const probeDuration = performance.now() - probeStart
-			this.logger.info(`${loggerPrefix}: ${Number(probeDuration).toFixed(0)}ms`)
+			this.logger.info(`${loggerPrefix}: probe ended (${Number(probeDuration).toFixed(0)}ms)`)
+			this.logger.info("====================================================================")
 		}, healthCheckInterval * ms)
 	}
 	private readonly addRequestToWorker = (workerId: string, request:IConversionRequest):void => {
@@ -349,11 +348,11 @@ export class RedisService {
 						request.externalConversionId
 					)
 					const containerName = this.getContainerName(workerId)
-					this.logger.info(`fetched file from ${containerName}`)
+					this.logger.info(`[FETCH]:: [${containerName}] => fetched file for ${request.externalConversionId}`)
 					const ext = getExtFromFormat(request.conversionRequestBody.originalFormat)
 					const inputPath = join("input", request.externalConversionId + ext)
 					await deleteFile(inputPath)
-					this.logger.info(`deleted ${inputPath}`)
+					this.logger.info(`[FETCH]:: deleted ${inputPath}`)
 					this.finishedRequest.set(request.externalConversionId, {
 						containerId: workerId,
 						request
@@ -367,7 +366,7 @@ export class RedisService {
 					const ext = getExtFromFormat(request.conversionRequestBody.originalFormat)
 					const inputPath = join("input", request.externalConversionId + ext)
 					await deleteFile(inputPath)
-					this.logger.info(`deleted ${inputPath}`)
+					this.logger.info(`[FETCH]:: deleted ${inputPath}`)
 					this.finishedRequest.set(request.externalConversionId, {
 						containerId: this.workers[workerId].containerInfo.containerId,
 						request
@@ -381,8 +380,8 @@ export class RedisService {
 	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
 	 */
 	private readonly forwardRequestsToIdleWorkers = async (): Promise<void> => {
-		this.logger.info(`${await this.getPendingRequestCount()} in queue`)
-		this.logger.info("forwarding requests to free workers...")
+		this.logger.info(`[FORWARD]:: ${await this.getPendingRequestCount()} in queue`)
+		this.logger.info("[FORWARD]:: forwarding requests to free workers...")
 		const {
 			tasksPerContainer
 		} = this.config.autoScalerConfig
@@ -412,9 +411,10 @@ export class RedisService {
 				})
 				const containerName = this.getContainerName(workerId)
 				const extId = request.externalConversionId
-				this.logger.info(`forwarded ${extId} to ${containerName} (${workerConversionId})`)
+				this.logger.info(`[FORWARD]:: [${containerName}] received [${extId}][${workerConversionId}]`)
 			}
 		}
+		this.logger.info(`[FORWARD]:: ${await this.getPendingRequestCount()} in queue after forwarding`)
 	}
 	/**
 	 * Utility function to get the container name of the worker
@@ -458,7 +458,7 @@ export class RedisService {
 	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
 	 */
 	private readonly probeWorkersForStatus = async (): Promise<void> => {
-		this.logger.info("asking busy workers for status update...")
+		this.logger.info("[PROBE]:: asking busy workers for status update...")
 		const workerIds = Object.keys(this.workers)
 		for (const workerId of workerIds) {
 			for (const request of this.workers[workerId].requests) {
@@ -476,7 +476,7 @@ export class RedisService {
 					externalConversionId,
 					workerConversionId
 				} = request
-				this.logger.info(`${containerName}::${externalConversionId} || ${workerConversionId} => ${status} `)
+				this.logger.info(`[PROBE]:: [${containerName}] [${externalConversionId}][${workerConversionId}] => ${status} `)
 			}
 		}
 	}
