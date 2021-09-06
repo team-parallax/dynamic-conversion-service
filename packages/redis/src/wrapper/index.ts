@@ -1,16 +1,15 @@
 import { IRedisConfiguration } from "../config"
 import { Logger } from "logger"
 import {
-	RedisWrapperNoServerError,
 	RedisWrapperNotInitializedError,
 	RedisWrapperPopError,
 	RedisWrapperQueueCreateError,
 	RedisWrapperQueueDeleteError,
 	RedisWrapperQueueListError,
 	RedisWrapperQueueStatError,
-	RedisWrapperSendError
+	RedisWrapperSendError,
+	RedisWrapperTimoutError
 } from "./exception"
-import { execSync } from "child_process"
 import RedisSMQ, { QueueMessage } from "rsmq"
 export class RedisWrapper {
 	private readonly config: IRedisConfiguration
@@ -28,6 +27,7 @@ export class RedisWrapper {
 			ns: namespace,
 			port
 		})
+		this.logger.info("established redis connection")
 	}
 	readonly getPendingMessagesCount = async (): Promise<number> => {
 		if (!this.isInitialized) {
@@ -47,22 +47,32 @@ export class RedisWrapper {
 		})
 	}
 	readonly initialize = async (): Promise<void> => {
-		if (!this.pingRedisServer()) {
-			throw new RedisWrapperNoServerError()
+		const ms = 1000
+		const timeout = async (s: number):Promise<void> => new Promise((resolve, reject) => {
+			global.setTimeout(resolve, s * ms)
+		})
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
+		global.setTimeout(async ():Promise<void> => {
+			const existingQueues = await this.getQueues()
+			const {
+				queue
+			} = this.config
+			if (!existingQueues.includes(queue)) {
+				await this.createQueue(queue)
+			}
+			else {
+				this.logger.info(`found existing queue with name: ${queue}. Removing...`)
+				await this.deleteQueue(queue)
+				await this.createQueue(queue)
+			}
+			this.isInitialized = true
+		})
+		const timeoutInSeconds = 5
+		await timeout(timeoutInSeconds)
+		if (!this.isInitialized) {
+			throw new RedisWrapperTimoutError()
 		}
-		const existingQueues = await this.getQueues()
-		const {
-			queue
-		} = this.config
-		if (!existingQueues.includes(queue)) {
-			await this.createQueue(queue)
-		}
-		else {
-			this.logger.info(`found existing queue with name: ${queue}. Removing...`)
-			await this.deleteQueue(queue)
-			await this.createQueue(queue)
-		}
-		this.isInitialized = true
+		this.logger.info("redis-wrapper initialized")
 	}
 	readonly quit = async (): Promise<void> => {
 		const runningQueues = await this.getQueues()
@@ -162,12 +172,5 @@ export class RedisWrapper {
 				return resolve(queues)
 			})
 		})
-	}
-	private readonly pingRedisServer = (): boolean => {
-		const output = execSync("redis-cli ping")
-			.toString()
-			.trim()
-		this.logger.info(`redis-server replied ${output} to ping`)
-		return output === "PONG"
 	}
 }
