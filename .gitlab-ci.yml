@@ -99,7 +99,7 @@ release job:
   needs:
     - job: "prepare release"
       artifacts: true
-    - job: "build docker"
+    - job: "build docker conversion-service"
     - job: "code quality"
   script:
     - echo "create gitlab-release for ${CI_COMMIT_TAG}"

@@ -12,6 +12,7 @@ ADD . ${WORKDIR}
 RUN yarn install \
 	&& yarn tsoa:create:host
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=3s CMD curl --fail http://localhost:3000/ping || exit 1   
+HEALTHCHECK --interval=10s --timeout=5s --start-period=3s \
+	CMD curl --fail http://localhost:3000/ping || exit 1
 
 CMD [ "yarn", "start" ]

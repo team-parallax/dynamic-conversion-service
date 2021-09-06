@@ -1,9 +1,5 @@
-# Make redis server available
-# FROM redis:latest
-# RUN redis-server --version
-
-FROM docker:latest
-RUN docker version
+FROM docker:19.03.5-dind
+# RUN docker version
 
 # Set env variables required for passthrough
 # to the conversion service instances
@@ -34,9 +30,14 @@ ENV TASKS_PER_CONTAINER="2" \
     CONTAINER_TAG="latest" \
     DOCKER_SOCKET_PATH="/var/run/docker.sock"
 
-# FROM teamparallax/conversion-service-base-image:v0.2.2
-ARG host:localhost:3000
+FROM docker:latest
+RUN docker version
+
+# # FROM teamparallax/conversion-service-base-image:v0.2.2
+# ARG host:localhost:3000
 WORKDIR /app
 ADD . ${WORKDIR}
+RUN apk update \
+	&& apk add --no-cache nodejs yarn
 RUN yarn install
-CMD [ "yarn", "start" ]
+CMD [ "yarn", "start:redis" ]

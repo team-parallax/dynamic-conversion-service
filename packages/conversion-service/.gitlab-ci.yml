@@ -40,7 +40,7 @@ typecheck conversion-service:
     - changes:
       - packages/conversion-service/**/*.ts
 
-build docker:
+build docker conversion-service:
   stage: build
   services:
     - docker:19.03.5-dind
@@ -65,7 +65,7 @@ build docker:
 
 test unit conversion-service:
   stage: test
-  needs: 
+  needs:
   - job: "typecheck conversion-service"
   <<: *conversion-service-before-script
   script:
