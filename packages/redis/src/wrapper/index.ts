@@ -1,6 +1,7 @@
 import { IRedisConfiguration } from "../config"
 import { Logger } from "logger"
 import {
+	RedisWrapperNoServerError,
 	RedisWrapperNotInitializedError,
 	RedisWrapperPopError,
 	RedisWrapperQueueCreateError,
@@ -9,6 +10,7 @@ import {
 	RedisWrapperQueueStatError,
 	RedisWrapperSendError
 } from "./exception"
+import { execSync } from "child_process"
 import RedisSMQ, { QueueMessage } from "rsmq"
 export class RedisWrapper {
 	private readonly config: IRedisConfiguration
@@ -45,6 +47,9 @@ export class RedisWrapper {
 		})
 	}
 	readonly initialize = async (): Promise<void> => {
+		if (!this.pingRedisServer()) {
+			throw new RedisWrapperNoServerError()
+		}
 		const existingQueues = await this.getQueues()
 		const {
 			queue
@@ -157,5 +162,12 @@ export class RedisWrapper {
 				return resolve(queues)
 			})
 		})
+	}
+	private readonly pingRedisServer = (): boolean => {
+		const output = execSync("redis-cli ping")
+			.toString()
+			.trim()
+		this.logger.info(`redis-server replied ${output} to ping`)
+		return output === "PONG"
 	}
 }

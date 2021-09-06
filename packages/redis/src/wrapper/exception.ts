@@ -38,3 +38,8 @@ export class RedisWrapperNotInitializedError extends Error {
 		super("redis-service has not been initialized")
 	}
 }
+export class RedisWrapperNoServerError extends Error {
+	constructor() {
+		super("unable to ping redis-server")
+	}
+}
