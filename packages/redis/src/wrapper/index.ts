@@ -47,9 +47,9 @@ export class RedisWrapper {
 		})
 	}
 	readonly initialize = async (): Promise<void> => {
-		const ms = 1000
-		const timeout = async (s: number):Promise<void> => new Promise((resolve, reject) => {
-			global.setTimeout(resolve, s * ms)
+		const millisecondsPerSecond = 1000
+		const timeout = async (seconds: number):Promise<void> => new Promise((resolve, reject) => {
+			global.setTimeout(resolve, seconds * millisecondsPerSecond)
 		})
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		global.setTimeout(async ():Promise<void> => {
