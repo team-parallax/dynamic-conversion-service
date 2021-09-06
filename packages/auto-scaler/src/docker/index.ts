@@ -48,7 +48,9 @@ export class DockerService {
 	checkImage = async (imageId: string, tag?: string): Promise<void> => {
 		const targetTag = tag ?? "latest"
 		const targetImageString = `${imageId}:${targetTag}`
-		const localImages = await this.docker.image.list()
+		const localImages = await this.docker.image.list({
+			filter: imageId
+		})
 		let isAvailable = false
 		localImages.forEach(localImage => {
 			const imageData = localImage.data as IDockerApiImage
