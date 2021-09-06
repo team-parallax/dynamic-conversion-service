@@ -120,7 +120,7 @@ export class RedisService {
 		const status = await this.autoScaler.checkContainerStatus(
 			pendingRequests + inProgressRequestCount
 		)
-		status.runningContainers.forEach(container => {
+		for (const container of status.runningContainers) {
 			const {
 				containerId: id,
 				containerIp: ip,
@@ -128,9 +128,17 @@ export class RedisService {
 				containerStatus: status,
 				containerHealthStatus: health
 			} = container
-			const requestCount = this.getRequestCount(id)
-			this.logger.info(`[STATUS]:${name} [${requestCount}] => ${status}|${health} ${ip}`)
-		})
+			// Remove any dangling containers
+			// This mostly is relevant on launch (i.e. initial health check)
+			if (!this.workers[id]) {
+				this.logger.info(`found dangling container ${name}, removing`)
+				await this.autoScaler.removeContainer(id)
+			}
+			else {
+				const requestCount = this.getRequestCount(id)
+				this.logger.info(`[STATUS]:${name} [${requestCount}] => ${status}|${health} ${ip}`)
+			}
+		}
 		const unhealthyContainerIds = status.runningContainers
 			.filter(container => !isStartingOrHealthy(container.containerHealthStatus))
 			.map(container => container.containerId)
