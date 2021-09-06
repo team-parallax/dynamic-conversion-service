@@ -128,3 +128,6 @@ export const isHealthy = (containerStatus: string): boolean => {
 export const isUnhealthy = (containerStatus: string): boolean => {
 	return !isHealthy(containerStatus)
 }
+export const isStartingOrHealthy = (containerStatus: string): boolean => {
+	return isHealthy(containerStatus) || containerStatus === "starting"
+}

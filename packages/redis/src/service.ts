@@ -26,6 +26,7 @@ import {
 	getFileFromWorker,
 	getFormatsFromWorker,
 	isHealthy,
+	isStartingOrHealthy,
 	isUnhealthy,
 	pingWorker
 } from "./util"
@@ -131,20 +132,15 @@ export class RedisService {
 			this.logger.info(`[STATUS]:${name} [${requestCount}] => ${status}|${health} ${ip}`)
 		})
 		const unhealthyContainerIds = status.runningContainers
-			.filter(con => isUnhealthy(con.containerHealthStatus))
+			.filter(container => !isStartingOrHealthy(container.containerHealthStatus))
 			.map(container => container.containerId)
 		const unhealthyContainerCount = unhealthyContainerIds.length
 		if (unhealthyContainerCount > 0) {
 			this.logger.info(`found ${unhealthyContainerCount} unhealthy containers`)
 			for (const containerId of unhealthyContainerIds) {
-				if (this.workers[containerId].containerInfo.containerHealthStatus !== "starting") {
-					this.logger.info(`[${this.getContainerName(containerId)}]:: is unhealthy => removing`)
-					await this.autoScaler.removeContainer(containerId)
-					delete this.workers[containerId]
-				}
-				else {
-					this.logger.info(`[${this.getContainerName(containerId)}]:: is starting, not removing`)
-				}
+				this.logger.info(`[${this.getContainerName(containerId)}]:: is unhealthy => removing`)
+				await this.autoScaler.removeContainer(containerId)
+				delete this.workers[containerId]
 			}
 		}
 		const inProgressRequestCountAfterHealthCheck = this.getInProgressRequestCount()
