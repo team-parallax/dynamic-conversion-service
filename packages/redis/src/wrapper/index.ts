@@ -57,14 +57,12 @@ export class RedisWrapper {
 			const {
 				queue
 			} = this.config
-			if (!existingQueues.includes(queue)) {
-				await this.createQueue(queue)
-			}
-			else {
+			if (existingQueues.includes(queue)) {
 				this.logger.info(`found existing queue with name: ${queue}. Removing...`)
 				await this.deleteQueue(queue)
-				await this.createQueue(queue)
 			}
+			this.logger.info(`create queue with name: ${queue}.`)
+			await this.createQueue(queue)
 			this.isInitialized = true
 		})
 		const timeoutInSeconds = 5
@@ -72,7 +70,7 @@ export class RedisWrapper {
 		if (!this.isInitialized) {
 			throw new RedisWrapperTimoutError()
 		}
-		this.logger.info("redis-wrapper initialized")
+		this.logger.info("initialized redis-wrapper")
 	}
 	readonly quit = async (): Promise<void> => {
 		const runningQueues = await this.getQueues()
