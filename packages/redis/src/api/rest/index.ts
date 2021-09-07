@@ -24,7 +24,6 @@ export class Api {
 	public readonly app: Application
 	private readonly _port: number = 3000
 	private server: Server | null
-	// Private readonly startUpDelay: number = 1500
 	constructor(port?: number) {
 		this.app = express()
 		this.server = null
@@ -36,10 +35,6 @@ export class Api {
 		this.configureServer()
 		this.addApi()
 		this.createApplicationDirectiories(["input", "output"])
-		// SetTimeout(
-		// 	() => this.listen(),
-		// 	This.startUpDelay
-		// )
 	}
 	close = (): void => {
 		this.logger.info(`Closing http server running on port ${this.port}`)
@@ -59,9 +54,12 @@ export class Api {
 		this.app.get("/", (req, res, err) => {
 			res.send("Request received")
 		})
-		this.app.use("/docs", serve, async (req: Request, res: Response) => {
+		this.app.use("/docs", serve, (req: Request, res: Response) => {
+			const swaggerHostServer = swaggerDocument.servers[0]
+			swaggerHostServer.url = process.env.SWAGGER_HOST ?? "http://localhost:3000"
+			swaggerDocument.servers[0] = swaggerHostServer
 			return res.send(
-				generateHTML(await import("conversion-service/swagger.json"))
+				generateHTML(swaggerDocument)
 			)
 		})
 		RegisterRoutes(this.app as Express)
@@ -93,9 +91,9 @@ export class Api {
 		})
 	}
 	private readonly configureServer = (): void => {
-		// Mount json form parser
+		/* Mount json form parser */
 		this.app.use(cors())
-		// Set max limit
+		/* Set max limit */
 		this.app.use(urlencoded({
 			extended: true,
 			limit: "50mb"

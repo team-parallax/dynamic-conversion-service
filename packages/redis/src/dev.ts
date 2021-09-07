@@ -21,14 +21,14 @@ process.env.REDIS_HOST = "127.0.0.1"
 process.env.REDIS_PORT = "6379"
 process.env.REDIS_NS = "redis-service-test"
 process.env.REDIS_QUEUE = "redis-service-test-queue"
-process.env.HEALTH_CHECK_INTERVAL = "10"
-process.env.APPLY_DESIRED_STATE_INTERVAL = "30"
+process.env.HEALTH_CHECK_INTERVAL = "5"
+process.env.APPLY_DESIRED_STATE_INTERVAL = "15"
 // =============================================================
 // || auto-scaler ENVIRONMENT VARIABLES
 // =============================================================
-process.env.TASKS_PER_CONTAINER = "2"
+process.env.TASKS_PER_CONTAINER = "1"
 process.env.MAX_WORKER_CONTAINERS = "10"
-process.env.MIN_WORKER_CONTAINERS = "2"
+process.env.MIN_WORKER_CONTAINERS = "1"
 process.env.CONTAINER_NAME_PREFIX = "redis-dev-mode-container_"
 process.env.CONTAINER_IMAGE = "teamparallax/conversion-service"
 process.env.CONTAINER_TAG = "latest"
