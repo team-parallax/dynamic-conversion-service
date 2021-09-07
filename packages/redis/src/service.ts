@@ -26,6 +26,7 @@ import {
 	getFileFromWorker,
 	getFormatsFromWorker,
 	isHealthy,
+	isStartingOrHealthy,
 	isUnhealthy,
 	pingWorker
 } from "./util"
@@ -89,7 +90,7 @@ export class RedisService {
 	readonly addRequestToQueue = async (conversionRequest: IConversionRequest): Promise<void> => {
 		await this.redisWrapper.sendMessage(JSON.stringify(conversionRequest))
 		const queueDepth = await this.getPendingRequestCount()
-		this.logger.info(`added request to queue [${queueDepth}]`)
+		this.logger.info(`[API]:: added request ${conversionRequest.externalConversionId} [${queueDepth}]`)
 	}
 	/**
 	 * Apply the last status.
@@ -103,7 +104,7 @@ export class RedisService {
 			)
 			const started = result.startedContainers.length
 			const removed = result.removedContainers.length
-			this.logger.info(`STATE: [${started} started][${removed} removed]`)
+			this.logger.info(`[APPLIED STATE]:: [${started} started][${removed} removed]`)
 			this.lastStatus = null
 			this.updateActiveWorkers(result)
 		}
@@ -113,31 +114,44 @@ export class RedisService {
 	 */
 	readonly checkHealth = async (): Promise<void> => {
 		const pendingRequests = await this.redisWrapper.getPendingMessagesCount()
-		const status = await this.autoScaler.checkContainerStatus(pendingRequests)
-		status.runningContainers.forEach(container => {
+		const inProgressRequestCount = this.getInProgressRequestCount()
+		const status = await this.autoScaler.checkContainerStatus(
+			pendingRequests + inProgressRequestCount
+		)
+		for (const container of status.runningContainers) {
 			const {
 				containerId: id,
-				containerIp: ip,
 				containerName: name,
 				containerStatus: status,
 				containerHealthStatus: health
 			} = container
-			const requestCount = this.getRequestCount(id)
-			this.logger.info(`[STATUS]:${name} [${requestCount}] => ${status}|${health} ${ip}`)
-		})
+			// Remove any dangling containers
+			// This mostly is relevant on launch (i.e. initial health check)
+			if (!this.workers[id]) {
+				this.logger.info(`[HEALTH]:: found dangling container ${name}, removing`)
+				await this.autoScaler.removeContainer(id)
+			}
+			else {
+				const requestCount = this.getRequestCount(id)
+				this.logger.info(`[HEALTH]:: [${name}][${status}|${health}]:: processing [${requestCount}] requests`)
+			}
+		}
 		const unhealthyContainerIds = status.runningContainers
-			.filter(con => isUnhealthy(con.containerHealthStatus))
+			.filter(container => !isStartingOrHealthy(container.containerHealthStatus))
 			.map(container => container.containerId)
 		const unhealthyContainerCount = unhealthyContainerIds.length
 		if (unhealthyContainerCount > 0) {
-			this.logger.info(`found ${unhealthyContainerCount} unhealthy containers`)
+			this.logger.info(`[HEALTH]:: found ${unhealthyContainerCount} unhealthy containers`)
 			for (const containerId of unhealthyContainerIds) {
+				this.logger.info(`[${this.getContainerName(containerId)}]:: is unhealthy => removing`)
 				await this.autoScaler.removeContainer(containerId)
 				delete this.workers[containerId]
 			}
-			this.logger.info(`removed ${unhealthyContainerCount} unhealthy containers`)
 		}
-		this.lastStatus = await this.autoScaler.checkContainerStatus(pendingRequests)
+		const inProgressRequestCountAfterHealthCheck = this.getInProgressRequestCount()
+		this.lastStatus = await this.autoScaler.checkContainerStatus(
+			pendingRequests + inProgressRequestCountAfterHealthCheck
+		)
 		const {
 			containersToRemove: remove,
 			containersToStart: start
@@ -151,7 +165,7 @@ export class RedisService {
 				containerInfo: container
 			}
 		})
-		this.logger.info(`[HEALTH]: should start ${start} | remove ${remove} containers`)
+		this.logger.info(`[HEALTH]:: should start ${start} | remove ${remove} containers`)
 	}
 	/**
 	 * Get the current conversion request for the given conversion id.
@@ -164,11 +178,17 @@ export class RedisService {
 			return this.finishedRequest.get(conversionId)?.request
 		}
 		let conversionRequest: IConversionRequest | undefined = undefined
-		Object.keys(this.workers).forEach(workerId => {
-			conversionRequest = this.workers[workerId].requests.filter(
-				request => request.externalConversionId === conversionId
-			).pop()
-		})
+		for (const worker of this.getWorkers()) {
+			for (const request of worker.requests) {
+				if (request.externalConversionId === conversionId) {
+					conversionRequest = request
+					break
+				}
+			}
+			if (conversionRequest) {
+				break
+			}
+		}
 		return conversionRequest
 	}
 	/**
@@ -182,7 +202,7 @@ export class RedisService {
 			this.logger.info("using cached formats")
 			return this.cachedFormats
 		}
-		this.logger.info("fetching formats from workers")
+		this.logger.info("[FORMATS]:: fetching formats from workers")
 		const [workerUrl] = this.getWorkerUrls()
 		const formats = await getFormatsFromWorker(workerUrl)
 		if (formats) {
@@ -196,6 +216,10 @@ export class RedisService {
 			*/
 			throw new Error("no worker replied with formats")
 		}
+	}
+	readonly getInProgressRequestCount = (): number => {
+		return this.getWorkers().map(worker => worker.requests.length)
+			.reduce((a, b) => a + b, 0)
 	}
 	/**
 	 * Get the number of pending requests within the queue.
@@ -221,11 +245,10 @@ export class RedisService {
 	 * Ping the first available worker.
 	 */
 	readonly pingRandomWorker = async (): Promise<boolean> => {
-		const workerUrls = Object.keys(this.workers)
-			.map(workerId => this.workers[workerId].workerUrl)
-		const promises = workerUrls.map(async url => pingWorker(url))
-		const result = await Promise.all(promises)
-		return result.filter(res => res).length > 0
+		const workerUrls = this.getWorkers().map(worker => worker.workerUrl)
+		const pingPromises = workerUrls.map(async url => pingWorker(url))
+		const pingResults = await Promise.all(pingPromises)
+		return pingResults.filter(res => res).length > 0
 	}
 	/**
 	 * Retrieve a request from the queue.
@@ -240,11 +263,11 @@ export class RedisService {
 	 * Clean-up and quit the redis-service.
 	 */
 	readonly quit = async (): Promise<void> => {
-		this.logger.info("Commencing redis-service cleanup")
+		this.logger.info("[EXIT]:: Commencing redis-service cleanup")
 		if (this.probeInterval !== null) {
 			global.clearInterval(this.probeInterval)
 		}
-		this.logger.info("stopped queue check cron job")
+		this.logger.info("[EXIT]:: stopped queue check cron job")
 		await this.redisWrapper.quit()
 		const {
 			runningContainers
@@ -264,7 +287,7 @@ export class RedisService {
 	 * Start the queue and health check cron jobs.
 	 */
 	readonly start = async (): Promise<void> => {
-		this.logger.info("starting main loop")
+		this.logger.info("[START]:: starting main loop")
 		await this.checkHealth()
 		const ms = 1000
 		const queueProbeInterval = 10
@@ -272,6 +295,7 @@ export class RedisService {
 			healthCheckInterval,
 			stateApplicationInterval
 		} = this.config.schedulerConfig
+		this.logger.info(`[START]:: probing every ${healthCheckInterval}s, applying state every ${stateApplicationInterval}s`)
 		/*
 		* To ensure data consistency we run everything in the same interval
 		* Compute how many normal probes we need until the specified
@@ -285,7 +309,7 @@ export class RedisService {
 			const loggerPrefix = shouldApplyState
 				? "[HEALTH+STATE]"
 				: "[HEALTH]"
-			this.logger.info(`${loggerPrefix}: #${probeCount}`)
+			this.logger.info(`${loggerPrefix}: starting probe #${probeCount}`)
 			const probeStart = performance.now()
 			/* Checking for dead/unhealthy containers */
 			await this.checkHealth()
@@ -295,12 +319,13 @@ export class RedisService {
 			await this.probeWorkersForStatus()
 			/* Fetch files */
 			await this.fetchFilesFromWorkers()
-			if (probeCount % probesPerStateApply === 0) {
+			if (shouldApplyState) {
 				await this.applyState()
 			}
 			probeCount++
 			const probeDuration = performance.now() - probeStart
-			this.logger.info(`${loggerPrefix}: ${Number(probeDuration).toFixed(0)}ms`)
+			this.logger.info(`${loggerPrefix}: probe ended (${Number(probeDuration).toFixed(0)}ms)`)
+			this.logger.info("====================================================================")
 		}, healthCheckInterval * ms)
 	}
 	private readonly addRequestToWorker = (workerId: string, request:IConversionRequest):void => {
@@ -312,79 +337,97 @@ export class RedisService {
 	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
 	 */
 	private readonly fetchFilesFromWorkers = async (): Promise<void> => {
-		const workerIds = Object.keys(this.workers)
-		for (const workerId of workerIds) {
-			for (const request of this.workers[workerId].requests) {
+		for (const worker of this.getWorkers()) {
+			for (const request of worker.requests) {
 				if (request.conversionStatus === "converted") {
 					await getFileFromWorker(
-						this.workers[workerId].workerUrl,
+						worker.workerUrl,
 						// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 						request.workerConversionId!,
 						request.externalConversionId,
 						request.conversionRequestBody.targetFormat
 					)
+					const {
+						containerId
+					} = worker.containerInfo
 					this.removeRequestFromWorker(
-						this.workers[workerId].containerInfo.containerId,
+						worker.containerInfo.containerId,
 						request.externalConversionId
 					)
-					const containerName = this.getContainerName(workerId)
-					this.logger.info(`fetched file from ${containerName}`)
+					const containerName = this.getContainerName(containerId)
+					this.logger.info(`[FETCH]:: [${containerName}] => fetched file for ${request.externalConversionId}`)
 					const ext = getExtFromFormat(request.conversionRequestBody.originalFormat)
 					const inputPath = join("input", request.externalConversionId + ext)
 					await deleteFile(inputPath)
-					this.logger.info(`deleted ${inputPath}`)
+					this.logger.info(`[FETCH]:: deleted ${inputPath}`)
 					this.finishedRequest.set(request.externalConversionId, {
-						containerId: workerId,
+						containerId,
 						request
 					})
 				}
 				else if (request.conversionStatus === "erroneous") {
+					const {
+						containerId
+					} = worker.containerInfo
 					this.removeRequestFromWorker(
-						this.workers[workerId].containerInfo.containerId,
+						containerId,
 						request.externalConversionId
 					)
 					const ext = getExtFromFormat(request.conversionRequestBody.originalFormat)
 					const inputPath = join("input", request.externalConversionId + ext)
 					await deleteFile(inputPath)
-					this.logger.info(`deleted ${inputPath}`)
+					this.logger.info(`[FETCH]:: deleted ${inputPath}`)
 					this.finishedRequest.set(request.externalConversionId, {
-						containerId: this.workers[workerId].containerInfo.containerId,
+						containerId,
 						request
 					})
 				}
 			}
 		}
+		const finishedRequestCount = this.finishedRequest.size
+		this.logger.info(`[FETCH]:: ${finishedRequestCount} finished requests`)
 	}
 	/**
 	 * Dispatch requests from the queue to idle workers.
 	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
 	 */
 	private readonly forwardRequestsToIdleWorkers = async (): Promise<void> => {
-		this.logger.info("forwarding requests to free workers...")
+		this.logger.info(`[FORWARD]:: ${await this.getPendingRequestCount()} in queue`)
+		this.logger.info("[FORWARD]:: forwarding requests to free workers")
 		const {
 			tasksPerContainer
 		} = this.config.autoScalerConfig
-		const workerIds = Object.keys(this.workers)
-		for (const workerId of workerIds) {
-			if (this.workers[workerId].requests.length === tasksPerContainer) {
+		// Sort workers by request count ascending
+		const sortedWorkers = this.getWorkers().sort((workerA, workerB) => {
+			return workerA.requests.length - workerB.requests.length
+		})
+		for (const worker of sortedWorkers) {
+			if (worker.requests.length === tasksPerContainer) {
 				continue
 			}
-			while (this.workers[workerId].requests.length < tasksPerContainer
+			if (isUnhealthy(worker.containerInfo.containerHealthStatus)) {
+				continue
+			}
+			if (worker.requests.length < tasksPerContainer
 				&& await this.getPendingRequestCount() > 0) {
 				const request = await this.popRequest()
 				const workerConversionId = await forwardRequestToWorker(
-					this.workers[workerId].workerUrl,
+					worker.workerUrl,
 					request
 				)
-				this.addRequestToWorker(workerId, {
+				const {
+					containerId
+				} = worker.containerInfo
+				this.addRequestToWorker(containerId, {
 					...request,
 					workerConversionId
 				})
-				const containerName = this.getContainerName(workerId)
+				const containerName = this.getContainerName(containerId)
 				const extId = request.externalConversionId
-				this.logger.info(`forwarded ${extId} to ${containerName} (${workerConversionId})`)
+				this.logger.info(`[FORWARD]:: [${containerName}] received [${extId}][${workerConversionId}]`)
 			}
 		}
+		this.logger.info(`[FORWARD]:: ${await this.getPendingRequestCount()} in queue after forwarding`)
 	}
 	/**
 	 * Utility function to get the container name of the worker
@@ -399,17 +442,11 @@ export class RedisService {
 	 * @returns the container id's of idle workers
 	 */
 	private readonly getIdleWorkerIds = (): string[] => {
-		const {
-			tasksPerContainer
-		} = this.config.autoScalerConfig
-		const filteredIdleWorkers = Object.keys(this.workers).filter(workerId => {
-			const workerRequests = this.workers[workerId].requests
-			const hasLessRequestsThanAllowed = workerRequests.length < tasksPerContainer
-			return hasLessRequestsThanAllowed && isHealthy(
-				this.workers[workerId].containerInfo.containerStatus
-			)
+		return this.getWorkers().filter(worker => {
+			return isHealthy(worker.containerInfo.containerHealthStatus)
+			&& worker.requests.length === 0
 		})
-		return filteredIdleWorkers.map(workerId => workerId)
+			.map(worker => worker.containerInfo.containerId)
 	}
 	/**
 	 * Get the number of request the given worker has.
@@ -424,30 +461,35 @@ export class RedisService {
 	 * @returns the ip's of the workers
 	 */
 	private readonly getWorkerUrls = (): string[] => {
-		return Object.keys(this.workers).map(workerId => {
-			return this.workers[workerId].workerUrl
-		})
+		return this.getWorkers().map(worker => worker.workerUrl)
 	}
 	/**
 	 * Probe all busy workers for their status.
 	 * THIS IS A LIFECYLCE METHOD AND SHOULD ONLY BE CALLED FROM WITHIN THE INTERVAL!!!
 	 */
 	private readonly probeWorkersForStatus = async (): Promise<void> => {
-		this.logger.info("asking busy workers for status update...")
+		this.logger.info("[PROBE]:: asking busy workers for status update...")
 		const workerIds = Object.keys(this.workers)
-		for (const workerId of workerIds) {
-			for (const request of this.workers[workerId].requests) {
+		for (const worker of this.getWorkers()) {
+			for (const request of worker.requests) {
+				const {
+					containerId
+				} = worker.containerInfo
 				const status = await getConversionStatus(
-					this.workers[workerId].workerUrl,
+					worker.workerUrl,
 					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 					request.workerConversionId!
 				)
-				this.updateWorkerConversionStatus(workerId, {
+				this.updateWorkerConversionStatus(containerId, {
 					...request,
 					conversionStatus: status
 				})
-				const containerName = this.getContainerName(workerId)
-				this.logger.info(`${containerName}::${request.externalConversionId} => ${status} `)
+				const containerName = this.getContainerName(containerId)
+				const {
+					externalConversionId,
+					workerConversionId
+				} = request
+				this.logger.info(`[PROBE]:: [${containerName}] [${externalConversionId}][${workerConversionId}] => ${status} `)
 			}
 		}
 	}

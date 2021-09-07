@@ -38,3 +38,8 @@ export class RedisWrapperNotInitializedError extends Error {
 		super("redis-service has not been initialized")
 	}
 }
+export class RedisWrapperTimoutError extends Error {
+	constructor() {
+		super("timeout when connecting to redis-server")
+	}
+}

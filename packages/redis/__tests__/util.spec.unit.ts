@@ -87,10 +87,11 @@ describe("utility functions should work", () => {
 	describe("isUnhealthy should pass all tests", () => {
 		it("should handle valid cases", () => {
 			expect(isUnhealthy("unhealthy")).toBe(true)
+			expect(isUnhealthy("starting")).toBe(true)
+			expect(isUnhealthy("invalid status")).toBe(true)
 		})
 		it("should handle invalid cases", () => {
 			expect(isUnhealthy("healthy")).toBe(false)
-			expect(isUnhealthy("starting")).toBe(false)
 		})
 	})
 })
