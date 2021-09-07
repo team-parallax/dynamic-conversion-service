@@ -15,7 +15,7 @@ ENV WEBSERVICE_PORT="3000" \
     CONVERT_TO_PNG_WITH="ffmpeg" \
     CONVERT_TO_BMP_WITH="ffmpeg"
 
-ENV REDIS_HOST="127.0.0.1" \
+ENV REDIS_HOST="172.17.0.1" \
     REDIS_PORT="6379" \
     REDIS_NS="redis-service-test" \
     REDIS_QUEUE="redis-service-test-queue" \
@@ -30,8 +30,8 @@ ENV TASKS_PER_CONTAINER="2" \
     CONTAINER_TAG="latest" \
     DOCKER_SOCKET_PATH="/var/run/docker.sock"
 
-FROM docker:latest
-RUN docker version
+# FROM docker:latest
+# RUN docker version
 
 # # FROM teamparallax/conversion-service-base-image:v0.2.2
 # ARG host:localhost:3000
@@ -41,3 +41,4 @@ RUN apk update \
 	&& apk add --no-cache nodejs yarn
 RUN yarn install
 CMD [ "yarn", "start:redis" ]
+# CMD ["/bin/sh"]

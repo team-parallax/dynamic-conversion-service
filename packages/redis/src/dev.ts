@@ -17,7 +17,7 @@ process.env.CONVERT_TO_BMP_WITH = "ffmpeg"
 // =============================================================
 // || redis-service ENVIRONMENT VARIABLES
 // =============================================================
-process.env.REDIS_HOST = "127.0.0.1"
+process.env.REDIS_HOST = "172.17.0.1"
 process.env.REDIS_PORT = "6379"
 process.env.REDIS_NS = "redis-service-test"
 process.env.REDIS_QUEUE = "redis-service-test-queue"

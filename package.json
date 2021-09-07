@@ -8,7 +8,8 @@
     "prepare": "husky install",
     "release": "standard-version",
     "test:unit": "yarn lerna run test:unit",
-    "typecheck": "yarn lerna run test:types"
+    "typecheck": "yarn lerna run test:types",
+    "start:redis": "yarn --cwd packages/redis start:dev"
   },
   "devDependencies": {
     "@openapitools/openapi-generator-cli": "^2.3.10",

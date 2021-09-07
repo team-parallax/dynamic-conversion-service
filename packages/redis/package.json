@@ -17,7 +17,7 @@
     "lint": "yarn eslint src --ext .ts",
     "lint:fix": "yarn eslint src --ext .ts --fix",
     "start": "yarn ts-node src/index.ts",
-    "start-dev": "yarn ts-node src/dev.ts",
+    "start:dev": "yarn ts-node src/dev.ts",
     "test": "yarn jest --config ./jest.config.js --detectOpenHandles",
     "test:integration": "yarn jest integration --config ./jest.config.js --detectOpenHandles",
     "test:integration:coverage": "yarn test:integration --coverage --reporters=default --reporters=jest-junit",
