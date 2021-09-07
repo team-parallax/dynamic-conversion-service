@@ -89,7 +89,7 @@ code quality:
     - if: "$CODE_QUALITY_DISABLED"
       when: never
     - changes:
-        - src/**/*.ts
+        - ./**/*.ts
       when: always
 
 ### Release Stage
