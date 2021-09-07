@@ -27,7 +27,6 @@ export class RedisWrapper {
 			ns: namespace,
 			port
 		})
-		this.logger.info("established redis connection")
 	}
 	readonly getPendingMessagesCount = async (): Promise<number> => {
 		if (!this.isInitialized) {
@@ -47,6 +46,7 @@ export class RedisWrapper {
 		})
 	}
 	readonly initialize = async (): Promise<void> => {
+		this.logger.info("initializing redis-wrapper")
 		const millisecondsPerSecond = 1000
 		const timeout = async (seconds: number):Promise<void> => new Promise((resolve, reject) => {
 			global.setTimeout(resolve, seconds * millisecondsPerSecond)
@@ -70,7 +70,7 @@ export class RedisWrapper {
 		if (!this.isInitialized) {
 			throw new RedisWrapperTimoutError()
 		}
-		this.logger.info("initialized redis-wrapper")
+		this.logger.info("redis-wrapper connected to redis-server")
 	}
 	readonly quit = async (): Promise<void> => {
 		const runningQueues = await this.getQueues()
