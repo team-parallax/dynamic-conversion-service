@@ -54,9 +54,12 @@ export class Api {
 		this.app.get("/", (req, res, err) => {
 			res.send("Request received")
 		})
-		this.app.use("/docs", serve, async (req: Request, res: Response) => {
+		this.app.use("/docs", serve, (req: Request, res: Response) => {
+			const swaggerHostServer = swaggerDocument.servers[0]
+			swaggerHostServer.url = process.env.SWAGGER_HOST ?? "http://localhost:3000"
+			swaggerDocument.servers[0] = swaggerHostServer
 			return res.send(
-				generateHTML(await import("conversion-service/swagger.json"))
+				generateHTML(swaggerDocument)
 			)
 		})
 		RegisterRoutes(this.app as Express)
