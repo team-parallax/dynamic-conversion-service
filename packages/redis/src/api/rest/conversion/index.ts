@@ -113,21 +113,18 @@ export class ConversionController extends Controller {
 	@Get("/")
 	public async getConversionQueueStatus(): Promise<IConversionQueueStatus> {
 		try {
-			const workerInfos = this.redisService.getWorkers()
-			const runningWorkers = workerInfos.filter(w => w.requests.length > 0)
+			const requests = this.redisService.getRequests()
 			const conversions: IConversionStatus[] = []
-			for (const worker of runningWorkers) {
-				for (const request of worker.requests) {
-					conversions.push({
-						conversionId: request.externalConversionId,
-						path: request.conversionRequestBody.filename,
-						retries: 0,
-						// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-						sourceFormat: request.conversionRequestBody.originalFormat!,
-						status: assertStatus(request.conversionStatus),
-						targetFormat: request.conversionRequestBody.targetFormat
-					})
-				}
+			for (const request of requests) {
+				conversions.push({
+					conversionId: request.externalConversionId,
+					path: request.conversionRequestBody.filename,
+					retries: 0,
+					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+					sourceFormat: request.conversionRequestBody.originalFormat!,
+					status: assertStatus(request.conversionStatus),
+					targetFormat: request.conversionRequestBody.targetFormat
+				})
 			}
 			const inProcessConversions = conversions.length
 			const inQueueConversions = await this.redisService.getPendingRequestCount()
