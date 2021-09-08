@@ -178,9 +178,9 @@ export class WorkerHandler {
 		return targetRequest[0]
 	}
 	/**
-	 *
-	 * @param tasksPerContainer
-	 * @returns
+	 * Get the number of currently forwardable requests.
+	 * @param tasksPerContainer The config to respect
+	 * @returns the number of currently forwardable requests
 	 */
 	public readonly getForwardableRequestCount = (tasksPerContainer: number): number => {
 		return this._workers()
@@ -219,8 +219,8 @@ export class WorkerHandler {
 		return this.workers[workerId].requests.length
 	}
 	/**
-	 *
-	 * @returns
+	 * Get all requests.
+	 * @returns all requests currently assigned to workers
 	 */
 	public readonly getRequests = (): IConversionRequest[] => {
 		return this._workers().map(worker => worker.requests)
@@ -277,6 +277,11 @@ export class WorkerHandler {
 			}
 		}
 	}
+	/**
+	 * Remove the given conversion id from a worker
+	 * @param workerId the worker
+	 * @param externalConversionId  the conversion id
+	 */
 	public readonly removeRequestFromWorker = (
 		workerId: string,
 		externalConversionId: string

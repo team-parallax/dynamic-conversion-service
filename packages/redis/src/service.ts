@@ -208,6 +208,13 @@ export class RedisService {
 		return this.workerManager.getRequests()
 	}
 	/**
+	 * Check if at least 1 worker is up.
+	 * @returns if the at least 1 worker is online
+	 */
+	readonly hasWorker = (): boolean => {
+		return this.workerManager.getWorkerCount() > 0
+	}
+	/**
 	 * Initialize redis service.
 	 */
 	readonly initialize = async (): Promise<void> => {
