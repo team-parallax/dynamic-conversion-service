@@ -297,10 +297,9 @@ export class RedisService {
 					request
 				)
 			})
-			// If (shouldApplyState) {
-			/* Await this.checkHealth() */
-			await this.applyState()
-			// }
+			if (shouldApplyState) {
+				await this.applyState()
+			}
 			probeCount++
 			const probeDuration = performance.now() - probeStart
 			this.logger.info(`${loggerPrefix}: probe ended (${Number(probeDuration).toFixed(0)}ms)`)
