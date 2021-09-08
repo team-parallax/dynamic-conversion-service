@@ -1,7 +1,8 @@
 import {
 	DuplicateWorkerIdError,
 	InvalidWorkerIdError,
-	NoWorkerConversionIdError
+	NoWorkerConversionIdError,
+	NoWorkerWithRequestError
 } from "./exception"
 import { EConversionStatus } from "../api/conversion-client"
 import { IContainerInfo } from "auto-scaler/src/docker/interface"
@@ -338,7 +339,7 @@ export class WorkerHandler {
 			}
 		})
 		if (targetIndex === -1) {
-			throw new Error("Worker xy does not have request ab")
+			throw new NoWorkerWithRequestError(workerId, request.externalConversionId)
 		}
 		this.workers[workerId].requests[targetIndex] = request
 	}

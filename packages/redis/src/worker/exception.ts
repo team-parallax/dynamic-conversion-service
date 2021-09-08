@@ -13,3 +13,8 @@ export class NoWorkerConversionIdError extends Error {
 		super(`request ${externalConversionId} has no workerConversionId`)
 	}
 }
+export class NoWorkerWithRequestError extends Error {
+	constructor(workerId: string, externalConversionId: string) {
+		super(`worker ${workerId} doesn't have a request with id: ${externalConversionId}`)
+	}
+}
