@@ -1,11 +1,11 @@
 export class InvalidWorkerIdError extends Error {
 	constructor(workerId: string) {
-		super(`no worker found with ${workerId}`)
+		super(`no worker found with id: ${workerId}`)
 	}
 }
 export class DuplicateWorkerIdError extends Error {
 	constructor(workerId: string) {
-		super(`${workerId} already exists`)
+		super(`worker with id: ${workerId} already exists`)
 	}
 }
 export class NoWorkerConversionIdError extends Error {

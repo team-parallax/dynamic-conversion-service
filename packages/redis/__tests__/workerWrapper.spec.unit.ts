@@ -1,12 +1,14 @@
 import {
-	DuplicateWorkerIdError, InvalidWorkerIdError, NoWorkerConversionIdError
+	DuplicateWorkerIdError,
+	InvalidWorkerIdError,
+	NoWorkerConversionIdError
 } from "../src/worker/exception"
 import { EConversionStatus } from "../src/api/conversion-client"
 import { ELogLevel } from "logger/src/enum"
 import { IContainerInfo } from "auto-scaler/src/docker/interface"
 import { IConversionRequest } from "../src/interface"
 import { Logger } from "logger"
-import { WorkerManager } from "../src/worker"
+import { WorkerHandler } from "../src/worker"
 describe("WorkerWrapper should pass all tests", () => {
 	const invalidRequest: IConversionRequest = {
 		conversionRequestBody: {
@@ -19,9 +21,9 @@ describe("WorkerWrapper should pass all tests", () => {
 		externalConversionId: "",
 		workerConversionId: null
 	}
-	let workerManager: WorkerManager
+	let workerManager: WorkerHandler
 	beforeAll(() => {
-		workerManager = new WorkerManager(new Logger({
+		workerManager = new WorkerHandler(new Logger({
 			logLevel: ELogLevel.debug,
 			serviceName: "WorkerManagerTest"
 		}))

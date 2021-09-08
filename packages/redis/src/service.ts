@@ -12,7 +12,7 @@ import {
 } from "./config"
 import { Logger } from "logger"
 import { RedisWrapper } from "./wrapper"
-import { WorkerManager } from "./worker"
+import { WorkerHandler } from "./worker"
 import {
 	getFormatsFromWorker,
 	isStartingOrHealthy,
@@ -52,7 +52,10 @@ export class RedisService {
 	 * The wrapper around the rsmq implementation.
 	 */
 	private readonly redisWrapper: RedisWrapper
-	private readonly workerManager: WorkerManager
+	/**
+	 * The state-handler for all workers.
+	 */
+	private readonly workerManager: WorkerHandler
 	constructor() {
 		this.config = getRedisConfigFromEnv()
 		this.logger = new Logger({
@@ -64,9 +67,8 @@ export class RedisService {
 		} = this.config
 		this.redisWrapper = new RedisWrapper(redisConfig, this.logger)
 		this.autoScaler = new AutoScaler(autoScalerConfig)
-		// This.workers = {}
 		this.finishedRequest = new Map()
-		this.workerManager = new WorkerManager(this.logger)
+		this.workerManager = new WorkerHandler(this.logger)
 	}
 	/**
 	 * Add the given request to the queue to be processed later.

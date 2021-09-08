@@ -22,10 +22,7 @@ import {
 	isHealthy
 } from "../util"
 import { join } from "path"
-/**
- * WorkerManager handles all running workers.
- */
-export class WorkerManager {
+export class WorkerHandler {
 	/**
 	 * Logger
 	 */
@@ -34,9 +31,6 @@ export class WorkerManager {
 	 * The object containing all workers
 	 */
 	private readonly workers: IWorkers
-	/**
-	 *
-	 */
 	constructor(logger: Logger) {
 		this.logger = logger
 		// This.logger.changeServiceName("Worker-Manager")
@@ -254,7 +248,7 @@ export class WorkerManager {
 		return this.workers[workerId] !== undefined
 	}
 	/**
-	 *
+	 * Ask all workers for a status update on their conversions.
 	 */
 	public readonly probeWorkersForStatus = async (): Promise<void> => {
 		this.logger.info("[PROBE]:: asking busy workers for status update...")
@@ -289,8 +283,9 @@ export class WorkerManager {
 		if (!this.hasWorkerId(workerId)) {
 			throw new InvalidWorkerIdError(workerId)
 		}
-		this.workers[workerId].requests = this.workers[workerId].requests
-			.filter(request => request.externalConversionId !== externalConversionId)
+		this.workers[workerId].requests = this.workers[workerId].requests.filter(
+			request => request.externalConversionId !== externalConversionId
+		)
 		this.logger.info(`[${this.getContainerName(workerId)}] removed ${externalConversionId}`)
 	}
 	/**
@@ -324,6 +319,11 @@ export class WorkerManager {
 			containerInfo
 		}
 	}
+	/**
+	 * Update the request assigned to the worker.
+	 * @param workerId the worker to update
+	 * @param request the request to update
+	 */
 	public readonly updateWorkerConversionStatus = (
 		workerId: string,
 		request: IConversionRequest
@@ -359,7 +359,7 @@ export class WorkerManager {
 		})
 	}
 	/**
-	 *
+	 * A utility function to easily get all workers as an array.
 	 */
 	private readonly _workers = (): IWorkerInfo[] => {
 		return Object.keys(this.workers).map(workerId => this.workers[workerId])
