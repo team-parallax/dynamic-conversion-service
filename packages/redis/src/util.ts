@@ -11,11 +11,11 @@ import {
 } from "./exception"
 import { IConversionRequest } from "./interface"
 import { createWriteStream } from "fs"
+import { deleteFile, readFileToBuffer } from "conversion-service/src/service/file-io"
 import {
 	extname,
 	join
 } from "path"
-import { readFileToBuffer } from "conversion-service/src/service/file-io"
 import FormData from "form-data"
 import fetch from "node-fetch"
 export const wait = async (duration: number): Promise<void> => {
@@ -130,4 +130,12 @@ export const isUnhealthy = (containerStatus: string): boolean => {
 }
 export const isStartingOrHealthy = (containerStatus: string): boolean => {
 	return isHealthy(containerStatus) || containerStatus === "starting"
+}
+export const removeRequestFile = async (
+	dir: "input" | "output",
+	request: IConversionRequest
+): Promise<void> => {
+	const ext = getExtFromFormat(request.conversionRequestBody.originalFormat)
+	const targetPath = join(dir, request.externalConversionId + ext)
+	await deleteFile(targetPath)
 }
