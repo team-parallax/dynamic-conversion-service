@@ -58,15 +58,5 @@ import { RedisService } from "./service"
 		await redisService.quit()
 		api.close()
 	})
-	// eslint-disable-next-line @typescript-eslint/no-misused-promises
-	process.on("SIGTERM", async (): Promise<void> => {
-		await redisService.quit()
-		api.close()
-	})
-	// eslint-disable-next-line @typescript-eslint/no-misused-promises
-	process.on("SIGKILL", async (): Promise<void> => {
-		await redisService.quit()
-		api.close()
-	})
 	api.listen()
 })()
