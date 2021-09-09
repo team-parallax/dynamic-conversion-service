@@ -27,7 +27,7 @@ export class DockerService {
 			host,
 			port
 		} = this.config
-		const useSocket = socketPath && (!host && !port)
+		const useSocket = socketPath && socketPath !== ""
 		const useHostPort = host && port && !socketPath
 		if (useSocket) {
 			this.docker = new Docker({
