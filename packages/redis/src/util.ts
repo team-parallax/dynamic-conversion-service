@@ -135,7 +135,11 @@ export const removeRequestFile = async (
 	dir: "input" | "output",
 	request: IConversionRequest
 ): Promise<string> => {
-	const ext = getExtFromFormat(request.conversionRequestBody.originalFormat)
+	const ext = getExtFromFormat(
+		dir === "input"
+			? request.conversionRequestBody.originalFormat
+			: request.conversionRequestBody.targetFormat
+	)
 	const targetPath = join(dir, request.externalConversionId + ext)
 	await deleteFile(targetPath)
 	return targetPath

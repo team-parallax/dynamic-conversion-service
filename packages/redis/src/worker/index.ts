@@ -102,6 +102,7 @@ export class WorkerHandler {
 					this.logger.info(`[FETCH]:: deleted ${deletedPath}`)
 					finishedRequests.push({
 						containerId,
+						finishedTime: new Date(),
 						request
 					})
 				}
@@ -118,6 +119,7 @@ export class WorkerHandler {
 					this.logger.info(`[FETCH]:: deleted ${deletedPath}`)
 					finishedRequests.push({
 						containerId,
+						finishedTime: new Date(),
 						request
 					})
 				}
