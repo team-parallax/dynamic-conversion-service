@@ -53,6 +53,10 @@ export class RedisService {
 	 */
 	private readonly redisWrapper: RedisWrapper
 	/**
+	 * Track requests which are still in queue
+	 */
+	private readonly requestsInQueue: Map<string, IConversionRequest>
+	/**
 	 * The state-handler for all workers.
 	 */
 	private readonly workerHandler: WorkerHandler
@@ -68,6 +72,7 @@ export class RedisService {
 		this.redisWrapper = new RedisWrapper(redisConfig, this.logger)
 		this.autoScaler = new AutoScaler(autoScalerConfig)
 		this.finishedRequest = new Map()
+		this.requestsInQueue = new Map()
 		this.workerHandler = new WorkerHandler(this.logger)
 	}
 	/**
@@ -76,6 +81,10 @@ export class RedisService {
 	 */
 	readonly addRequestToQueue = async (conversionRequest: IConversionRequest): Promise<void> => {
 		await this.redisWrapper.sendMessage(JSON.stringify(conversionRequest))
+		this.requestsInQueue.set(
+			conversionRequest.externalConversionId,
+			conversionRequest
+		)
 		const queueDepth = await this.getPendingRequestCount()
 		this.logger.info(
 			`[API]:: added request ${conversionRequest.externalConversionId} [${queueDepth}]`
@@ -164,6 +173,9 @@ export class RedisService {
 	 * no conversion with the given id
 	 */
 	readonly getConversionResult = (conversionId: string): IConversionRequest | undefined => {
+		if (this.requestsInQueue.has(conversionId)) {
+			return this.requestsInQueue.get(conversionId)
+		}
 		if (this.finishedRequest.has(conversionId)) {
 			return this.finishedRequest.get(conversionId)?.request
 		}
@@ -238,6 +250,7 @@ export class RedisService {
 	readonly popRequest = async (): Promise<IConversionRequest> => {
 		const requestString = await this.redisWrapper.receiveMessage()
 		const conversionRequest = JSON.parse(requestString) as IConversionRequest
+		this.requestsInQueue.delete(conversionRequest.externalConversionId)
 		return conversionRequest
 	}
 	/**
