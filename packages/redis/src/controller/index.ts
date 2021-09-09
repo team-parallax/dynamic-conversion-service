@@ -15,8 +15,8 @@ export class IndexController extends Controller {
 	@Tags("Misc.")
 	@Get("/ping")
 	@Example<string>("pong")
-	public async getPingResponse(): Promise<string> {
-		const hasWorker = await this.redisService.pingRandomWorker()
+	public getPingResponse(): string {
+		const hasWorker = this.redisService.hasWorker()
 		if (hasWorker) {
 			this.setStatus(EHttpResponseCodes.ok)
 			return "pong"
