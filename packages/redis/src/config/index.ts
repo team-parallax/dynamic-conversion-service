@@ -151,25 +151,17 @@ const getSchedulerConfigFromEnv = (): ISchedulerConfiguration => {
 	}
 }
 export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
-	const envHost = process.env.REDIS_HOST
+	const envHost = process.env.REDIS_HOST ?? "127.0.0.1"
 	const envPort = process.env.REDIS_PORT
-	const envNameSpace = process.env.REDIS_NS
-	const envQueue = process.env.REDIS_QUEUE
+	const envNameSpace = process.env.REDIS_NS ?? "dcs-redis-ns"
+	const envQueue = process.env.REDIS_QUEUE ?? "dcs-redis-q"
 	const envFileTtl = process.env.FILE_TTL
-	if (!envHost) {
-		throw new InvalidConfigurationError("redis-service", "REDIS_HOST")
-	}
-	if (!envPort) {
-		throw new InvalidConfigurationError("redis-service", "REDIS_PORT")
-	}
-	if (!isStringNumber(envPort)) {
-		throw new InvalidConfigurationValueError("redis-service", "REDIS_PORT", envPort)
-	}
-	if (!envNameSpace) {
-		throw new InvalidConfigurationError("redis-service", "REDIS_NS")
-	}
-	if (!envQueue) {
-		throw new InvalidConfigurationError("redis-service", "REDIS_QUEUE")
+	let redisPort = 6379
+	if (envPort) {
+		if (!isStringNumber(envPort)) {
+			throw new InvalidConfigurationValueError("redis-service", "REDIS_PORT", envPort)
+		}
+		redisPort = parseInt(envPort)
 	}
 	let fileTtl = 3600
 	if (envFileTtl) {
@@ -184,7 +176,7 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 		redisConfig: {
 			host: envHost,
 			namespace: envNameSpace,
-			port: parseInt(envPort),
+			port: redisPort,
 			queue: envQueue
 		},
 		schedulerConfig: getSchedulerConfigFromEnv()
