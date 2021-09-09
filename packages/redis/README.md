@@ -47,10 +47,9 @@ const redis = new RedisService({
         queue: "test-queue"
     }
 })
-// This is important
+/* This is important */
 await redis.initialize()
 await redis.send("Hello World")
 const message = await redis.receive()
 console.log(message) // "Hello World"
-
 ```
