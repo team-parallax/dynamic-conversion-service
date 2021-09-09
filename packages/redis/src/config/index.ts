@@ -123,8 +123,8 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 const getSchedulerConfigFromEnv = (): ISchedulerConfiguration => {
 	const envHealthInterval = process.env.HEALTH_CHECK_INTERVAL
 	const envStateInterval = process.env.APPLY_DESIRED_STATE_INTERVAL
-	let healthCheckInterval: number = 120
-	let stateApplicationInterval: number = 600
+	let healthCheckInterval: number = 10
+	let stateApplicationInterval: number = 30
 	if (envHealthInterval) {
 		if (!isStringNumber(envHealthInterval)) {
 			throw new InvalidConfigurationValueError(
