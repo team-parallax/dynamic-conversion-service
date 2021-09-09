@@ -155,6 +155,7 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 	const envPort = process.env.REDIS_PORT
 	const envNameSpace = process.env.REDIS_NS
 	const envQueue = process.env.REDIS_QUEUE
+	const envFileTtl = process.env.FILE_TTL
 	if (!envHost) {
 		throw new InvalidConfigurationError("redis-service", "REDIS_HOST")
 	}
@@ -170,8 +171,16 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 	if (!envQueue) {
 		throw new InvalidConfigurationError("redis-service", "REDIS_QUEUE")
 	}
+	let fileTtl = 3600
+	if (envFileTtl) {
+		if (!isStringNumber(envFileTtl)) {
+			throw new InvalidConfigurationError("redis-service", "FILE_TTL")
+		}
+		fileTtl = parseInt(envFileTtl)
+	}
 	return {
 		autoScalerConfig: getAutoScalerConfigFromEnv(),
+		fileTtl,
 		redisConfig: {
 			host: envHost,
 			namespace: envNameSpace,

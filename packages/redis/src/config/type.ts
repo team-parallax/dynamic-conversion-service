@@ -10,6 +10,8 @@ export type TRequiredRedisServiceConfigurationField =
 	| "REDIS_PORT"
 	| "REDIS_NS"
 	| "REDIS_QUEUE"
+	// Is this really the right place here?
+	| "FILE_TTL"
 export type TRequiredConversionServiceConfigurationField =
 	| "FFMPEG_PATH"
 	| "IMAGE_MAGICK_PATH"

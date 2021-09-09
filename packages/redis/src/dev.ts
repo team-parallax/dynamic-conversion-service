@@ -23,6 +23,7 @@ process.env.REDIS_NS = "redis-service-test"
 process.env.REDIS_QUEUE = "redis-service-test-queue"
 process.env.HEALTH_CHECK_INTERVAL = "10"
 process.env.APPLY_DESIRED_STATE_INTERVAL = "15"
+process.env.FILE_TTL = "30"
 // =============================================================
 // || auto-scaler ENVIRONMENT VARIABLES
 // =============================================================
