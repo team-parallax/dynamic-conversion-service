@@ -84,14 +84,12 @@ describe("loading configuration fields from environment should work", () => {
 			expect(() => getRedisConfigFromEnv()).toThrowError(InvalidConfigurationError)
 		})
 		it("should throw an error when a required field is missing", () => {
-			delete process.env.REDIS_HOST
+			delete process.env.MAX_WORKER_CONTAINERS
 			expect(() => getRedisConfigFromEnv()).toThrowError(InvalidConfigurationError)
 		})
 		it("should throw an error when multiple required field is missing", () => {
-			delete process.env.REDIS_HOST
-			delete process.env.REDIS_PORT
-			delete process.env.REDIS_NS
-			delete process.env.REDIS_QUEUE
+			delete process.env.MAX_WORKER_CONTAINERS
+			delete process.env.MIN_WORKER_CONTAINERS
 			expect(() => getRedisConfigFromEnv()).toThrowError(InvalidConfigurationError)
 		})
 	})
