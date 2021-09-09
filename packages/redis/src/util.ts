@@ -134,8 +134,9 @@ export const isStartingOrHealthy = (containerStatus: string): boolean => {
 export const removeRequestFile = async (
 	dir: "input" | "output",
 	request: IConversionRequest
-): Promise<void> => {
+): Promise<string> => {
 	const ext = getExtFromFormat(request.conversionRequestBody.originalFormat)
 	const targetPath = join(dir, request.externalConversionId + ext)
 	await deleteFile(targetPath)
+	return targetPath
 }
