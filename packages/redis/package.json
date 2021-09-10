@@ -13,11 +13,11 @@
   "license": "MIT",
   "main": "src/index.ts",
   "scripts": {
-    "build:docker": "docker build -t teamparallax/dynamic-conversion-service -f ./Dockerfile .",
+    "build:docker": "docker build -t teamparallax/redis-conversion-manager -f ./Dockerfile .",
     "lint": "yarn eslint src --ext .ts",
     "lint:fix": "yarn eslint src --ext .ts --fix",
     "start": "yarn ts-node src/index.ts",
-    "start-dev": "yarn ts-node src/dev.ts",
+    "start:dev": "yarn ts-node src/dev.ts",
     "test": "yarn jest --config ./jest.config.js --detectOpenHandles",
     "test:integration": "yarn jest integration --config ./jest.config.js --detectOpenHandles",
     "test:integration:coverage": "yarn test:integration --coverage --reporters=default --reporters=jest-junit",
@@ -35,7 +35,8 @@
   "dependencies": {
     "rsmq": "^0.9.1",
     "node-fetch": "^2.6.1",
-    "form-data": "^4.0.0"
+    "form-data": "^4.0.0",
+    "ts-node": "^10.1.0"
   },
   "devDependencies": {
     "@types/node-fetch": "^2.5.12",
