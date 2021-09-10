@@ -21,7 +21,7 @@ workflow:
 
 include:
   - local: .gitlab/ci/build.gitlab-ci.yml
-  - local: packages/**/.gitlab-ci.yml
+  - local: packages/**/*.gitlab-ci.yml
 
 ### Prepare - Stage
 lint code:
