@@ -96,7 +96,7 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 		}
 		port = parseInt(envPort)
 	}
-	const useSocket = socketPath && (!host && !port)
+	const useSocket = socketPath && socketPath !== ""
 	const useHostPort = host && port && !socketPath
 	if (!(useSocket || useHostPort)) {
 		throw new InvalidConfigurationValueError(

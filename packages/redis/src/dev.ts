@@ -17,6 +17,7 @@ process.env.CONVERT_TO_BMP_WITH = "ffmpeg"
 // =============================================================
 // || redis-service ENVIRONMENT VARIABLES
 // =============================================================
+process.env.REDIS_HOST = "172.17.0.1"
 process.env.HEALTH_CHECK_INTERVAL = "10"
 process.env.APPLY_DESIRED_STATE_INTERVAL = "15"
 process.env.FILE_TTL = "30"

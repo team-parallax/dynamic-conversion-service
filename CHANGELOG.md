@@ -2,6 +2,91 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.0-14](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-13...v0.2.0-14) (2021-09-10)
+
+## [0.2.0-13](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-12...v0.2.0-13) (2021-09-10)
+
+
+### Bug Fixes
+
+* **ci:** add default pipeline image ([bca37e6](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/bca37e60dfb3e71278cd9eb6535c90d84e926e8f))
+
+## [0.2.0-12](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-11...v0.2.0-12) (2021-09-10)
+
+## [0.2.0-11](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-10...v0.2.0-11) (2021-09-10)
+
+## [0.2.0-10](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-9...v0.2.0-10) (2021-09-10)
+
+## [0.2.0-9](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-8...v0.2.0-9) (2021-09-10)
+
+
+### Bug Fixes
+
+* **root:** fix invalid yaml ([77218ef](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/77218efd0cd9b8c3306b123e3541d55298e05638))
+* **root:** move image definition in ci-file ([8eb016c](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/8eb016cdf0b6d6924b0883c9d064cfdc9930ed76))
+
+## [0.2.0-8](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-7...v0.2.0-8) (2021-09-10)
+
+
+### Bug Fixes
+
+* **root:** fix invalid yaml definition for ci ([eae7ce9](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/eae7ce9f4f36c9d3f46fe8fb959c18677b80380e))
+
+## [0.2.0-7](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-6...v0.2.0-7) (2021-09-10)
+
+
+### Features
+
+* **auto-scaler:** start/remove containers in parallel ([3123f09](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/3123f09fa59bd9e36fe3d7c4cdab446c7e37873e))
+* **auto-scaler:** use literal type for container (health-)status ([c0f077d](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/c0f077ded1662041cc06aa3b25841f96f34e20a7)), closes [#115](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/115)
+* **logger:** remove quotes from log messages ([daba7fe](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/daba7fe6148ef97479d574b2f56dd8cdcf38acf9)), closes [#91](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/91)
+* **multiple:** change docker connection strategy ([3a4e9bd](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/3a4e9bdaa4dcaa627c38a7f9494be933fb0f3418))
+* **redis:** add function to remove request files ([37318a4](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/37318a4e0c4c5709bc574ea15f7cd46e73861957)), closes [#131](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/131)
+* **redis:** add new config setting for FILE_TTL ([5bea05e](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/5bea05e67b5fa072adf59742ec712573246fc9e3)), closes [#127](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/127)
+* **redis:** check for file ttl ([bfe4d77](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/bfe4d77791ecd9ed5b0b9dadad81415d9f60a25b)), closes [#127](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/127)
+* **redis:** dispatch to healthy workers and treat starting as unhealthy ([b3aa1b1](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/b3aa1b13a29ed562a17fb8d8d7625e4736f9ee47)), closes [#118](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/118)
+* **redis:** initial version of the WorkerManager ([50e0426](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/50e0426241249e7e16174d86dc4ea9d3178249ce))
+* **redis:** lower default interval values ([94a76ba](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/94a76bae4269dc4e67ff8d869a914e287e704acb)), closes [#128](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/128)
+* **redis:** make redis-server options optional ([8e7619b](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/8e7619b898f0752d67b24ccb631ad67281065bab)), closes [#128](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/128)
+* **redis:** moved worker communication to WorkerManager ([a9062ca](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/a9062cad8870314959c2249d36f65d033701e9cd))
+* **redis:** only dispatch 1 request to a worker per interval ([69d79e7](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/69d79e70a8083cbcacc1ab0da612e2154f3fd585)), closes [#120](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/120)
+* **redis:** ping redis-server on launch ([e88096d](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/e88096dc0f75cf74006c71d6aaa19e995328ea28)), closes [#121](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/121)
+* **redis:** remove untracked containers with given name prefix ([4202455](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/4202455c5863414acc1141a0dfa1ed03366f4714)), closes [#122](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/122)
+* **redis:** reply pong to ping if at least one worker is up ([9ec081a](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/9ec081a3bfdd5d2d848a47805a569aa9613495d2))
+* **redis:** simplify WorkerHandler.fetchFiles ([7d82a38](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/7d82a38b45cf4106cd7c2bb02bfd3c32130bed9e)), closes [#131](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/131)
+* **redis:** wip: dockerize redis implementation ([cbd0689](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/cbd06899ce0440369c03ef23b489eea458b50570))
+
+
+### Bug Fixes
+
+* **multiple:** identify and remove idle containers correctly ([193851a](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/193851ac4006e616bf187fd0c4cbdb66a2dde34f)), closes [#119](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/119)
+* **redis:** add missing function-parameter ([eb4085e](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/eb4085e3dd1cb6b3c70f97c309feb3d7eb67ca66))
+* **redis:** add timeout to redis-wrapper init function ([6ff75a6](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/6ff75a6a54ee570b7f6ae7d7a21c55516485d8d7))
+* **redis:** fix wrong logging in redis-wrapper ([7ef2df8](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/7ef2df8f0246ee7df871f30a8e67ff2d3dc4dfcb)), closes [#125](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/125)
+* **redis:** only apply state in state interval ([b4475dc](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/b4475dcfcb4c467e4eddb2253839a8fd63265bc9))
+* **redis:** track requests which are still in queue ([e1ded1c](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/e1ded1c7f8271d5f2c5ecf824c966842decbc0f2)), closes [#130](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/issues/130)
+
+
+### Reverts
+
+* **redis:** remove broken signal handlers ([61df38d](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/61df38d08f9dfa27305a267b3f7de8f6b16032a0))
+
+
+### Docs
+
+* **redis:** add usage section for dynamic-conversion-service ([6f23928](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/6f239286bc6a0f9899f5b2e4c3919fd4425d8654))
+
+
+### Tests
+
+* **auto-scaler:** fix broken auto-scaler unit test ([cbbc1f8](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/cbbc1f8b564082f251d2f095dcbe30685c4ee478))
+* **redis:** add missing tests to WorkerHandler ([37cddd8](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/37cddd8bfa2c254223340b7e3ab8210d101832b3))
+* **redis:** fix broken envConfig test ([2861700](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/28617006d09be85f78bb1d21c919a223fdb5aef9))
+* **redis:** fix broken util unit test ([1023d3b](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/1023d3b4f9096edf38b09dc0a342f309dfbd4c45))
+* **redis:** fix broken util unit tests ([e301500](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/e301500c7889ce9c3c57f30806ce7d4b90aea923))
+* **redis:** fix broken workerWrapper unit test ([223f30f](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/223f30f9e34ea6fea63c61b2d1c798462a0945b2))
+* **redis:** remove wrong test-case ([3129709](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/3129709c33384f548d09d5669947d70780fb0f7f))
+
 ## [0.2.0-6](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-1...v0.2.0-6) (2021-09-06)
 
 
