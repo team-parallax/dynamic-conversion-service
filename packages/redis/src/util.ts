@@ -139,7 +139,7 @@ export const removeRequestFile = async (
 	const deleteFileExtension = dir === "input"
 		? request.conversionRequestBody.originalFormat
 		: request.conversionRequestBody.targetFormat
-	const ext = getExtFromFormat()
+	const ext = getExtFromFormat(deleteFileExtension)
 	const targetPath = join(dir, request.externalConversionId + ext)
 	await deleteFile(targetPath)
 	return targetPath
