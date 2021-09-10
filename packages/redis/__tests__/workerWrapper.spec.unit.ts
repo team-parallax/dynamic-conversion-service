@@ -36,7 +36,7 @@ describe("WorkerWrapper should pass all tests", () => {
 			containerImage: "foo",
 			containerIp: "127.0.0.3",
 			containerName: "container-name",
-			containerStatus: "Up",
+			containerStatus: "running",
 			containerTag: "latest"
 		}
 		expect(workerManager.getWorkerCount()).toEqual(0)
@@ -125,7 +125,7 @@ describe("WorkerWrapper should pass all tests", () => {
 			containerImage: "foo",
 			containerIp: "127.0.0.4",
 			containerName: "container-name-2",
-			containerStatus: "Up",
+			containerStatus: "running",
 			containerTag: "latest"
 		}
 		workerManager.updateWorkers({

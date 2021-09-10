@@ -21,6 +21,7 @@ export interface IConversionRequest {
 }
 export interface IFinishedRequest {
 	containerId: string,
+	finishedTime: Date,
 	request: IConversionRequest
 }
 export interface IWorkers {

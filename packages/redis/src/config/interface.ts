@@ -11,6 +11,7 @@ export interface ISchedulerConfiguration {
 }
 export interface IRedisServiceConfiguration {
     autoScalerConfig: IAutoScalerConfiguration,
+    fileTtl: number,
     redisConfig: IRedisConfiguration,
     schedulerConfig: ISchedulerConfiguration
 }

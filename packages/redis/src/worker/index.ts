@@ -14,15 +14,13 @@ import {
 	IWorkers
 } from "../interface"
 import { Logger } from "logger/src"
-import { deleteFile } from "conversion-service/src/service/file-io"
 import {
 	forwardRequestToWorker,
 	getConversionStatus,
-	getExtFromFormat,
 	getFileFromWorker,
-	isHealthy
+	isHealthy,
+	removeRequestFile
 } from "../util"
-import { join } from "path"
 export class WorkerHandler {
 	/**
 	 * Logger
@@ -70,35 +68,41 @@ export class WorkerHandler {
 		}
 		this.logger.info(`added new worker ${containerInfo.containerName}`)
 	}
+	/**
+	 * Fetch files from files that are finished and delete the input file.
+	 * Also delete erroneous files.
+	 * @returns an array of finished requests
+	 */
 	public readonly fetchFiles = async () :Promise<IFinishedRequest[]> => {
 		const finishedRequests: IFinishedRequest[] = []
 		for (const worker of this._workers()) {
 			for (const request of worker.requests) {
+				const {
+					containerId
+				} = worker.containerInfo
 				if (request.conversionStatus === EConversionStatus.Converted) {
+					if (request.workerConversionId === null) {
+						throw new NoWorkerConversionIdError(request.externalConversionId)
+					}
 					// eslint-disable-next-line no-await-in-loop
 					await getFileFromWorker(
 						worker.workerUrl,
-						// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-						request.workerConversionId!,
+						request.workerConversionId,
 						request.externalConversionId,
 						request.conversionRequestBody.targetFormat
 					)
-					const {
-						containerId
-					} = worker.containerInfo
 					this.removeRequestFromWorker(
-						worker.containerInfo.containerId,
+						containerId,
 						request.externalConversionId
 					)
 					const containerName = this.getContainerName(containerId)
 					this.logger.info(`[FETCH]:: [${containerName}] => fetched file for ${request.externalConversionId}`)
-					const ext = getExtFromFormat(request.conversionRequestBody.originalFormat)
-					const inputPath = join("input", request.externalConversionId + ext)
 					// eslint-disable-next-line no-await-in-loop
-					await deleteFile(inputPath)
-					this.logger.info(`[FETCH]:: deleted ${inputPath}`)
+					const deletedPath = await removeRequestFile("input", request)
+					this.logger.info(`[FETCH]:: deleted ${deletedPath}`)
 					finishedRequests.push({
-						containerId: worker.containerInfo.containerId,
+						containerId,
+						finishedTime: new Date(),
 						request
 					})
 				}
@@ -110,13 +114,12 @@ export class WorkerHandler {
 						containerId,
 						request.externalConversionId
 					)
-					const ext = getExtFromFormat(request.conversionRequestBody.originalFormat)
-					const inputPath = join("input", request.externalConversionId + ext)
 					// eslint-disable-next-line no-await-in-loop
-					await deleteFile(inputPath)
-					this.logger.info(`[FETCH]:: deleted ${inputPath}`)
+					const deletedPath = await removeRequestFile("input", request)
+					this.logger.info(`[FETCH]:: deleted ${deletedPath}`)
 					finishedRequests.push({
-						containerId: worker.containerInfo.containerId,
+						containerId,
+						finishedTime: new Date(),
 						request
 					})
 				}

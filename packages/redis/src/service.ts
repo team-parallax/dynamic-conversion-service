@@ -16,7 +16,8 @@ import { WorkerHandler } from "./worker"
 import {
 	getFormatsFromWorker,
 	isStartingOrHealthy,
-	pingWorker
+	pingWorker,
+	removeRequestFile
 } from "./util"
 import { performance } from "perf_hooks"
 export class RedisService {
@@ -106,6 +107,28 @@ export class RedisService {
 			this.lastStatus = null
 			this.workerHandler.updateWorkers(result)
 		}
+	}
+	/**
+	 * Check if any finished requests have exceeded the TTL.
+	 */
+	readonly checkFileTtl = async (): Promise<void> => {
+		const now = new Date().getTime()
+		const promises: Promise<void>[] = []
+		const ms = 1000
+		this.finishedRequest.forEach(finishedRequest => {
+			const cleanFilePromise = async (): Promise<void> => {
+				const request = finishedRequest.request
+				const requestTime = finishedRequest.finishedTime.getTime()
+				if (now - requestTime > this.config.fileTtl * ms) {
+					const deletedPath = await removeRequestFile("output", request)
+					this.logger.info(`[FILE_TTL]:: ${request.externalConversionId} exceeded TTL`)
+					this.logger.info(`[FILE_TTL]:: deleted ${deletedPath}`)
+					this.finishedRequest.delete(request.externalConversionId)
+				}
+			}
+			promises.push(cleanFilePromise())
+		})
+		await Promise.all(promises)
 	}
 	/**
 	 * Check the current container status.
@@ -322,6 +345,7 @@ export class RedisService {
 			if (shouldApplyState) {
 				await this.applyState()
 			}
+			await this.checkFileTtl()
 			probeCount++
 			const probeDuration = performance.now() - probeStart
 			this.logger.info(`${loggerPrefix}: probe ended (${Number(probeDuration).toFixed(0)}ms)`)

@@ -123,8 +123,8 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 const getSchedulerConfigFromEnv = (): ISchedulerConfiguration => {
 	const envHealthInterval = process.env.HEALTH_CHECK_INTERVAL
 	const envStateInterval = process.env.APPLY_DESIRED_STATE_INTERVAL
-	let healthCheckInterval: number = 120
-	let stateApplicationInterval: number = 600
+	let healthCheckInterval: number = 10
+	let stateApplicationInterval: number = 30
 	if (envHealthInterval) {
 		if (!isStringNumber(envHealthInterval)) {
 			throw new InvalidConfigurationValueError(
@@ -151,31 +151,32 @@ const getSchedulerConfigFromEnv = (): ISchedulerConfiguration => {
 	}
 }
 export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
-	const envHost = process.env.REDIS_HOST
+	const envHost = process.env.REDIS_HOST ?? "127.0.0.1"
 	const envPort = process.env.REDIS_PORT
-	const envNameSpace = process.env.REDIS_NS
-	const envQueue = process.env.REDIS_QUEUE
-	if (!envHost) {
-		throw new InvalidConfigurationError("redis-service", "REDIS_HOST")
+	const envNameSpace = process.env.REDIS_NS ?? "dcs-redis-ns"
+	const envQueue = process.env.REDIS_QUEUE ?? "dcs-redis-q"
+	const envFileTtl = process.env.FILE_TTL
+	let redisPort = 6379
+	if (envPort) {
+		if (!isStringNumber(envPort)) {
+			throw new InvalidConfigurationValueError("redis-service", "REDIS_PORT", envPort)
+		}
+		redisPort = parseInt(envPort)
 	}
-	if (!envPort) {
-		throw new InvalidConfigurationError("redis-service", "REDIS_PORT")
-	}
-	if (!isStringNumber(envPort)) {
-		throw new InvalidConfigurationValueError("redis-service", "REDIS_PORT", envPort)
-	}
-	if (!envNameSpace) {
-		throw new InvalidConfigurationError("redis-service", "REDIS_NS")
-	}
-	if (!envQueue) {
-		throw new InvalidConfigurationError("redis-service", "REDIS_QUEUE")
+	let fileTtl = 3600
+	if (envFileTtl) {
+		if (!isStringNumber(envFileTtl)) {
+			throw new InvalidConfigurationError("redis-service", "FILE_TTL")
+		}
+		fileTtl = parseInt(envFileTtl)
 	}
 	return {
 		autoScalerConfig: getAutoScalerConfigFromEnv(),
+		fileTtl,
 		redisConfig: {
 			host: envHost,
 			namespace: envNameSpace,
-			port: parseInt(envPort),
+			port: redisPort,
 			queue: envQueue
 		},
 		schedulerConfig: getSchedulerConfigFromEnv()

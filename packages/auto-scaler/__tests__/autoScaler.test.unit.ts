@@ -57,6 +57,8 @@ describe("auto-scaler should pass all tests", () => {
 		const maxContainers = 50
 		const minContainers = 5
 		it("should report zero|zero with zero pending requests", () => {
+			/* Arrange */
+			const expectedRemove = 5
 			/* Act */
 			const result = autoScaler.computeContainerScaleAmount(
 				runningContainers,
@@ -66,7 +68,7 @@ describe("auto-scaler should pass all tests", () => {
 				minContainers
 			)
 			/* Assert */
-			expect(result.remove).toEqual(0)
+			expect(result.remove).toEqual(expectedRemove)
 			expect(result.start).toEqual(0)
 		})
 		it("should start max amount on high request count", () => {
