@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.0-8](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-7...v0.2.0-8) (2021-09-10)
+
+
+### Bug Fixes
+
+* **root:** fix invalid yaml definition for ci ([eae7ce9](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/eae7ce9f4f36c9d3f46fe8fb959c18677b80380e))
+
 ## [0.2.0-7](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-6...v0.2.0-7) (2021-09-10)
 
 
