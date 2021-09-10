@@ -5,11 +5,12 @@ export type TRequiredAutoScalerConfigurationField =
 	| "TASKS_PER_CONTAINER"
 	| "CONTAINER_NAME_PREFIX"
 	| "CONTAINER_IMAGE"
-export type TRequiredRedisServiceConfigurationField =
+export type TRequiredRedisConfigurationField =
 	| "REDIS_HOST"
 	| "REDIS_PORT"
 	| "REDIS_NS"
 	| "REDIS_QUEUE"
+	| "FILE_TTL"
 export type TRequiredConversionServiceConfigurationField =
 	| "FFMPEG_PATH"
 	| "IMAGE_MAGICK_PATH"
@@ -21,5 +22,5 @@ export type TRequiredConversionServiceConfigurationField =
 	| "CONVERTER_MEDIA_PRIORITY"
 export type TRequiredKey =
 	TRequiredAutoScalerConfigurationField
-	| TRequiredRedisServiceConfigurationField
+	| TRequiredRedisConfigurationField
 	| TRequiredConversionServiceConfigurationField

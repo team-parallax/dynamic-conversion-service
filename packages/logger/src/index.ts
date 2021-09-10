@@ -70,18 +70,21 @@ export class Logger {
 		this.logger.debug(`New service name set to: ${newName}`)
 	}
 	critical = (message: any): void => {
-		this.logger.crit(JSON.stringify(message, null, this.defaultIndentation))
+		this.logger.crit(this.trimQuotes(JSON.stringify(message, null, this.defaultIndentation)))
 	}
 	debug = (message: any): void => {
-		this.logger.debug(JSON.stringify(message, null, this.defaultIndentation))
+		this.logger.debug(this.trimQuotes(JSON.stringify(message, null, this.defaultIndentation)))
 	}
 	error = (message: any): void => {
-		this.logger.error(JSON.stringify(message, null, this.defaultIndentation))
+		this.logger.error(this.trimQuotes(JSON.stringify(message, null, this.defaultIndentation)))
 	}
 	info = (message: any): void => {
-		this.logger.info(JSON.stringify(message, null, this.defaultIndentation))
+		this.logger.info(this.trimQuotes(JSON.stringify(message, null, this.defaultIndentation)))
 	}
 	get serviceName(): string {
 		return this.loggerServiceName
+	}
+	private readonly trimQuotes = (message: string): string => {
+		return message.slice(1, message.length - 1)
 	}
 }

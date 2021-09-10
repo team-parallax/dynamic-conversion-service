@@ -13,10 +13,14 @@ import {
 import { IDockerConfiguration } from "../config"
 import { Logger } from "logger/src"
 import { Stream } from "stream"
+import {
+	TDockerContainerStatus,
+	TDockerHealthStatus
+} from "./type"
+import { nanoid } from "nanoid"
 import { promisifyStream } from "./util"
 export class DockerService {
 	private readonly config: IDockerConfiguration
-	private containerCounter: number = 1
 	private readonly docker: Docker
 	private hasImage: boolean = false
 	private readonly logger: Logger
@@ -87,7 +91,8 @@ export class DockerService {
 			await this.checkImage(targetImage, targetTag)
 			this.hasImage = true
 		}
-		const containerName = `${namePrefix}__${this.containerCounter}`
+		const maxIdChars = 6
+		const containerName = `${namePrefix}__${nanoid(maxIdChars)}`
 		const newContainer = await this.docker.container.create({
 			Env: envVars,
 			Image: `${targetImage}:${targetTag}`,
@@ -105,14 +110,13 @@ export class DockerService {
 		}
 		const { IPAddress } = containerState.NetworkSettings
 		this.logger.info(`created container: ${createdContainerName}`)
-		this.containerCounter++
 		return {
-			containerHealthStatus: healthStatus,
+			containerHealthStatus: healthStatus as TDockerHealthStatus,
 			containerId: startedContainer.id,
 			containerImage: targetImage,
 			containerIp: IPAddress,
 			containerName: createdContainerName,
-			containerStatus: Status,
+			containerStatus: Status as TDockerContainerStatus,
 			containerTag: targetTag ?? "latest"
 		}
 	}
@@ -134,12 +138,12 @@ export class DockerService {
 			if (containerState.Name.startsWith(`/${this.config.namePrefix}__`)) {
 				const [image, tag] = containerState.Config.Image
 				targetContainers.push({
-					containerHealthStatus: healthStatus,
+					containerHealthStatus: healthStatus as TDockerHealthStatus,
 					containerId: container.id,
 					containerImage: image,
 					containerIp: IPAddress,
 					containerName: containerState.Name,
-					containerStatus: Status,
+					containerStatus: Status as TDockerContainerStatus,
 					containerTag: tag
 				})
 			}
@@ -166,12 +170,12 @@ export class DockerService {
 		const { IPAddress } = containerState.NetworkSettings
 		this.logger.info(`removed container: ${containerName}`)
 		return {
-			containerHealthStatus: healthStatus,
+			containerHealthStatus: healthStatus as TDockerHealthStatus,
 			containerId: container.id,
 			containerImage: image,
 			containerIp: IPAddress,
 			containerName,
-			containerStatus: Status,
+			containerStatus: Status as TDockerContainerStatus,
 			containerTag: tag
 		}
 	}

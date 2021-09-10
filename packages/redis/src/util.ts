@@ -10,12 +10,13 @@ import {
 	StatusUpdateError
 } from "./exception"
 import { IConversionRequest } from "./interface"
+import { TDockerHealthStatus } from "auto-scaler/src/docker/type"
 import { createWriteStream } from "fs"
+import { deleteFile, readFileToBuffer } from "conversion-service/src/service/file-io"
 import {
 	extname,
 	join
 } from "path"
-import { readFileToBuffer } from "conversion-service/src/service/file-io"
 import FormData from "form-data"
 import fetch from "node-fetch"
 export const wait = async (duration: number): Promise<void> => {
@@ -122,12 +123,24 @@ export const getExt = (filename: string, format?: string): string => {
 	}
 	return ext
 }
-export const isHealthy = (containerStatus: string): boolean => {
-	return containerStatus === "healthy"
+export const isHealthy = (containerHealthStatus: TDockerHealthStatus): boolean => {
+	return containerHealthStatus === "healthy"
 }
-export const isUnhealthy = (containerStatus: string): boolean => {
-	return !isHealthy(containerStatus)
+export const isUnhealthy = (containerHealthStatus: TDockerHealthStatus): boolean => {
+	return !isHealthy(containerHealthStatus)
 }
-export const isStartingOrHealthy = (containerStatus: string): boolean => {
-	return isHealthy(containerStatus) || containerStatus === "starting"
+export const isStartingOrHealthy = (containerHealthStatus: TDockerHealthStatus): boolean => {
+	return isHealthy(containerHealthStatus) || containerHealthStatus === "starting"
+}
+export const removeRequestFile = async (
+	dir: "input" | "output",
+	request: IConversionRequest
+): Promise<string> => {
+	const deleteFileExtension = dir === "input"
+		? request.conversionRequestBody.originalFormat
+		: request.conversionRequestBody.targetFormat
+	const ext = getExtFromFormat(deleteFileExtension)
+	const targetPath = join(dir, request.externalConversionId + ext)
+	await deleteFile(targetPath)
+	return targetPath
 }

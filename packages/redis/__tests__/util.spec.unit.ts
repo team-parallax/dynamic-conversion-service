@@ -80,15 +80,15 @@ describe("utility functions should work", () => {
 		})
 		it("should handle invalid cases", () => {
 			expect(isHealthy("unhealthy")).toBe(false)
-			expect(isHealthy("dead")).toBe(false)
-			expect(isHealthy("")).toBe(false)
+			expect(isHealthy("none")).toBe(false)
+			expect(isHealthy("starting")).toBe(false)
 		})
 	})
 	describe("isUnhealthy should pass all tests", () => {
 		it("should handle valid cases", () => {
 			expect(isUnhealthy("unhealthy")).toBe(true)
 			expect(isUnhealthy("starting")).toBe(true)
-			expect(isUnhealthy("invalid status")).toBe(true)
+			expect(isUnhealthy("none")).toBe(true)
 		})
 		it("should handle invalid cases", () => {
 			expect(isUnhealthy("healthy")).toBe(false)
