@@ -37,26 +37,29 @@ export class AutoScaler {
 			throw new Error("invalid status: cannot start and kill containers in one call")
 		}
 		const startedContainers: IContainerInfo[] = []
-		if (containersToStart) {
+		if (containersToStart > 0) {
+			const promises: Promise<IContainerInfo>[] = []
 			for (let i = 0; i < containersToStart; i++) {
-				// eslint-disable-next-line no-await-in-loop
-				const containerInfo = await this.dockerService.createContainer(
-					imageId,
-					tag
-				)
-				startedContainers.push(containerInfo)
+				const createFunc = async (): Promise<IContainerInfo> => {
+					return this.dockerService.createContainer(imageId, tag)
+				}
+				promises.push(createFunc())
 			}
+			const containerInfos = await Promise.all(promises)
+			startedContainers.push(...containerInfos)
 		}
 		const removedContainers: IContainerInfo[] = []
-		if (containersToRemove && idleContainerIds) {
+		if (containersToRemove > 0 && idleContainerIds) {
 			const idleContainersToRemove = idleContainerIds.slice(0, containersToRemove)
+			const promises: Promise<IContainerInfo>[] = []
 			for (let i = 0; i < idleContainersToRemove.length; i++) {
-				// eslint-disable-next-line no-await-in-loop
-				const containerInfo = await this.dockerService.removeContainer(
-					idleContainersToRemove[i]
-				)
-				removedContainers.push(containerInfo)
+				const removeFunc = async (): Promise<IContainerInfo> => {
+					return await this.dockerService.removeContainer(idleContainersToRemove[i])
+				}
+				promises.push(removeFunc())
 			}
+			const containerInfos = await Promise.all(promises)
+			removedContainers.push(...containerInfos)
 		}
 		return {
 			removedContainers,

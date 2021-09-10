@@ -17,10 +17,10 @@ import {
 	TDockerContainerStatus,
 	TDockerHealthStatus
 } from "./type"
+import { nanoid } from "nanoid"
 import { promisifyStream } from "./util"
 export class DockerService {
 	private readonly config: IDockerConfiguration
-	private containerCounter: number = 1
 	private readonly docker: Docker
 	private hasImage: boolean = false
 	private readonly logger: Logger
@@ -91,7 +91,8 @@ export class DockerService {
 			await this.checkImage(targetImage, targetTag)
 			this.hasImage = true
 		}
-		const containerName = `${namePrefix}__${this.containerCounter}`
+		const maxIdChars = 6
+		const containerName = `${namePrefix}__${nanoid(maxIdChars)}`
 		const newContainer = await this.docker.container.create({
 			Env: envVars,
 			Image: `${targetImage}:${targetTag}`,
@@ -109,7 +110,6 @@ export class DockerService {
 		}
 		const { IPAddress } = containerState.NetworkSettings
 		this.logger.info(`created container: ${createdContainerName}`)
-		this.containerCounter++
 		return {
 			containerHealthStatus: healthStatus as TDockerHealthStatus,
 			containerId: startedContainer.id,
