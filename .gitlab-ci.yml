@@ -21,7 +21,10 @@ workflow:
 
 include:
   - local: .gitlab/ci/build.gitlab-ci.yml
-  - local: packages/**/*.gitlab-ci.yml
+  - local: packages/conversion-service/.gitlab-ci.yml
+  - local: packages/auto-scaler/.gitlab-ci.yml
+  - local: packages/redis/.gitlab-ci.yml
+  - local: packages/logger/.gitlab-ci.yml
 
 ### Prepare - Stage
 lint code:
