@@ -1,4 +1,5 @@
 default:
+  image: teamparallax/conversion-service-base-image:v0.2.2
   interruptible: true
 
 cache:
