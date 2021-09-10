@@ -21,10 +21,7 @@ workflow:
 
 include:
   - local: .gitlab/ci/build.gitlab-ci.yml
-  - local: packages/conversion-service/.gitlab-ci.yml
-  - local: packages/auto-scaler/.gitlab-ci.yml
-  - local: packages/redis/.gitlab-ci.yml
-  - local: packages/logger/.gitlab-ci.yml
+  - local: packages/**/.gitlab-ci.yml
 
 ### Prepare - Stage
 lint code:
@@ -90,7 +87,7 @@ code quality:
     - if: "$CODE_QUALITY_DISABLED"
       when: never
     - changes:
-        - ./**/*.ts
+        - packages/**/*.ts
       when: always
 
 ### Release Stage
@@ -101,6 +98,7 @@ release job:
     - job: "prepare release"
       artifacts: true
     - job: "build docker conversion-service"
+    - job: "build docker dynamic-conversion-controller"
     - job: "code quality"
   script:
     - echo "create gitlab-release for ${CI_COMMIT_TAG}"
