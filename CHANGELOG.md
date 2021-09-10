@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.0-13](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-12...v0.2.0-13) (2021-09-10)
+
+
+### Bug Fixes
+
+* **ci:** add default pipeline image ([bca37e6](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/commit/bca37e60dfb3e71278cd9eb6535c90d84e926e8f))
+
 ## [0.2.0-12](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-11...v0.2.0-12) (2021-09-10)
 
 ## [0.2.0-11](https://gitlab.internal.team-parallax.com/belwue/dynamic-conversion-service/compare/v0.2.0-10...v0.2.0-11) (2021-09-10)
