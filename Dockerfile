@@ -31,6 +31,10 @@ ENV TASKS_PER_CONTAINER="2" \
 
 WORKDIR /app
 ADD . ${WORKDIR}
-RUN apk add --no-cache nodejs yarn
+RUN apk add --no-cache \
+	--update \
+	--repository="http://dl-cdn.alpinelinux.org/alpine/edge/community" \
+	nodejs \
+	yarn
 RUN yarn install
 CMD [ "yarn", "start:redis" ]
