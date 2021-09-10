@@ -1,12 +1,16 @@
+default:
+  interruptible: true
+
 cache:
   paths:
     - .yarn/
 
 stages:
-  - lint
   - prepare
-  - test
-  - test integration
+  - lint
+  - test:types
+  - test:unit
+  - test:integration
   - build
   - review
   - release
