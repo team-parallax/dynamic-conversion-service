@@ -40,10 +40,10 @@ export class AutoScaler {
 		if (containersToStart > 0) {
 			const promises: Promise<IContainerInfo>[] = []
 			for (let i = 0; i < containersToStart; i++) {
-				const createFunc = async (): Promise<IContainerInfo> => {
+				const createContainerPromise = async (): Promise<IContainerInfo> => {
 					return this.dockerService.createContainer(imageId, tag)
 				}
-				promises.push(createFunc())
+				promises.push(createContainerPromise())
 			}
 			const containerInfos = await Promise.all(promises)
 			startedContainers.push(...containerInfos)
@@ -53,10 +53,10 @@ export class AutoScaler {
 			const idleContainersToRemove = idleContainerIds.slice(0, containersToRemove)
 			const promises: Promise<IContainerInfo>[] = []
 			for (let i = 0; i < idleContainersToRemove.length; i++) {
-				const removeFunc = async (): Promise<IContainerInfo> => {
+				const removeContainerPromise = async (): Promise<IContainerInfo> => {
 					return await this.dockerService.removeContainer(idleContainersToRemove[i])
 				}
-				promises.push(removeFunc())
+				promises.push(removeContainerPromise())
 			}
 			const containerInfos = await Promise.all(promises)
 			removedContainers.push(...containerInfos)

@@ -116,7 +116,7 @@ export class RedisService {
 		const promises: Promise<void>[] = []
 		const ms = 1000
 		this.finishedRequest.forEach(finishedRequest => {
-			const cleanFunc = async (): Promise<void> => {
+			const cleanFilePromise = async (): Promise<void> => {
 				const request = finishedRequest.request
 				const requestTime = finishedRequest.finishedTime.getTime()
 				if (now - requestTime > this.config.fileTtl * ms) {
@@ -126,7 +126,7 @@ export class RedisService {
 					this.finishedRequest.delete(request.externalConversionId)
 				}
 			}
-			promises.push(cleanFunc())
+			promises.push(cleanFilePromise())
 		})
 		await Promise.all(promises)
 	}
