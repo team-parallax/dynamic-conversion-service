@@ -307,7 +307,6 @@ export class RedisService {
 		this.logger.info("[START]:: starting main loop")
 		await this.checkHealth()
 		const ms = 1000
-		const queueProbeInterval = 10
 		const {
 			healthCheckInterval,
 			stateApplicationInterval
@@ -318,7 +317,7 @@ export class RedisService {
 		* Compute how many normal probes we need until the specified
 		* Time for a state apply has elapsed.
 		*/
-		const probesPerStateApply = Math.ceil(stateApplicationInterval / queueProbeInterval)
+		const probesPerStateApply = Math.ceil(stateApplicationInterval / healthCheckInterval)
 		let probeCount = 1
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		this.probeInterval = global.setInterval(async (): Promise<void> => {
