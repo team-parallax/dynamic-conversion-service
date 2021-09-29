@@ -16,8 +16,10 @@ The following section describes how to setup and use the `dynamic-conversion-ser
 
 ```console
 docker run --rm -it \
-  -p 4322:3000 \                                      # <HOST>:<CONTAINER>
+  -p 4322:3000 \                                      # Port mapping in the scheme <HOST>:<CONTAINER>
   -e SWAGGER_HOST=http://localhost:4322 \             # The url shown swagger UI
   -v /var/run/docker.sock:/var/run/docker.sock \      # Mounting the docker socket in order to scale
-  teamparallax/dynamic-conversion-service:<YOUR_TAG>
+  -v <YOUR_INPUT_FOLDER>:/app/input \                 # Bind mount for input files
+  -v <YOUR_OUTPUT_FOLDER>:/app/output \               # Bind mount for output files
+  teamparallax/dynamic-conversion-controller:<YOUR_TAG>
 ```

@@ -2,7 +2,7 @@
 
 A wrapper around a redis message queue.
 
-# Requirements
+## Requirements
 
 Requires a running `redis-server`. [See here.](https://redis.io/)
 For simplicity you can use this docker command:
