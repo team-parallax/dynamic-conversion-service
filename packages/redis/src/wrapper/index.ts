@@ -22,6 +22,7 @@ export class RedisWrapper {
 		const {
 			host, port, namespace
 		} = this.config
+		this.logger.info(`connecting to redis on ${host}:${port}`)
 		this.rsmq = new RedisSMQ({
 			host,
 			ns: namespace,
