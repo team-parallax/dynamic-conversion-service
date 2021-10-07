@@ -14,7 +14,7 @@ ENV WEBSERVICE_PORT="3000" \
 	CONVERT_TO_PNG_WITH="ffmpeg" \
 	CONVERT_TO_BMP_WITH="ffmpeg"
 
-ENV REDIS_HOST="172.17.0.1" \
+ENV REDIS_HOST="dcs-redis-server" \
 	REDIS_PORT="6379" \
 	REDIS_NS="redis-service-test" \
 	REDIS_QUEUE="redis-service-test-queue" \
