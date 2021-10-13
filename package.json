@@ -2,6 +2,7 @@
   "name": "root",
   "private": true,
   "scripts": {
+    "build:docker": "docker build -t teamparallax/redis-conversion-manager -f ./Dockerfile .",
     "build:api": "yarn openapi-generator-cli generate --input-spec packages/conversion-service/swagger.json --generator-name typescript-axios --output packages/redis/src/api/conversion --config packages/conversion-service/api-config.json",
     "git:commit": "yarn git-cz",
     "lint": "yarn lerna run lint",
@@ -9,7 +10,7 @@
     "release": "standard-version",
     "test:unit": "yarn lerna run test:unit",
     "typecheck": "yarn lerna run test:types",
-    "start:redis": "yarn --cwd packages/redis start:dev"
+    "start:redis": "yarn --cwd packages/redis start"
   },
   "devDependencies": {
     "@openapitools/openapi-generator-cli": "^2.3.10",

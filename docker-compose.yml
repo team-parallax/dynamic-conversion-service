@@ -1,12 +1,17 @@
 version: "3"
+
 services:
   redis-server:
+    container_name: dcs-redis-server
     image: redis:6.2.5-alpine
   redis-conversion-manager:
+    container_name: redis-conversion-service-manager
     build:
       context: .
       dockerfile: ./Dockerfile
-    # env_file: ./template.env
+    env_file: ./.env
+    depends_on:
+      - "redis-server"
     ports:
       - 3000:3000
     volumes:
