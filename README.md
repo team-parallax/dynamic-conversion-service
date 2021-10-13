@@ -12,7 +12,7 @@ For further information checkout the README files of the corresponding `package`
 
 ## Usage
 
-The following section describes how to setup and use the `dynamic-conversion-service`.
+The following section describes how to setup and use the `dynamic-conversion-controller`.
 
 ```bash
 docker run --rm -it \
