@@ -1,12 +1,17 @@
+default:
+  image: teamparallax/conversion-service-base-image:v0.2.2
+  interruptible: true
+
 cache:
   paths:
     - .yarn/
 
 stages:
-  - lint
   - prepare
-  - test
-  - test integration
+  - lint
+  - test:types
+  - test:unit
+  - test:integration
   - build
   - review
   - release
@@ -20,6 +25,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH || $CI_COMMIT_TAG
 
 include:
+  - local: .gitlab/ci/build.gitlab-ci.yml
   - local: packages/conversion-service/.gitlab-ci.yml
   - local: packages/auto-scaler/.gitlab-ci.yml
   - local: packages/redis/.gitlab-ci.yml
@@ -89,7 +95,7 @@ code quality:
     - if: "$CODE_QUALITY_DISABLED"
       when: never
     - changes:
-        - src/**/*.ts
+        - packages/**/*.ts
       when: always
 
 ### Release Stage
@@ -99,7 +105,8 @@ release job:
   needs:
     - job: "prepare release"
       artifacts: true
-    - job: "build docker"
+    - job: "build docker conversion-service"
+    - job: "build docker dynamic-conversion-controller"
     - job: "code quality"
   script:
     - echo "create gitlab-release for ${CI_COMMIT_TAG}"

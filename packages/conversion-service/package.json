@@ -13,6 +13,7 @@
     "release": "standard-version",
     "start": "ts-node src/app.ts",
     "start:dev": "yarn tsoa:create:local && yarn start",
+    "start:local:dev": "ts-node src/app.dev.ts",
     "start:docker": "docker run --name web-conversion-service -p 3000:3000 teamparallax/conversion-service",
     "start:docker:dev": "yarn run build:docker && yarn run start:docker",
     "test": "yarn jest --config ./jest.config.js --detectOpenHandles",

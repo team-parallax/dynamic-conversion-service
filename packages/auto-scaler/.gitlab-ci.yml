@@ -1,25 +1,10 @@
-default:
-  interruptible: true
-
-stages:
-  - prepare
-  - test
-
-# Workflow rules for MR-Pipelines taken from docs at docs.gitlab.com:
-# https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
-workflow:
-  rules:
-    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"
-      when: never
-    - if: $CI_COMMIT_BRANCH || $CI_COMMIT_TAG
-
 .auto-scaler-before-script: &auto-scaler-before-script
   before_script:
     - cd packages/auto-scaler
     - yarn install --cache .yarn --prefer-offline
 
 typecheck auto-scaler:
-  stage: prepare
+  stage: "test:types"
   <<: *auto-scaler-before-script
   script:
     - yarn test:types
@@ -29,15 +14,14 @@ typecheck auto-scaler:
       when: always
 
 test unit auto-scaler:
-  stage: test
+  stage: "test:unit"
   needs:
     - job: "typecheck auto-scaler"
   <<: *auto-scaler-before-script
   variables:
     IS_CI: 1
   script:
-    - |
-      yarn test:unit:coverage --ci
+    - yarn test:unit:coverage --ci
   coverage: /All files[^|]*\|[^|]*\s+([\d\.]+)/
   artifacts:
     expire_in: 7 days
@@ -49,9 +33,6 @@ test unit auto-scaler:
     when: always
   allow_failure: true
   rules:
-    - changes:
-        - src/**/*.ts
-      when: always
     - changes:
         - packages/auto-scaler/**/*.ts
       when: always

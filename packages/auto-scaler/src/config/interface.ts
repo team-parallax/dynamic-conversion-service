@@ -5,6 +5,7 @@ export interface IAutoScalerConfiguration {
 	tasksPerContainer: number
 }
 export interface IDockerConfiguration {
+	envVars?: string[],
 	host?: string,
 	imageName: string,
 	namePrefix: string,

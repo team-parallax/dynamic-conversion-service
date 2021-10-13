@@ -7,7 +7,8 @@ import {
 	RedisWrapperQueueDeleteError,
 	RedisWrapperQueueListError,
 	RedisWrapperQueueStatError,
-	RedisWrapperSendError
+	RedisWrapperSendError,
+	RedisWrapperTimoutError
 } from "./exception"
 import RedisSMQ, { QueueMessage } from "rsmq"
 export class RedisWrapper {
@@ -21,6 +22,7 @@ export class RedisWrapper {
 		const {
 			host, port, namespace
 		} = this.config
+		this.logger.info(`connecting to redis on ${host}:${port}`)
 		this.rsmq = new RedisSMQ({
 			host,
 			ns: namespace,
@@ -45,14 +47,31 @@ export class RedisWrapper {
 		})
 	}
 	readonly initialize = async (): Promise<void> => {
-		const existingQueues = await this.getQueues()
-		const {
-			queue
-		} = this.config
-		if (!existingQueues.includes(queue)) {
+		this.logger.info("initializing redis-wrapper")
+		const millisecondsPerSecond = 1000
+		const timeout = async (seconds: number):Promise<void> => new Promise((resolve, reject) => {
+			global.setTimeout(resolve, seconds * millisecondsPerSecond)
+		})
+		// eslint-disable-next-line @typescript-eslint/no-misused-promises
+		global.setTimeout(async ():Promise<void> => {
+			const existingQueues = await this.getQueues()
+			const {
+				queue
+			} = this.config
+			if (existingQueues.includes(queue)) {
+				this.logger.info(`found existing queue with name: ${queue}. Removing...`)
+				await this.deleteQueue(queue)
+			}
+			this.logger.info(`create queue with name: ${queue}.`)
 			await this.createQueue(queue)
+			this.isInitialized = true
+		})
+		const timeoutInSeconds = 5
+		await timeout(timeoutInSeconds)
+		if (!this.isInitialized) {
+			throw new RedisWrapperTimoutError()
 		}
-		this.isInitialized = true
+		this.logger.info("redis-wrapper connected to redis-server")
 	}
 	readonly quit = async (): Promise<void> => {
 		const runningQueues = await this.getQueues()
@@ -117,7 +136,7 @@ export class RedisWrapper {
 					return reject(new RedisWrapperQueueCreateError(queue))
 				}
 				if (resp === 1) {
-					this.logger.info(`created queue : ${queue}`)
+					this.logger.info(`created queue: ${queue}`)
 					return resolve()
 				}
 				return reject()
@@ -134,7 +153,7 @@ export class RedisWrapper {
 					return reject(new RedisWrapperQueueDeleteError(queue))
 				}
 				if (resp === 1) {
-					this.logger.info(`deleted queue : ${queue}`)
+					this.logger.info(`deleted queue: ${queue}`)
 					return resolve()
 				}
 				return reject()
@@ -148,6 +167,7 @@ export class RedisWrapper {
 					this.logger.error(err)
 					return reject(new RedisWrapperQueueListError())
 				}
+				this.logger.debug(`found ${queues.length} redis-queues`)
 				return resolve(queues)
 			})
 		})

@@ -4,16 +4,26 @@ import {
 } from "./api/conversion-client"
 import { IContainerInfo } from "auto-scaler/src/docker/interface"
 export interface IContainerCheck {
-    containerInfo: IContainerInfo,
-    isRunning: boolean
+	containerInfo: IContainerInfo,
+	isRunning: boolean
 }
 export interface IWorkerInfo {
 	containerInfo: IContainerInfo,
-	currentRequest: IConversionRequest | null,
+	// CurrentRequest: IConversionRequest | null,
+	requests: IConversionRequest[],
 	workerUrl: string
 }
 export interface IConversionRequest {
-	converionStatus: EConversionStatus,
-	conversionId: string,
-	conversionRequestBody: IConversionRequestBody
+	conversionRequestBody: IConversionRequestBody,
+	conversionStatus: EConversionStatus,
+	externalConversionId:string,
+	workerConversionId: string | null
+}
+export interface IFinishedRequest {
+	containerId: string,
+	finishedTime: Date,
+	request: IConversionRequest
+}
+export interface IWorkers {
+	[containerId: string]: IWorkerInfo
 }
