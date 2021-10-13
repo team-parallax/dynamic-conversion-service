@@ -1,12 +1,34 @@
+import {
+	TDockerContainerStatus,
+	TDockerHealthStatus
+} from "./type"
+/* eslint-disable @typescript-eslint/naming-convention */
 export interface IContainerInfo {
+	containerHealthStatus: TDockerHealthStatus,
 	containerId: string,
 	containerImage?: string,
+	containerIp: string,
 	containerName: string,
+	containerStatus: TDockerContainerStatus,
 	containerTag?: string
 }
-export interface IDockerAPIContainer {
-	// eslint-disable-next-line @typescript-eslint/naming-convention
+export interface IDockerApiImage {
+	Id: string,
+	RepoTags: string[]
+}
+export interface IDockerContainerStatus {
+	Config: {
+		Image: string
+	},
 	Image: string,
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	Names: string[]
+	Name: string,
+	NetworkSettings: {
+		IPAddress: string
+	},
+	State : {
+		Health: {
+			Status: string
+		},
+		Status: string
+	}
 }

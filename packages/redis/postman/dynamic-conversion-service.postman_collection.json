@@ -1,0 +1,110 @@
+{
+	"info": {
+		"_postman_id": "66378782-ad2c-4874-a975-5f5dd5f8693f",
+		"name": "dynamic-conversion-service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Post Conversion",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "originalFormat",
+							"value": ".jpg",
+							"type": "text"
+						},
+						{
+							"key": "targetFormat",
+							"value": ".png",
+							"type": "text"
+						},
+						{
+							"key": "conversionFile",
+							"type": "file",
+							"src": "corgi.jpg"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:3000/conversion/v2",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"conversion",
+						"v2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Ping",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/ping",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"ping"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Formats",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/formats",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"formats"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "QueueStatus",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/conversion/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"conversion",
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

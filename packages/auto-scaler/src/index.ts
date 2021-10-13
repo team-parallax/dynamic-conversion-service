@@ -37,28 +37,29 @@ export class AutoScaler {
 			throw new Error("invalid status: cannot start and kill containers in one call")
 		}
 		const startedContainers: IContainerInfo[] = []
-		if (containersToStart) {
+		if (containersToStart > 0) {
+			const promises: Promise<IContainerInfo>[] = []
 			for (let i = 0; i < containersToStart; i++) {
-				// eslint-disable-next-line no-await-in-loop
-				const containerInfo = await this.dockerService.createContainer(
-					imageId,
-					tag
-				)
-				startedContainers.push(containerInfo)
+				const createContainerPromise = async (): Promise<IContainerInfo> => {
+					return this.dockerService.createContainer(imageId, tag)
+				}
+				promises.push(createContainerPromise())
 			}
-			this.logger.info(`started ${startedContainers.length} containers`)
+			const containerInfos = await Promise.all(promises)
+			startedContainers.push(...containerInfos)
 		}
 		const removedContainers: IContainerInfo[] = []
-		if (containersToRemove && idleContainerIds) {
+		if (containersToRemove > 0 && idleContainerIds) {
 			const idleContainersToRemove = idleContainerIds.slice(0, containersToRemove)
+			const promises: Promise<IContainerInfo>[] = []
 			for (let i = 0; i < idleContainersToRemove.length; i++) {
-				// eslint-disable-next-line no-await-in-loop
-				const containerInfo = await this.dockerService.removeContainer(
-					idleContainersToRemove[i]
-				)
-				removedContainers.push(containerInfo)
+				const removeContainerPromise = async (): Promise<IContainerInfo> => {
+					return await this.dockerService.removeContainer(idleContainersToRemove[i])
+				}
+				promises.push(removeContainerPromise())
 			}
-			this.logger.info(`removed ${removedContainers.length} containers`)
+			const containerInfos = await Promise.all(promises)
+			removedContainers.push(...containerInfos)
 		}
 		return {
 			removedContainers,
@@ -98,14 +99,20 @@ export class AutoScaler {
 		maxContainers: number,
 		minContainers: number
 	): IComputedScalingResult => {
-		// Nothing to do here
-		if (pendingRequests === 0) {
+		/* Nothing to do here */
+		if (pendingRequests === 0 && runningContainers === 0) {
 			return {
 				remove: 0,
+				start: minContainers
+			}
+		}
+		if (pendingRequests === 0) {
+			return {
+				remove: runningContainers - minContainers,
 				start: 0
 			}
 		}
-		// Early exit and avoid division by zero
+		/* Early exit and avoid division by zero */
 		if (runningContainers === 0) {
 			return {
 				remove: 0,
@@ -115,26 +122,26 @@ export class AutoScaler {
 		let start = 0
 		let remove = 0
 		const pendingTasksPerContainer = Math.ceil(pendingRequests / runningContainers)
-		// If we exceed the task per container threshold
+		/* If we exceed the task per container threshold */
 		if (pendingTasksPerContainer > tasksPerContainer) {
 			/*
 			 * Compute required amount of containers for tasks not being
-			 * Handled by running containers
+			 * handled by already running containers
 			 */
 			const remainingTasks = pendingRequests - tasksPerContainer * runningContainers
 			start = Math.ceil(remainingTasks / tasksPerContainer)
 			if (start + runningContainers > maxContainers) {
-				// Do not exceed upper threshold
+				/* Do not exceed upper threshold */
 				start = maxContainers - runningContainers
 			}
 		}
 		else if (pendingTasksPerContainer < tasksPerContainer) {
-			// Tasks we actually need for all requests
+			/* Container amount we need to handle the actual amount of all requests */
 			const requiredContainers = Math.max(
 				pendingRequests - tasksPerContainer * runningContainers,
 				0
 			)
-			// Containers we can remove
+			/* Containers we can remove */
 			remove = runningContainers - requiredContainers
 			remove = Math.max(
 				runningContainers - remove,

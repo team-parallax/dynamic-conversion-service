@@ -2,6 +2,14 @@ import { InvalidConfigurationError, InvalidConfigurationValueError } from "../sr
 import { getRedisConfigFromEnv, isStringNumber } from "../src/config"
 describe("loading configuration fields from environment should work", () => {
 	beforeEach(() => {
+		process.env.WEBSERVICE_PORT = "3000"
+		process.env.FFMPEG_PATH = "/opt/ffmpeg/bin/ffmpeg"
+		process.env.IMAGE_MAGICK_PATH = "usr/bin/convert"
+		process.env.UNOCONV_PATH = "/usr/bin/unoconv"
+		process.env.MAX_CONVERSION_TIME = "90000"
+		process.env.MAX_CONVERSION_TRIES = "5"
+		process.env.CONVERTER_DOCUMENT_PRIORITY = "unoconv,imageMagick"
+		process.env.CONVERTER_MEDIA_PRIORITY = "ffmpeg,imageMagick,unoconv"
 		process.env.TASKS_PER_CONTAINER = "5"
 		process.env.MAX_WORKER_CONTAINERS = "10"
 		process.env.MIN_WORKER_CONTAINERS = "1"
@@ -76,23 +84,16 @@ describe("loading configuration fields from environment should work", () => {
 			expect(() => getRedisConfigFromEnv()).toThrowError(InvalidConfigurationError)
 		})
 		it("should throw an error when a required field is missing", () => {
-			delete process.env.REDIS_HOST
+			delete process.env.MAX_WORKER_CONTAINERS
 			expect(() => getRedisConfigFromEnv()).toThrowError(InvalidConfigurationError)
 		})
 		it("should throw an error when multiple required field is missing", () => {
-			delete process.env.REDIS_HOST
-			delete process.env.REDIS_PORT
-			delete process.env.REDIS_NS
-			delete process.env.REDIS_QUEUE
+			delete process.env.MAX_WORKER_CONTAINERS
+			delete process.env.MIN_WORKER_CONTAINERS
 			expect(() => getRedisConfigFromEnv()).toThrowError(InvalidConfigurationError)
 		})
 	})
 	describe("it should handle invalid config option combinations", () => {
-		it("should report when all docker connection options are set", () => {
-			// Per test-default, DOCKER_SOCKET_PATH, DOCKER_HOST
-			// And DOCKER_PORT are set before each test so it should fail here
-			expect(() => getRedisConfigFromEnv()).toThrowError(InvalidConfigurationValueError)
-		})
 		it("should report missing docker port/host fields", () => {
 			delete process.env.DOCKER_SOCKET_PATH
 			delete process.env.DOCKER_HOST
@@ -103,4 +104,3 @@ describe("loading configuration fields from environment should work", () => {
 		})
 	})
 })
-export {}
