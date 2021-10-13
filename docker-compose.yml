@@ -6,9 +6,7 @@ services:
     image: redis:6.2.5-alpine
   redis-conversion-manager:
     container_name: redis-conversion-service-manager
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+    image: teamparallax/dynamic-conversion-controller:latest
     env_file: ./.env
     depends_on:
       - "redis-server"
@@ -16,4 +14,10 @@ services:
       - 3000:3000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      # Uncomment lines below to make use of docker-bind mounts
+      # The folders moodle-input/-ouput are placeholder values and need to be existent on the filesystem
+      # If the folders do not exist, either create them or replace the left part
+      # with folders that do exist and should be used for the docker-container mounts.
+      # - ~/moodle-input:/app/packages/redis/input
+      # - ~/moodle-output:/app/packages/redis/output
     restart: always
