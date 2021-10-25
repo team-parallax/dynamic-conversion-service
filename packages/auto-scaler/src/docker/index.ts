@@ -93,8 +93,14 @@ export class DockerService {
 		}
 		const maxIdChars = 6
 		const containerName = `${namePrefix}__${nanoid(maxIdChars)}`
+		const dockerNetworkSettings = {
+			HostConfig: {
+				NetworkMode: this.config.network
+			}
+		}
 		const newContainer = await this.docker.container.create({
 			Env: envVars,
+			...!this.config.isLocal && dockerNetworkSettings,
 			Image: `${targetImage}:${targetTag}`,
 			name: containerName
 		})
@@ -109,7 +115,7 @@ export class DockerService {
 			healthStatus = containerState.State.Health.Status
 		}
 		const { IPAddress } = containerState.NetworkSettings
-		this.logger.info(`created container: ${createdContainerName}`)
+		this.logger.info(`created: ${createdContainerName} Network: ${this.config.network} IP: ${IPAddress}`)
 		return {
 			containerHealthStatus: healthStatus as TDockerHealthStatus,
 			containerId: startedContainer.id,

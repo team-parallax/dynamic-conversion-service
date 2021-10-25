@@ -110,6 +110,7 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 			"Either use socketPath OR host+port"
 		)
 	}
+	const envNetwork = process.env.DOCKER_ROOT_NETWORK ?? "dcs__dcs-network"
 	return {
 		dockerConfig: {
 			envVars: getConversionServiceConfigFromEnv(),
@@ -117,6 +118,7 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 			imageName,
 			isLocal,
 			namePrefix: containerNamePrefix,
+			network: envNetwork,
 			port,
 			socketPath,
 			tag

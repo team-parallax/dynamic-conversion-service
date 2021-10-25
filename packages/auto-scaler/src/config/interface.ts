@@ -10,6 +10,7 @@ export interface IDockerConfiguration {
 	imageName: string,
 	isLocal?: boolean,
 	namePrefix: string,
+	network?: string,
 	port?: number,
 	socketPath?: string,
 	tag?: string
