@@ -38,8 +38,7 @@ export class WorkerHandler {
 		this.logger = logger
 		// This.logger.changeServiceName("Worker-Manager")
 		this.workers = {}
-		// This.isLocal = isLocal
-		this.isLocal = true
+		this.isLocal = isLocal
 		const addressMode = this.isLocal
 			? "IP Addresses"
 			: "Container names"
@@ -148,22 +147,30 @@ export class WorkerHandler {
 		for (let i = 0; i < requests.length; i++) {
 			const worker = availableWorkers[i]
 			const request = requests[i]
-			// eslint-disable-next-line no-await-in-loop
-			const workerConversionId = await forwardRequestToWorker(
-				worker.workerUrl,
-				request
-			)
 			const {
 				containerId
 			} = worker.containerInfo
-			this.addRequestToWorker(
-				containerId,
-				{
-					...request,
-					workerConversionId
-				}
-			)
-			this.logger.info(`[${this.getContainerName(containerId)}] ${request.externalConversionId} <=> ${workerConversionId}`)
+			const logPrefix = `[${this.getContainerName(containerId)}]:`
+			try {
+				this.logger.info(`${logPrefix} using ${worker.workerUrl} to address`)
+				// eslint-disable-next-line no-await-in-loop
+				const workerConversionId = await forwardRequestToWorker(
+					worker.workerUrl,
+					request
+				)
+				this.logger.info(`${logPrefix} dispatched using ${worker.workerUrl}`)
+				this.addRequestToWorker(
+					containerId,
+					{
+						...request,
+						workerConversionId
+					}
+				)
+				this.logger.info(`${logPrefix} ${request.externalConversionId} <=> ${workerConversionId}`)
+			}
+			catch (error) {
+				this.logger.info(`${logPrefix} (${worker.workerUrl}) failed to forward request!`)
+			}
 		}
 	}
 	/**
