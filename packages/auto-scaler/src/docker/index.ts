@@ -49,6 +49,9 @@ export class DockerService {
 		}
 		this.logger = logger
 		this.logger.info(`created DockerService using ${socketPath}`)
+		if (this.config.isLocal) {
+			this.logger.info(`using network: ${this.config.network}`)
+		}
 	}
 	checkImage = async (imageId: string, tag?: string): Promise<void> => {
 		const targetTag = tag ?? "latest"
