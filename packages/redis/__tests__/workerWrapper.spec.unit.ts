@@ -27,7 +27,7 @@ describe("WorkerWrapper should pass all tests", () => {
 		workerManager = new WorkerHandler(new Logger({
 			logLevel: ELogLevel.debug,
 			serviceName: "WorkerManagerTest"
-		}))
+		}), true)
 	})
 	it("should pass adding/removing a worker", () => {
 		const containerInfo: IContainerInfo = {
