@@ -9,13 +9,15 @@ describe("redis-wrapper should pass all tests", () => {
 		host: "127.0.0.1",
 		namespace: "redis-service-tests",
 		port: 6379,
-		queue: "redis-service-test-queue"
+		queue: "redis-service-test-queue",
+		timeout: 10
 	}, logger)
 	const redis2 = new RedisWrapper({
 		host: "127.0.0.1",
 		namespace: "redis-service-tests",
 		port: 6379,
-		queue: "redis-service-test-queue"
+		queue: "redis-service-test-queue",
+		timeout: 10
 	}, logger)
 	it("initialization should work", async (): Promise<void> => {
 		await expect(redis.initialize()).resolves.not.toThrowError()
