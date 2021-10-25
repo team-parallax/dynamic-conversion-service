@@ -17,7 +17,8 @@ import {
 	getFormatsFromWorker,
 	isStartingOrHealthy,
 	pingWorker,
-	removeRequestFile
+	removeRequestFile,
+	shortID
 } from "./util"
 import { performance } from "perf_hooks"
 export class RedisService {
@@ -91,7 +92,7 @@ export class RedisService {
 		)
 		const queueDepth = await this.getPendingRequestCount()
 		this.logger.info(
-			`[API]:: added request ${conversionRequest.externalConversionId} [${queueDepth}]`
+			`[API]:: added request ${shortID(conversionRequest.externalConversionId)} [${queueDepth}]`
 		)
 	}
 	/**
@@ -124,7 +125,7 @@ export class RedisService {
 				const requestTime = finishedRequest.finishedTime.getTime()
 				if (now - requestTime > this.config.fileTtl * ms) {
 					const deletedPath = await removeRequestFile("output", request)
-					this.logger.info(`[FILE_TTL]:: ${request.externalConversionId} exceeded TTL`)
+					this.logger.info(`[FILE_TTL]:: ${shortID(request.externalConversionId)} exceeded TTL`)
 					this.logger.info(`[FILE_TTL]:: deleted ${deletedPath}`)
 					this.finishedRequest.delete(request.externalConversionId)
 				}

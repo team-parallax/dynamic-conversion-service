@@ -3,7 +3,8 @@ import {
 	getExtFromFilename,
 	getExtFromFormat,
 	isHealthy,
-	isUnhealthy
+	isUnhealthy,
+	shortID
 } from "../src/util"
 describe("utility functions should work", () => {
 	describe("getExtFromFormat should work", () => {
@@ -92,6 +93,15 @@ describe("utility functions should work", () => {
 		})
 		it("should handle invalid cases", () => {
 			expect(isUnhealthy("healthy")).toBe(false)
+		})
+	})
+	describe("shortID should pass all tests", () => {
+		it("should properly shorten id's", () => {
+			expect(shortID("aaaaaaaaaaaaa")).toEqual("aaaaa...")
+			expect(shortID("aaa")).toEqual("aaa...")
+		})
+		it("should return an empty string when receiving null", () => {
+			expect(shortID(null)).toEqual("")
 		})
 	})
 })
