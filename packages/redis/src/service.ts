@@ -74,7 +74,10 @@ export class RedisService {
 		this.autoScaler = new AutoScaler(autoScalerConfig)
 		this.finishedRequest = new Map()
 		this.requestsInQueue = new Map()
-		this.workerHandler = new WorkerHandler(this.logger)
+		const {
+			isLocal
+		} = this.config.autoScalerConfig.dockerConfig
+		this.workerHandler = new WorkerHandler(this.logger, isLocal)
 	}
 	/**
 	 * Add the given request to the queue to be processed later.

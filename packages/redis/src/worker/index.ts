@@ -23,6 +23,10 @@ import {
 } from "../util"
 export class WorkerHandler {
 	/**
+	 * Used to address containers via IP or container name
+	 */
+	private readonly isLocal: boolean = false
+	/**
 	 * Logger
 	 */
 	private readonly logger: Logger
@@ -30,10 +34,16 @@ export class WorkerHandler {
 	 * The object containing all workers
 	 */
 	private readonly workers: IWorkers
-	constructor(logger: Logger) {
+	constructor(logger: Logger, isLocal: boolean = false) {
 		this.logger = logger
 		// This.logger.changeServiceName("Worker-Manager")
 		this.workers = {}
+		// This.isLocal = isLocal
+		this.isLocal = true
+		const addressMode = this.isLocal
+			? "IP Addresses"
+			: "Container names"
+		this.logger.info(`using ${addressMode} to address containers!`)
 	}
 	/**
 	 * Add a new request to the worker
@@ -61,10 +71,13 @@ export class WorkerHandler {
 		if (this.hasWorkerId(containerInfo.containerId)) {
 			throw new DuplicateWorkerIdError(containerInfo.containerId)
 		}
+		const addressMode = this.isLocal
+			? containerInfo.containerIp
+			: containerInfo.containerName.substring(1)
 		this.workers[containerInfo.containerId] = {
 			containerInfo,
 			requests: [],
-			workerUrl: `http://${containerInfo.containerIp}:3000`
+			workerUrl: `http://${addressMode}:3000`
 		}
 		this.logger.info(`added new worker ${containerInfo.containerName}`)
 	}

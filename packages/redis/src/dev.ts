@@ -31,6 +31,7 @@ process.env.CONTAINER_NAME_PREFIX = "redis-dev-mode-container_"
 process.env.CONTAINER_IMAGE = "teamparallax/conversion-service"
 process.env.CONTAINER_TAG = "latest"
 process.env.DOCKER_SOCKET_PATH = "/var/run/docker.sock"
+process.env.LOCAL_DEPLOYMENT = "true"
 // =============================================================
 // It's important to import it here due to issue #87 (see above)
 import { Api } from "./api/rest"

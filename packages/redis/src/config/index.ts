@@ -96,6 +96,11 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 		}
 		port = parseInt(envPort)
 	}
+	let isLocal = false
+	const isLocalEnv = process.env.LOCAL_DEPLOYMENT
+	if (isLocalEnv) {
+		isLocal = Boolean(JSON.parse(isLocalEnv))
+	}
 	const useSocket = socketPath && socketPath !== ""
 	const useHostPort = host && port && !socketPath
 	if (!(useSocket || useHostPort)) {
@@ -110,6 +115,7 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 			envVars: getConversionServiceConfigFromEnv(),
 			host,
 			imageName,
+			isLocal,
 			namePrefix: containerNamePrefix,
 			port,
 			socketPath,

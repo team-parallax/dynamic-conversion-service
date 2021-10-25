@@ -9,6 +9,7 @@ describe("auto-scaler should pass all tests", () => {
 	// Base Config
 	const dockerConfig: IDockerConfiguration = {
 		imageName: "teamparallax/conversion-service",
+		isLocal: true,
 		namePrefix: "conversion-service-worker"
 	}
 	if (process.env.IS_CI) {

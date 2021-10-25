@@ -8,6 +8,7 @@ export interface IDockerConfiguration {
 	envVars?: string[],
 	host?: string,
 	imageName: string,
+	isLocal?: boolean,
 	namePrefix: string,
 	port?: number,
 	socketPath?: string,
