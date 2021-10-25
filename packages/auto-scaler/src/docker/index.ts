@@ -49,7 +49,7 @@ export class DockerService {
 		}
 		this.logger = logger
 		this.logger.info(`created DockerService using ${socketPath}`)
-		if (this.config.isLocal) {
+		if (!this.config.isLocal) {
 			this.logger.info(`using network: ${this.config.network}`)
 		}
 	}
