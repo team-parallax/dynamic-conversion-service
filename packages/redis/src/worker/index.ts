@@ -93,48 +93,58 @@ export class WorkerHandler {
 				const {
 					containerId
 				} = worker.containerInfo
+				const containerName = this.getContainerName(containerId)
 				if (request.conversionStatus === EConversionStatus.Converted) {
 					if (request.workerConversionId === null) {
 						throw new NoWorkerConversionIdError(request.externalConversionId)
 					}
-					// eslint-disable-next-line no-await-in-loop
-					await getFileFromWorker(
-						worker.workerUrl,
-						request.workerConversionId,
-						request.externalConversionId,
-						request.conversionRequestBody.targetFormat
-					)
-					this.removeRequestFromWorker(
-						containerId,
-						request.externalConversionId
-					)
-					const containerName = this.getContainerName(containerId)
-					this.logger.info(`[FETCH]:: [${containerName}] => fetched file for ${shortID(request.externalConversionId)}`)
-					// eslint-disable-next-line no-await-in-loop
-					const deletedPath = await removeRequestFile("input", request)
-					this.logger.info(`[FETCH]:: deleted ${deletedPath}`)
-					finishedRequests.push({
-						containerId,
-						finishedTime: new Date(),
-						request
-					})
+					try {
+						// eslint-disable-next-line no-await-in-loop
+						await getFileFromWorker(
+							worker.workerUrl,
+							request.workerConversionId,
+							request.externalConversionId,
+							request.conversionRequestBody.targetFormat
+						)
+						this.removeRequestFromWorker(
+							containerId,
+							request.externalConversionId
+						)
+						this.logger.info(`[FETCH]:: [${containerName}] => fetched file for ${shortID(request.externalConversionId)}`)
+						// eslint-disable-next-line no-await-in-loop
+						const deletedPath = await removeRequestFile("input", request)
+						this.logger.info(`[FETCH]:: deleted ${deletedPath}`)
+						finishedRequests.push({
+							containerId,
+							finishedTime: new Date(),
+							request
+						})
+					}
+					catch (error) {
+						this.logger.info(`[FETCH]:: [${containerName}] => ERROR : ${error}`)
+					}
 				}
 				else if (request.conversionStatus === EConversionStatus.Erroneous) {
 					const {
 						containerId
 					} = worker.containerInfo
-					this.removeRequestFromWorker(
-						containerId,
-						request.externalConversionId
-					)
-					// eslint-disable-next-line no-await-in-loop
-					const deletedPath = await removeRequestFile("input", request)
-					this.logger.info(`[FETCH]:: deleted ${deletedPath}`)
-					finishedRequests.push({
-						containerId,
-						finishedTime: new Date(),
-						request
-					})
+					try {
+						this.removeRequestFromWorker(
+							containerId,
+							request.externalConversionId
+						)
+						// eslint-disable-next-line no-await-in-loop
+						const deletedPath = await removeRequestFile("input", request)
+						this.logger.info(`[FETCH]:: deleted ${deletedPath}`)
+						finishedRequests.push({
+							containerId,
+							finishedTime: new Date(),
+							request
+						})
+					}
+					catch (error) {
+						this.logger.info(`[FETCH]:: delete ERROR :${error}`)
+					}
 				}
 			}
 		}
@@ -153,13 +163,11 @@ export class WorkerHandler {
 			} = worker.containerInfo
 			const logPrefix = `[${this.getContainerName(containerId)}]:`
 			try {
-				this.logger.info(`${logPrefix} using ${worker.workerUrl} to address`)
 				// eslint-disable-next-line no-await-in-loop
 				const workerConversionId = await forwardRequestToWorker(
 					worker.workerUrl,
 					request
 				)
-				this.logger.info(`${logPrefix} dispatched using ${worker.workerUrl}`)
 				this.addRequestToWorker(
 					containerId,
 					{
@@ -170,7 +178,7 @@ export class WorkerHandler {
 				this.logger.info(`${logPrefix} ${shortID(request.externalConversionId)} <=> ${shortID(workerConversionId)}`)
 			}
 			catch (error) {
-				this.logger.info(`${logPrefix} (${worker.workerUrl}) failed to forward request!`)
+				this.logger.info(`${logPrefix} [${shortID(request.externalConversionId)}] failed to forward request!`)
 			}
 		}
 	}
@@ -282,22 +290,27 @@ export class WorkerHandler {
 				const {
 					containerId
 				} = worker.containerInfo
-				// eslint-disable-next-line no-await-in-loop
-				const status = await getConversionStatus(
-					worker.workerUrl,
-					// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-					request.workerConversionId!
-				)
-				this.updateWorkerConversionStatus(containerId, {
-					...request,
-					conversionStatus: status
-				})
 				const containerName = this.getContainerName(containerId)
-				const {
-					externalConversionId,
-					workerConversionId
-				} = request
-				this.logger.info(`[PROBE]:: [${containerName}] [${shortID(externalConversionId)}][${shortID(workerConversionId)}] => ${status} `)
+				try {
+					// eslint-disable-next-line no-await-in-loop
+					const status = await getConversionStatus(
+						worker.workerUrl,
+						// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+						request.workerConversionId!
+					)
+					this.updateWorkerConversionStatus(containerId, {
+						...request,
+						conversionStatus: status
+					})
+					const {
+						externalConversionId,
+						workerConversionId
+					} = request
+					this.logger.info(`[PROBE]:: [${containerName}] [${shortID(externalConversionId)}][${shortID(workerConversionId)}] => ${status} `)
+				}
+				catch (error) {
+					this.logger.info(`[PROBE]:: [${containerName}]:: ${error}`)
+				}
 			}
 		}
 	}

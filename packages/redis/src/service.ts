@@ -309,7 +309,12 @@ export class RedisService {
 	 */
 	readonly start = async (): Promise<void> => {
 		this.logger.info("[START]:: starting main loop")
-		await this.checkHealth()
+		try {
+			await this.checkHealth()
+		}
+		catch (error) {
+			this.logger.info(`error during health check: ${error}`)
+		}
 		const ms = 1000
 		const {
 			healthCheckInterval,
@@ -331,24 +336,29 @@ export class RedisService {
 				: "[HEALTH]"
 			this.logger.info(`${loggerPrefix}: starting probe #${probeCount}`)
 			const probeStart = performance.now()
-			/* Checking for dead/unhealthy containers */
-			await this.checkHealth()
-			/* Forwarding requests to workers */
-			await this.forwardRequestsToIdleWorkers()
-			/* Probe and update worker conversion status */
-			await this.workerHandler.probeWorkersForStatus()
-			/* Fetch files */
-			const finishedRequests = await this.workerHandler.fetchFiles()
-			finishedRequests.forEach(request => {
-				this.finishedRequest.set(
-					request.request.externalConversionId,
-					request
-				)
-			})
-			if (shouldApplyState) {
-				await this.applyState()
+			try {
+				/* Checking for dead/unhealthy containers */
+				await this.checkHealth()
+				/* Forwarding requests to workers */
+				await this.forwardRequestsToIdleWorkers()
+				/* Probe and update worker conversion status */
+				await this.workerHandler.probeWorkersForStatus()
+				/* Fetch files */
+				const finishedRequests = await this.workerHandler.fetchFiles()
+				finishedRequests.forEach(request => {
+					this.finishedRequest.set(
+						request.request.externalConversionId,
+						request
+					)
+				})
+				if (shouldApplyState) {
+					await this.applyState()
+				}
+				await this.checkFileTtl()
 			}
-			await this.checkFileTtl()
+			catch (error) {
+				this.logger.info(`error during probe: ${error}`)
+			}
 			probeCount++
 			const probeDuration = performance.now() - probeStart
 			this.logger.info(`${loggerPrefix}: probe ended (${Number(probeDuration).toFixed(0)}ms)`)
@@ -369,9 +379,19 @@ export class RedisService {
 			requests.length < pendingRequests
 			&& requests.length < forwardableRequestCount
 		) {
-			requests.push(await this.popRequest())
+			try {
+				requests.push(await this.popRequest())
+			}
+			catch (error) {
+				this.logger.info(`failed to pop request: ${error}`)
+			}
 		}
-		await this.workerHandler.forwardRequests(requests)
-		this.logger.info(`[FORWARD]:: ${await this.getPendingRequestCount()} in queue after forwarding`)
+		try {
+			await this.workerHandler.forwardRequests(requests)
+			this.logger.info(`[FORWARD]:: ${await this.getPendingRequestCount()} in queue after forwarding`)
+		}
+		catch (error) {
+			this.logger.info(`failed to forward requests: ${error}`)
+		}
 	}
 }
