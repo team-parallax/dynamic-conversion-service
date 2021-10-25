@@ -91,7 +91,8 @@ describe("redis-wrapper should pass all tests", () => {
 			host: "127.0.0.1",
 			namespace: "redis-service-tests",
 			port: 6379,
-			queue: "redis-service-test-queue"
+			queue: "redis-service-test-queue",
+			timeout: 10
 		}, logger)
 		await expect(testRedis.sendMessage("foobar"))
 			.rejects.toThrowError(RedisWrapperNotInitializedError)
