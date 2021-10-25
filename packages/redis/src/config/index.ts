@@ -162,6 +162,7 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 	const envNameSpace = process.env.REDIS_NS ?? "dcs-redis-ns"
 	const envQueue = process.env.REDIS_QUEUE ?? "dcs-redis-q"
 	const envFileTtl = process.env.FILE_TTL
+	const envRedisTimeout = process.env.REDIS_TIMEOUT ?? "10"
 	let redisPort = 6379
 	if (envPort) {
 		if (!isStringNumber(envPort)) {
@@ -176,6 +177,13 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 		}
 		fileTtl = parseInt(envFileTtl)
 	}
+	let redisTimeout = 10
+	if (envRedisTimeout) {
+		if (!isStringNumber(envRedisTimeout)) {
+			throw new InvalidConfigurationValueError("redis-service", "REDIS_TIMEOUT", envRedisTimeout)
+		}
+		redisTimeout = parseInt(envRedisTimeout)
+	}
 	return {
 		autoScalerConfig: getAutoScalerConfigFromEnv(),
 		fileTtl,
@@ -183,7 +191,8 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 			host: envHost,
 			namespace: envNameSpace,
 			port: redisPort,
-			queue: envQueue
+			queue: envQueue,
+			timeout: redisTimeout
 		},
 		schedulerConfig: getSchedulerConfigFromEnv()
 	}

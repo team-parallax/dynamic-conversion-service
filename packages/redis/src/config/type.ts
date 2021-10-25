@@ -10,6 +10,7 @@ export type TRequiredRedisConfigurationField =
 	| "REDIS_PORT"
 	| "REDIS_NS"
 	| "REDIS_QUEUE"
+	| "REDIS_TIMEOUT"
 	| "FILE_TTL"
 export type TRequiredConversionServiceConfigurationField =
 	| "FFMPEG_PATH"

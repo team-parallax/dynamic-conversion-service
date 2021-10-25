@@ -20,6 +20,7 @@ process.env.CONVERT_TO_BMP_WITH = "ffmpeg"
 process.env.REDIS_HOST = "172.17.0.1"
 process.env.HEALTH_CHECK_INTERVAL = "10"
 process.env.APPLY_DESIRED_STATE_INTERVAL = "15"
+process.env.REDIS_TIMEOUT = "10"
 process.env.FILE_TTL = "30"
 // =============================================================
 // || auto-scaler ENVIRONMENT VARIABLES
