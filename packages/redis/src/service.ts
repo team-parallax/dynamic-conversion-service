@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { AutoScaler } from "auto-scaler"
-import { IApiConversionFormatResponse } from "./api/conversion-client"
+import { EConversionStatus, IApiConversionFormatResponse } from "./api/conversion-client"
 import { IContainerStatus } from "auto-scaler/src/interface"
 import {
 	IConversionRequest,
@@ -170,6 +170,17 @@ export class RedisService {
 		if (unhealthyContainerCount > 0) {
 			this.logger.info(`[HEALTH]:: found ${unhealthyContainerCount} unhealthy containers`)
 			for (const containerId of unhealthyContainerIds) {
+				const requests = this.workerHandler.getRequestsFromWorker(containerId)
+				if (requests.length > 0) {
+					for (const request of requests) {
+						this.logger.info(`[HEALTH]: re-dispatching ${shortID(request.externalConversionId)} from unhealthy worker`)
+						await this.addRequestToQueue({
+							...request,
+							conversionStatus: EConversionStatus.InQueue,
+							workerConversionId: null
+						})
+					}
+				}
 				this.logger.info(`[${this.workerHandler.getContainerName(containerId)}]:: is unhealthy => removing`)
 				await this.autoScaler.removeContainer(containerId)
 				this.workerHandler.removeWorker(containerId)

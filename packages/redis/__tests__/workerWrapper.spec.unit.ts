@@ -72,6 +72,9 @@ describe("WorkerWrapper should pass all tests", () => {
 		expect(workerManager.getRequestCount()).toEqual(1)
 		expect(workerManager.getRequestCountFromWorker("container-id")).toEqual(1)
 		expect(
+			workerManager.getRequestsFromWorker(containerInfo.containerId)
+		).toEqual([validRequest])
+		expect(
 			() => workerManager.getRequestCountFromWorker("invalid-id")
 		).toThrowError(InvalidWorkerIdError)
 		expect(workerManager.getRequests()).toEqual([validRequest])

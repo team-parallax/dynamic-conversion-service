@@ -259,6 +259,17 @@ export class WorkerHandler {
 			.flat()
 	}
 	/**
+	 * Get the number of requests from the given worker.
+	 * @param workerId the worker
+	 * @returns the number of requests of the worker
+	 */
+		public readonly getRequestsFromWorker = (workerId: string): IConversionRequest[] => {
+			if (!this.hasWorkerId(workerId)) {
+				throw new InvalidWorkerIdError(workerId)
+			}
+			return this.workers[workerId].requests
+		}
+	/**
 	 * Get the number of running workers.
 	 * @returns the number of running workers
 	 */
