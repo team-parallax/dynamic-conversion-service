@@ -16,7 +16,12 @@ import { RedisService } from "./service"
 		Container.bind(RedisService)
 			.factory(() => redisService)
 			.scope(Scope.Singleton)
-		const api = new Api()
+		const portStr = process.env.WEBSERVICE_PORT
+		let port = 3000
+		if (portStr) {
+			port = parseInt(portStr)
+		}
+		const api = new Api(port)
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		process.on("SIGINT", async (): Promise<void> => {
 			await redisService.quit()
@@ -25,6 +30,7 @@ import { RedisService } from "./service"
 		api.listen()
 	}
 	catch (error) {
+		// eslint-disable-next-line no-console
 		console.log(error)
 		process.exit(1)
 	}
