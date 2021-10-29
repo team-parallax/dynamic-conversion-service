@@ -48,7 +48,7 @@ const getConversionServiceConfigFromEnv = (): string[] => {
 		`FFMPEG_PATH=${envFfmpegPath}`,
 		`IMAGE_MAGICK_PATH=${envImageMagickPath}`,
 		`UNOCONV_PATH=${envUnoConvPath}`,
-		`WEBSERVICE_PORT=${envWebservicePort}`,
+		`WEBSERVICE_PORT=3000`,
 		`MAX_CONVERSION_TIME=${envMaxConversionTime}`,
 		`MAX_CONVERSION_TRIES=${envMaxConversionTries}`,
 		`CONVERTER_DOCUMENT_PRIORITY=${envConverterDocumentPrio}`,
