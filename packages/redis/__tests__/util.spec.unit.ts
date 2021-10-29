@@ -99,6 +99,7 @@ describe("utility functions should work", () => {
 		it("should properly shorten id's", () => {
 			expect(shortID("aaaaaaaaaaaaa")).toEqual("aaaaa...")
 			expect(shortID("aaa")).toEqual("aaa...")
+			expect(shortID("aaaaaaaaaaaaa", 1)).toEqual("a...")
 		})
 		it("should return an empty string when receiving null", () => {
 			expect(shortID(null)).toEqual("")

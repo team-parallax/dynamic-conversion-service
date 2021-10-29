@@ -61,7 +61,8 @@ export class WorkerHandler {
 			throw new NoWorkerConversionIdError(request.externalConversionId)
 		}
 		this.workers[workerId].requests.push(request)
-		this.logger.info(`[${this.getContainerName(workerId)}] => added ${shortID(request.externalConversionId)}`)
+		const extId = shortID(request.externalConversionId)
+		this.logger.info(`[${this.getContainerName(workerId)}] => added ${extId}`)
 	}
 	/**
 	 * Add a new worker.
@@ -162,6 +163,7 @@ export class WorkerHandler {
 				containerId
 			} = worker.containerInfo
 			const logPrefix = `[${this.getContainerName(containerId)}]:`
+			const extId = shortID(request.externalConversionId)
 			try {
 				// eslint-disable-next-line no-await-in-loop
 				const workerConversionId = await forwardRequestToWorker(
@@ -175,10 +177,10 @@ export class WorkerHandler {
 						workerConversionId
 					}
 				)
-				this.logger.info(`${logPrefix} ${shortID(request.externalConversionId)} <=> ${shortID(workerConversionId)}`)
+				this.logger.info(`${logPrefix} ${extId} <=> ${shortID(workerConversionId)}`)
 			}
 			catch (error) {
-				this.logger.info(`${logPrefix} [${shortID(request.externalConversionId)}] failed to forward request!`)
+				this.logger.info(`${logPrefix} [${extId}] failed to forward request!`)
 			}
 		}
 	}
@@ -317,7 +319,9 @@ export class WorkerHandler {
 						externalConversionId,
 						workerConversionId
 					} = request
-					this.logger.info(`[PROBE]:: [${containerName}] [${shortID(externalConversionId)}][${shortID(workerConversionId)}] => ${status} `)
+					const extId = shortID(externalConversionId)
+					const workerId = shortID(workerConversionId)
+					this.logger.info(`[PROBE]:: [${containerName}] [${extId}][${workerId}] => ${status} `)
 				}
 				catch (error) {
 					this.logger.info(`[PROBE]:: [${containerName}]:: ${error}`)
@@ -340,7 +344,8 @@ export class WorkerHandler {
 		this.workers[workerId].requests = this.workers[workerId].requests.filter(
 			request => request.externalConversionId !== externalConversionId
 		)
-		this.logger.info(`[${this.getContainerName(workerId)}] removed ${shortID(externalConversionId)}`)
+		const extId = shortID(externalConversionId)
+		this.logger.info(`[${this.getContainerName(workerId)}] removed ${extId}`)
 	}
 	/**
 	 * Remove a worker.

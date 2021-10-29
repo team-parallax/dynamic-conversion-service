@@ -150,8 +150,8 @@ export const removeRequestFile = async (
 	await deleteFile(targetPath)
 	return targetPath
 }
-const shortIdMaxLength = 5
-export const shortID = (id: string | null): string =>
+const defaultIdLength = 5
+export const shortID = (id: string | null, maxLength = defaultIdLength): string =>
 	id
-		? `${id.substring(0, shortIdMaxLength)}...`
+		? `${id.substring(0, maxLength)}...`
 		: ""
