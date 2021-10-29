@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import {
 	ContainerNotFoundError,
-	InvalidDockerConnectionOptions
+	InvalidDockerConnectionOptions,
+	NoNetworkSpecifiedError
 } from "./exception"
 import { Docker } from "node-docker-api"
 import {
@@ -50,6 +51,9 @@ export class DockerService {
 		this.logger = logger
 		this.logger.info(`created DockerService using ${socketPath}`)
 		if (!this.config.isLocal) {
+			if (!this.config.network) {
+				throw new NoNetworkSpecifiedError()
+			}
 			this.logger.info(`using network: ${this.config.network}`)
 		}
 	}
