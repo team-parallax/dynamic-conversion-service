@@ -37,7 +37,6 @@ export class WorkerHandler {
 	private readonly workers: IWorkers
 	constructor(logger: Logger, isLocal: boolean = false) {
 		this.logger = logger
-		// This.logger.changeServiceName("Worker-Manager")
 		this.workers = {}
 		this.isLocal = isLocal
 		const addressMode = this.isLocal
