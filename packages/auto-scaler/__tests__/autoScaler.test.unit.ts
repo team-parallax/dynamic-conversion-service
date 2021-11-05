@@ -93,6 +93,7 @@ describe("auto-scaler should pass all tests", () => {
 			const testPendingRequests = 10
 			pendingRequests = testPendingRequests
 			runningContainers = 0
+			const expectedStart = 2
 			/* Act */
 			const result = autoScaler.computeContainerScaleAmount(
 				runningContainers,
@@ -101,7 +102,6 @@ describe("auto-scaler should pass all tests", () => {
 				maxContainers,
 				minContainers
 			)
-			const expectedStart = 2
 			/* Assert */
 			expect(result.remove).toEqual(0)
 			expect(result.start).toEqual(expectedStart)
@@ -112,6 +112,7 @@ describe("auto-scaler should pass all tests", () => {
 			pendingRequests = testPendingRequests
 			const testRunningContainers = 10
 			runningContainers = testRunningContainers
+			const expectedStart = 3
 			/* Act */
 			const result = autoScaler.computeContainerScaleAmount(
 				runningContainers,
@@ -120,7 +121,6 @@ describe("auto-scaler should pass all tests", () => {
 				maxContainers,
 				minContainers
 			)
-			const expectedStart = 3
 			/* Assert */
 			expect(result.remove).toEqual(0)
 			expect(result.start).toEqual(expectedStart)
@@ -170,6 +170,7 @@ describe("auto-scaler should pass all tests", () => {
 			pendingRequests = testPendingRequests
 			const testRunningContainers = 7
 			runningContainers = testRunningContainers
+			const expectedRemove = 2
 			/* Act */
 			const result = autoScaler.computeContainerScaleAmount(
 				runningContainers,
@@ -178,7 +179,6 @@ describe("auto-scaler should pass all tests", () => {
 				maxContainers,
 				minContainers
 			)
-			const expectedRemove = 2
 			/* Assert */
 			expect(result.start).toEqual(0)
 			expect(result.remove).toEqual(expectedRemove)
@@ -239,8 +239,8 @@ describe("auto-scaler should pass all tests", () => {
 				pendingRequests,
 				runningContainers: []
 			}
-			/* Act */
 			const targetContainerCount = 3
+			/* Act */
 			const {
 				removedContainers,
 				startedContainers
@@ -288,7 +288,7 @@ describe("auto-scaler should pass all tests", () => {
 		it(
 			"should report three running containers after starting three containers",
 			async () : Promise<void> => {
-			/* Arrange */
+				/* Arrange */
 				const expectedNumberOfContainers = 3
 				/* Act */
 				const status = await autoScaler.checkContainerStatus(pendingRequests)
@@ -330,8 +330,8 @@ describe("auto-scaler should pass all tests", () => {
 				pendingRequests,
 				runningContainers: []
 			}
-			/* Act */
 			const targetContainerCount = 2
+			/* Act */
 			const {
 				removedContainers,
 				startedContainers
@@ -343,7 +343,7 @@ describe("auto-scaler should pass all tests", () => {
 		it(
 			"should report two running containers after starting two containers",
 			async () : Promise<void> => {
-			/* Arrange */
+				/* Arrange */
 				containerIds = []
 				const expectedNumberOfContainers = 2
 				/* Act */
@@ -476,8 +476,8 @@ describe("auto-scaler should pass all tests", () => {
 				pendingRequests,
 				runningContainers: []
 			}
-			/* Act */
 			const targetContainerCount = 2
+			/* Act */
 			const {
 				removedContainers,
 				startedContainers
