@@ -131,6 +131,8 @@ describe("auto-scaler should pass all tests", () => {
 			pendingRequests = testPendingRequests
 			const testRunningContainers = 10
 			runningContainers = testRunningContainers
+			// We only need 1 container but minimum is 5
+			const expectedRemove = 5
 			/* Act */
 			const result = autoScaler.computeContainerScaleAmount(
 				runningContainers,
@@ -139,8 +141,6 @@ describe("auto-scaler should pass all tests", () => {
 				maxContainers,
 				minContainers
 			)
-			// We only need 1 container but minimum is 5
-			const expectedRemove = 5
 			/* Assert */
 			expect(result.remove).toEqual(expectedRemove)
 			expect(result.start).toEqual(0)
@@ -151,6 +151,7 @@ describe("auto-scaler should pass all tests", () => {
 			pendingRequests = testPendingRequests
 			const testRunningContainers = 1
 			runningContainers = testRunningContainers
+			const expectedStart = 4
 			/* Act */
 			const result = autoScaler.computeContainerScaleAmount(
 				runningContainers,
@@ -159,7 +160,6 @@ describe("auto-scaler should pass all tests", () => {
 				maxContainers,
 				minContainers
 			)
-			const expectedStart = 4
 			/* Assert */
 			expect(result.start).toEqual(expectedStart)
 			expect(result.remove).toEqual(0)
