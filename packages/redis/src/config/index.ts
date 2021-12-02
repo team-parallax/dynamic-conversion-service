@@ -44,6 +44,20 @@ const getConversionServiceConfigFromEnv = (): string[] => {
 	if (!envConverterMediaPrio) {
 		throw new InvalidConfigurationError("conversion-service", "CONVERTER_MEDIA_PRIORITY")
 	}
+	const monorules = Object.keys(process.env)
+		.filter(key => key.startsWith("CONVERT_TO"))
+		.map(k => ({
+			key: k,
+			value: process.env[k]
+		}))
+		.map(kv => `${kv.key}=${kv.value}`)
+	const multirules = Object.keys(process.env)
+		.filter(key => key.startsWith("CONVERT_FROM"))
+		.map(k => ({
+			key: k,
+			value: process.env[k]
+		}))
+		.map(kv => `${kv.key}=${kv.value}`)
 	return [
 		`FFMPEG_PATH=${envFfmpegPath}`,
 		`IMAGE_MAGICK_PATH=${envImageMagickPath}`,
@@ -52,7 +66,9 @@ const getConversionServiceConfigFromEnv = (): string[] => {
 		`MAX_CONVERSION_TIME=${envMaxConversionTime}`,
 		`MAX_CONVERSION_TRIES=${envMaxConversionTries}`,
 		`CONVERTER_DOCUMENT_PRIORITY=${envConverterDocumentPrio}`,
-		`CONVERTER_MEDIA_PRIORITY=${envConverterMediaPrio}`
+		`CONVERTER_MEDIA_PRIORITY=${envConverterMediaPrio}`,
+		...monorules,
+		...multirules
 	]
 }
 const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {

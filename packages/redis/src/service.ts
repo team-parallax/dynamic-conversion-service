@@ -116,6 +116,7 @@ export class RedisService {
 	 * Check if any finished requests have exceeded the TTL.
 	 */
 	readonly checkFileTtl = async (): Promise<void> => {
+		this.logger.info(`[FILE_TTL]:: commencing TTL check`)
 		const now = new Date().getTime()
 		const promises: Promise<void>[] = []
 		const ms = 1000
@@ -124,15 +125,23 @@ export class RedisService {
 				const request = finishedRequest.request
 				const requestTime = finishedRequest.finishedTime.getTime()
 				if (now - requestTime > this.config.fileTtl * ms) {
-					const deletedPath = await removeRequestFile("output", request)
 					this.logger.info(`[FILE_TTL]:: ${shortID(request.externalConversionId)} exceeded TTL`)
-					this.logger.info(`[FILE_TTL]:: deleted ${deletedPath}`)
+					if (request.conversionStatus === EConversionStatus.Converted) {
+						const deletedPath = await removeRequestFile("output", request)
+						this.logger.info(`[FILE_TTL]:: deleted ${deletedPath}`)
+					}
 					this.finishedRequest.delete(request.externalConversionId)
 				}
 			}
 			promises.push(cleanFilePromise())
 		})
-		await Promise.all(promises)
+		try {
+			await Promise.all(promises)
+		}
+		catch (e) {
+			this.logger.info(`error during file_ttl: ${e}`)
+		}
+		this.logger.info(`[FILE_TTL]:: finished TTL CHECK`)
 	}
 	/**
 	 * Check the current container status.
@@ -362,6 +371,7 @@ export class RedisService {
 						request
 					)
 				})
+				this.logger.info(`[PROBE]:: ${this.finishedRequest.size} finished requests`)
 				if (shouldApplyState) {
 					await this.applyState()
 				}
