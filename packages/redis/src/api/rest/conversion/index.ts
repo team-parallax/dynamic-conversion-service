@@ -87,19 +87,37 @@ export class ConversionController extends Controller {
 	 * The files in queue will be processed after the FIFO principle.
 	 * @param conversionRequestBody	contains the file to convert
 	 */
-	// eslint-disable-next-line @typescript-eslint/require-await
 	@Post("/")
 	@Deprecated()
 	public async convertFileLegacy(
 		@Body() requestBody: IConversionRequestBody
 	): Promise<IConversionProcessingResponse | IUnsupportedConversionFormatError> {
 		try {
-			const conversionRequest: IConversionRequestBody = requestBody
 			if (!requestBody) {
 				throw new InvalidRequestBodyError()
 			}
+			const {
+				originalFormat,
+				filename,
+				file,
+				targetFormat
+			} = requestBody
+			const externalConversionId = uuidV4()
+			const ext = getExt(filename, originalFormat)
+			await writeToFile(join("input", `${externalConversionId}${ext}`), file)
+			await this.redisService.addRequestToQueue({
+				conversionRequestBody: {
+					file: "",
+					filename,
+					originalFormat,
+					targetFormat
+				},
+				conversionStatus: EConversionStatus.InQueue,
+				externalConversionId,
+				workerConversionId: null
+			})
 			return {
-				conversionId: ""
+				conversionId: externalConversionId
 			}
 		}
 		catch (error) {
