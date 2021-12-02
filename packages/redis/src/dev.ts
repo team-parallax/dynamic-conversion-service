@@ -9,11 +9,13 @@ process.env.IMAGE_MAGICK_PATH = "/usr/bin/convert"
 process.env.UNOCONV_PATH = "/usr/local/bin/unoconv"
 process.env.MAX_CONVERSION_TIME = "90000"
 process.env.MAX_CONVERSION_TRIES = "1"
-process.env.CONVERTER_DOCUMENT_PRIORITY = "imageMagick,ffmpeg,unoconv"
+process.env.CONVERTER_DOCUMENT_PRIORITY = "unoconv,imageMagick,ffmpeg"
 process.env.CONVERTER_MEDIA_PRIORITY = "ffmpeg,imageMagick,unoconv"
-process.env.CONVERT_TO_JPG_WITH = "ffmpeg"
-process.env.CONVERT_TO_PNG_WITH = "ffmpeg"
-process.env.CONVERT_TO_BMP_WITH = "ffmpeg"
+process.env.CONVERT_TO_PDF_WITH = "unoconv"
+process.env.CONVERT_TO_PNG_WITH = "imagemagick"
+process.env.CONVERT_FROM_PNG_TO_PDF_WITH = "imagemagick"
+process.env.CONVERT_FROM_JPG_TO_PDF_WITH = "imagemagick"
+process.env.CONVERT_FROM_JPEG_TO_PDF_WITH = "imagemagick"
 // =============================================================
 // || redis-service ENVIRONMENT VARIABLES
 // =============================================================
