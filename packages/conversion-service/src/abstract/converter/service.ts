@@ -89,6 +89,7 @@ export class ConverterService {
 				throw new MaxConversionTriesError(conversionId)
 			}
 			const converter = this.determineConverter(conversionRequest)
+			this.logger.log(`Using Converter: ${converter}`)
 			const conversionFile = await this.convert(converter, conversionRequest)
 			this.conversionQueue.changeConvLogEntry(
 				conversionId,
