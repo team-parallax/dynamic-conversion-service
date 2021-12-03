@@ -66,10 +66,13 @@ export class RedisWrapper {
 			await this.createQueue(queue)
 			this.isInitialized = true
 		})
-		const timeoutInSeconds = 5
-		await timeout(timeoutInSeconds)
+		const {
+			timeout: redisTimeout
+		} = this.config
+		this.logger.info(`waiting ${redisTimeout}s for redis connection`)
+		await timeout(redisTimeout)
 		if (!this.isInitialized) {
-			throw new RedisWrapperTimoutError()
+			throw new RedisWrapperTimoutError(redisTimeout)
 		}
 		this.logger.info("redis-wrapper connected to redis-server")
 	}

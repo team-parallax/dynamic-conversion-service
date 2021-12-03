@@ -27,7 +27,7 @@ describe("WorkerWrapper should pass all tests", () => {
 		workerManager = new WorkerHandler(new Logger({
 			logLevel: ELogLevel.debug,
 			serviceName: "WorkerManagerTest"
-		}))
+		}), true)
 	})
 	it("should pass adding/removing a worker", () => {
 		const containerInfo: IContainerInfo = {
@@ -71,6 +71,9 @@ describe("WorkerWrapper should pass all tests", () => {
 		workerManager.addRequestToWorker(containerInfo.containerId, validRequest)
 		expect(workerManager.getRequestCount()).toEqual(1)
 		expect(workerManager.getRequestCountFromWorker("container-id")).toEqual(1)
+		expect(
+			workerManager.getRequestsFromWorker(containerInfo.containerId)
+		).toEqual([validRequest])
 		expect(
 			() => workerManager.getRequestCountFromWorker("invalid-id")
 		).toThrowError(InvalidWorkerIdError)

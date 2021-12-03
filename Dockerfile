@@ -8,11 +8,13 @@ ENV WEBSERVICE_PORT="3000" \
 	UNOCONV_PATH="/usr/local/bin/unoconv" \
 	MAX_CONVERSION_TIME="90000" \
 	MAX_CONVERSION_TRIES="1" \
-	CONVERTER_DOCUMENT_PRIORITY="imageMagick,ffmpeg,unoconv" \
+	CONVERTER_DOCUMENT_PRIORITY="unoconv,imagemagick,ffmpeg," \
 	CONVERTER_MEDIA_PRIORITY="ffmpeg,imageMagick,unoconv" \
-	CONVERT_TO_JPG_WITH="ffmpeg" \
-	CONVERT_TO_PNG_WITH="ffmpeg" \
-	CONVERT_TO_BMP_WITH="ffmpeg"
+	CONVERT_TO_PDF_WITH="unoconv" \
+	CONVERT_TO_PNG_WITH="imagemagick" \
+	CONVERT_FROM_PNG_TO_PDF_WITH="imagemagick" \
+	CONVERT_FROM_JPG_TO_PDF_WITH="imagemagick" \
+	CONVERT_FROM_JPEG_TO_PDF_WITH="imagemagick"
 
 ENV REDIS_HOST="dcs-redis-server" \
 	REDIS_PORT="6379" \

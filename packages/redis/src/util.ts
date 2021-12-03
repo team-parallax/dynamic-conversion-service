@@ -4,6 +4,7 @@ import {
 	IConversionStatus
 } from "./api/conversion-client"
 import {
+	FileRetrievalError,
 	FormatRetrievalError,
 	InvalidFormatError,
 	RequestFormatError,
@@ -55,16 +56,16 @@ export const forwardRequestToWorker = async (
 	if (ext === "") {
 		throw new InvalidFormatError(filename, originalFormat)
 	}
-	const fileLocation = join("input", request.externalConversionId + ext)
-	const buffer = await readFileToBuffer(fileLocation)
-	const formData = new FormData()
-	formData.append("conversionFile", buffer, {
-		filename,
-		filepath: fileLocation
-	})
-	formData.append("originalFormat", originalFormat ?? filename.split(".")[1])
-	formData.append("targetFormat", targetFormat)
 	try {
+		const fileLocation = join("input", request.externalConversionId + ext)
+		const buffer = await readFileToBuffer(fileLocation)
+		const formData = new FormData()
+		formData.append("conversionFile", buffer, {
+			filename,
+			filepath: fileLocation
+		})
+		formData.append("originalFormat", originalFormat ?? filename.split(".")[1])
+		formData.append("targetFormat", targetFormat)
 		const resp = await fetch(`${workerUrl}/conversion/v2`, {
 			body: formData,
 			method: "POST"
@@ -98,9 +99,14 @@ export const getFileFromWorker = async (
 	if (!format.startsWith(".")) {
 		format = `.${targetFormat}`
 	}
-	const outputFile = join("output", `${externalConversionId}${format}`)
-	const outStream = createWriteStream(outputFile)
-	resp.body.pipe(outStream)
+	try {
+		const outputFile = join("output", `${externalConversionId}${format}`)
+		const outStream = createWriteStream(outputFile)
+		resp.body.pipe(outStream)
+	}
+	catch (error) {
+		throw new FileRetrievalError(workerUrl)
+	}
 }
 export const getExtFromFormat = (format?: string): string => {
 	if (!format) {
@@ -144,3 +150,8 @@ export const removeRequestFile = async (
 	await deleteFile(targetPath)
 	return targetPath
 }
+const defaultIdLength = 5
+export const shortID = (id: string | null, maxLength = defaultIdLength): string =>
+	id
+		? `${id.substring(0, maxLength)}...`
+		: ""

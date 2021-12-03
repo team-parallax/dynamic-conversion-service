@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import {
 	ContainerNotFoundError,
-	InvalidDockerConnectionOptions
+	InvalidDockerConnectionOptions,
+	NoNetworkSpecifiedError
 } from "./exception"
 import { Docker } from "node-docker-api"
 import {
@@ -49,6 +50,12 @@ export class DockerService {
 		}
 		this.logger = logger
 		this.logger.info(`created DockerService using ${socketPath}`)
+		if (!this.config.isLocal) {
+			if (!this.config.network) {
+				throw new NoNetworkSpecifiedError()
+			}
+			this.logger.info(`using network: ${this.config.network}`)
+		}
 	}
 	checkImage = async (imageId: string, tag?: string): Promise<void> => {
 		const targetTag = tag ?? "latest"
@@ -93,8 +100,14 @@ export class DockerService {
 		}
 		const maxIdChars = 6
 		const containerName = `${namePrefix}__${nanoid(maxIdChars)}`
+		const dockerNetworkSettings = {
+			HostConfig: {
+				NetworkMode: this.config.network
+			}
+		}
 		const newContainer = await this.docker.container.create({
 			Env: envVars,
+			...!this.config.isLocal && dockerNetworkSettings,
 			Image: `${targetImage}:${targetTag}`,
 			name: containerName
 		})
@@ -109,7 +122,7 @@ export class DockerService {
 			healthStatus = containerState.State.Health.Status
 		}
 		const { IPAddress } = containerState.NetworkSettings
-		this.logger.info(`created container: ${createdContainerName}`)
+		this.logger.info(`created: ${createdContainerName} Network: ${this.config.network} IP: ${IPAddress}`)
 		return {
 			containerHealthStatus: healthStatus as TDockerHealthStatus,
 			containerId: startedContainer.id,

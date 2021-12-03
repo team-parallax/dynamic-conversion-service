@@ -11,3 +11,8 @@ export class ContainerNotFoundError extends Error {
 		super(`No worker with containerId=${containerId}`)
 	}
 }
+export class NoNetworkSpecifiedError extends Error {
+	constructor() {
+		super("No docker network has been specified")
+	}
+}

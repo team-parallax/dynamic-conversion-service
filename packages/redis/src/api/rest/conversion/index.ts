@@ -23,7 +23,7 @@ import {
 	IConversionRequestBody,
 	IUnsupportedConversionFormatError
 } from "conversion-service/src/service/conversion/interface"
-import { IConversionStatus } from "conversion-service/src/abstract/converter/interface"
+import { IConversionStatus, TApiConvertedCompatResponseV1 } from "conversion-service/src/abstract/converter/interface"
 import { RedisService } from "redis/src/service"
 import { assertStatus } from "./util"
 import { getExt } from "../../../util"
@@ -87,19 +87,37 @@ export class ConversionController extends Controller {
 	 * The files in queue will be processed after the FIFO principle.
 	 * @param conversionRequestBody	contains the file to convert
 	 */
-	// eslint-disable-next-line @typescript-eslint/require-await
 	@Post("/")
 	@Deprecated()
 	public async convertFileLegacy(
 		@Body() requestBody: IConversionRequestBody
 	): Promise<IConversionProcessingResponse | IUnsupportedConversionFormatError> {
 		try {
-			const conversionRequest: IConversionRequestBody = requestBody
 			if (!requestBody) {
 				throw new InvalidRequestBodyError()
 			}
+			const {
+				originalFormat,
+				filename,
+				file,
+				targetFormat
+			} = requestBody
+			const externalConversionId = uuidV4()
+			const ext = getExt(filename, originalFormat)
+			await writeToFile(join("input", `${externalConversionId}${ext}`), file)
+			await this.redisService.addRequestToQueue({
+				conversionRequestBody: {
+					file: "",
+					filename,
+					originalFormat,
+					targetFormat
+				},
+				conversionStatus: EConversionStatus.InQueue,
+				externalConversionId,
+				workerConversionId: null
+			})
 			return {
-				conversionId: ""
+				conversionId: externalConversionId
 			}
 		}
 		catch (error) {
@@ -113,7 +131,10 @@ export class ConversionController extends Controller {
 	@Get("/")
 	public async getConversionQueueStatus(): Promise<IConversionQueueStatus> {
 		try {
-			const requests = this.redisService.getRequests()
+			const requests = [
+				...this.redisService.getRequests(),
+				...this.redisService.getFinishedRequests()
+			]
 			const conversions: IConversionStatus[] = []
 			for (const request of requests) {
 				conversions.push({
@@ -157,8 +178,37 @@ export class ConversionController extends Controller {
 			}
 			const {
 				targetFormat,
-				originalFormat
+				originalFormat,
+				filename
 			} = conversionRequest.conversionRequestBody
+			if (
+				conversionRequest.conversionStatus === "converted"
+				&& !isV2Request
+			) {
+				const ext = targetFormat.startsWith(".")
+					? targetFormat
+					: `.${targetFormat}`
+				const filePath = `./output/${conversionId}${ext}`
+				let fileName = `${conversionId}${ext}`
+				if (originalFormat) {
+					fileName = filename.replace(originalFormat, ext)
+				}
+				else {
+					fileName = filename + ext
+				}
+				const stats = fs.readFileSync(filePath)
+				const response: TApiConvertedCompatResponseV1 = {
+					conversionId,
+					failures: 0,
+					path: fileName,
+					resultFile: stats,
+					retries: 0,
+					sourceFormat: originalFormat ?? "",
+					status: assertStatus(EConversionStatus.Converted),
+					targetFormat
+				}
+				return response
+			}
 			return {
 				conversionId,
 				path: "",
@@ -196,16 +246,24 @@ export class ConversionController extends Controller {
 			if (conversionRequest.conversionStatus === EConversionStatus.Converted) {
 				const {
 					filename,
-					targetFormat
+					targetFormat,
+					originalFormat
 				} = conversionRequest.conversionRequestBody
 				const ext = targetFormat.startsWith(".")
 					? targetFormat
 					: `.${targetFormat}`
 				const filePath = `./output/${conversionId}${ext}`
 				const stats = await fs.promises.stat(filePath)
+				let fileName = `${conversionId}${ext}`
+				if (originalFormat) {
+					fileName = filename.replace(originalFormat, ext)
+				}
+				else {
+					fileName = filename + ext
+				}
 				this.setHeader("Content-Type", `${getType(filePath)}`)
 				this.setHeader("Content-Length", stats.size.toString())
-				this.setHeader("Content-Disposition", `attachment; filename=${filename}`)
+				this.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
 				return fs.createReadStream(filePath)
 			}
 			return {

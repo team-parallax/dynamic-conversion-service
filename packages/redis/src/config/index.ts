@@ -44,15 +44,31 @@ const getConversionServiceConfigFromEnv = (): string[] => {
 	if (!envConverterMediaPrio) {
 		throw new InvalidConfigurationError("conversion-service", "CONVERTER_MEDIA_PRIORITY")
 	}
+	const monorules = Object.keys(process.env)
+		.filter(key => key.startsWith("CONVERT_TO"))
+		.map(k => ({
+			key: k,
+			value: process.env[k]
+		}))
+		.map(kv => `${kv.key}=${kv.value}`)
+	const multirules = Object.keys(process.env)
+		.filter(key => key.startsWith("CONVERT_FROM"))
+		.map(k => ({
+			key: k,
+			value: process.env[k]
+		}))
+		.map(kv => `${kv.key}=${kv.value}`)
 	return [
 		`FFMPEG_PATH=${envFfmpegPath}`,
 		`IMAGE_MAGICK_PATH=${envImageMagickPath}`,
 		`UNOCONV_PATH=${envUnoConvPath}`,
-		`WEBSERVICE_PORT=${envWebservicePort}`,
+		`WEBSERVICE_PORT=3000`,
 		`MAX_CONVERSION_TIME=${envMaxConversionTime}`,
 		`MAX_CONVERSION_TRIES=${envMaxConversionTries}`,
 		`CONVERTER_DOCUMENT_PRIORITY=${envConverterDocumentPrio}`,
-		`CONVERTER_MEDIA_PRIORITY=${envConverterMediaPrio}`
+		`CONVERTER_MEDIA_PRIORITY=${envConverterMediaPrio}`,
+		...monorules,
+		...multirules
 	]
 }
 const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
@@ -96,6 +112,11 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 		}
 		port = parseInt(envPort)
 	}
+	let isLocal = false
+	const isLocalEnv = process.env.LOCAL_DEPLOYMENT
+	if (isLocalEnv) {
+		isLocal = Boolean(JSON.parse(isLocalEnv))
+	}
 	const useSocket = socketPath && socketPath !== ""
 	const useHostPort = host && port && !socketPath
 	if (!(useSocket || useHostPort)) {
@@ -105,12 +126,15 @@ const getAutoScalerConfigFromEnv = () : IAutoScalerConfiguration => {
 			"Either use socketPath OR host+port"
 		)
 	}
+	const envNetwork = process.env.DOCKER_ROOT_NETWORK ?? "dcs__dcs-network"
 	return {
 		dockerConfig: {
 			envVars: getConversionServiceConfigFromEnv(),
 			host,
 			imageName,
+			isLocal,
 			namePrefix: containerNamePrefix,
+			network: envNetwork,
 			port,
 			socketPath,
 			tag
@@ -156,6 +180,7 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 	const envNameSpace = process.env.REDIS_NS ?? "dcs-redis-ns"
 	const envQueue = process.env.REDIS_QUEUE ?? "dcs-redis-q"
 	const envFileTtl = process.env.FILE_TTL
+	const envRedisTimeout = process.env.REDIS_TIMEOUT ?? "10"
 	let redisPort = 6379
 	if (envPort) {
 		if (!isStringNumber(envPort)) {
@@ -170,6 +195,13 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 		}
 		fileTtl = parseInt(envFileTtl)
 	}
+	let redisTimeout = 10
+	if (envRedisTimeout) {
+		if (!isStringNumber(envRedisTimeout)) {
+			throw new InvalidConfigurationValueError("redis-service", "REDIS_TIMEOUT", envRedisTimeout)
+		}
+		redisTimeout = parseInt(envRedisTimeout)
+	}
 	return {
 		autoScalerConfig: getAutoScalerConfigFromEnv(),
 		fileTtl,
@@ -177,7 +209,8 @@ export const getRedisConfigFromEnv = (): IRedisServiceConfiguration => {
 			host: envHost,
 			namespace: envNameSpace,
 			port: redisPort,
-			queue: envQueue
+			queue: envQueue,
+			timeout: redisTimeout
 		},
 		schedulerConfig: getSchedulerConfigFromEnv()
 	}
