@@ -229,6 +229,19 @@ export class RedisService {
 		return this.workerHandler.getConversionResult(conversionId)
 	}
 	/**
+	 *
+	 * @returns
+	 */
+	readonly getFinishedRequests = (): IConversionRequest[] => {
+		const requests: IConversionRequest[] = []
+		this.finishedRequest.forEach((v, k) => {
+			requests.push({
+				...v.request
+			})
+		})
+		return requests
+	}
+	/**
 	 * Get the supported formats of the workers.
 	 * The first call will ask every worker, return the first response
 	 * and cache it since it will not change.

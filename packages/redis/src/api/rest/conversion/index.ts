@@ -23,7 +23,7 @@ import {
 	IConversionRequestBody,
 	IUnsupportedConversionFormatError
 } from "conversion-service/src/service/conversion/interface"
-import { IConversionStatus } from "conversion-service/src/abstract/converter/interface"
+import { IConversionStatus, TApiConvertedCompatResponseV1 } from "conversion-service/src/abstract/converter/interface"
 import { RedisService } from "redis/src/service"
 import { assertStatus } from "./util"
 import { getExt } from "../../../util"
@@ -33,8 +33,8 @@ import {
 	handleMultipartFormData
 } from "conversion-service/src/service/conversion/util"
 import { join } from "path"
+import { readFromFileSync, writeToFile } from "conversion-service/src/service/file-io"
 import { v4 as uuidV4 } from "uuid"
-import { writeToFile } from "conversion-service/src/service/file-io"
 import express from "express"
 import fs from "fs"
 @Route("/conversion")
@@ -131,7 +131,10 @@ export class ConversionController extends Controller {
 	@Get("/")
 	public async getConversionQueueStatus(): Promise<IConversionQueueStatus> {
 		try {
-			const requests = this.redisService.getRequests()
+			const requests = [
+				...this.redisService.getRequests(),
+				...this.redisService.getFinishedRequests()
+			]
 			const conversions: IConversionStatus[] = []
 			for (const request of requests) {
 				conversions.push({
@@ -177,6 +180,27 @@ export class ConversionController extends Controller {
 				targetFormat,
 				originalFormat
 			} = conversionRequest.conversionRequestBody
+			if (
+				conversionRequest.conversionStatus === "converted"
+				&& !isV2Request
+			) {
+				const ext = targetFormat.startsWith(".")
+					? targetFormat
+					: `.${targetFormat}`
+				const filePath = `./output/${conversionId}${ext}`
+				const stats = readFromFileSync(filePath)
+				const response: TApiConvertedCompatResponseV1 = {
+					conversionId,
+					failures: 0,
+					path: filePath,
+					resultFile: stats,
+					retries: 0,
+					sourceFormat: originalFormat ?? "",
+					status: assertStatus(EConversionStatus.Converted),
+					targetFormat
+				}
+				return response
+			}
 			return {
 				conversionId,
 				path: "",
@@ -223,7 +247,7 @@ export class ConversionController extends Controller {
 				const stats = await fs.promises.stat(filePath)
 				this.setHeader("Content-Type", `${getType(filePath)}`)
 				this.setHeader("Content-Length", stats.size.toString())
-				this.setHeader("Content-Disposition", `attachment; filename=${filename}`)
+				this.setHeader("Content-Disposition", `attachment; filename=${conversionId}${ext}`)
 				return fs.createReadStream(filePath)
 			}
 			return {
