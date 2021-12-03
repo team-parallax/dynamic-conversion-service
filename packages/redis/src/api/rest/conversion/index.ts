@@ -33,8 +33,8 @@ import {
 	handleMultipartFormData
 } from "conversion-service/src/service/conversion/util"
 import { join } from "path"
-import { readFromFileSync, writeToFile } from "conversion-service/src/service/file-io"
 import { v4 as uuidV4 } from "uuid"
+import { writeToFile } from "conversion-service/src/service/file-io"
 import express from "express"
 import fs from "fs"
 @Route("/conversion")
@@ -178,7 +178,8 @@ export class ConversionController extends Controller {
 			}
 			const {
 				targetFormat,
-				originalFormat
+				originalFormat,
+				filename
 			} = conversionRequest.conversionRequestBody
 			if (
 				conversionRequest.conversionStatus === "converted"
@@ -188,11 +189,18 @@ export class ConversionController extends Controller {
 					? targetFormat
 					: `.${targetFormat}`
 				const filePath = `./output/${conversionId}${ext}`
-				const stats = readFromFileSync(filePath)
+				let fileName = `${conversionId}${ext}`
+				if (originalFormat) {
+					fileName = filename.replace(originalFormat, ext)
+				}
+				else {
+					fileName = filename + ext
+				}
+				const stats = fs.readFileSync(filePath)
 				const response: TApiConvertedCompatResponseV1 = {
 					conversionId,
 					failures: 0,
-					path: filePath,
+					path: fileName,
 					resultFile: stats,
 					retries: 0,
 					sourceFormat: originalFormat ?? "",
@@ -238,16 +246,24 @@ export class ConversionController extends Controller {
 			if (conversionRequest.conversionStatus === EConversionStatus.Converted) {
 				const {
 					filename,
-					targetFormat
+					targetFormat,
+					originalFormat
 				} = conversionRequest.conversionRequestBody
 				const ext = targetFormat.startsWith(".")
 					? targetFormat
 					: `.${targetFormat}`
 				const filePath = `./output/${conversionId}${ext}`
 				const stats = await fs.promises.stat(filePath)
+				let fileName = `${conversionId}${ext}`
+				if (originalFormat) {
+					fileName = filename.replace(originalFormat, ext)
+				}
+				else {
+					fileName = filename + ext
+				}
 				this.setHeader("Content-Type", `${getType(filePath)}`)
 				this.setHeader("Content-Length", stats.size.toString())
-				this.setHeader("Content-Disposition", `attachment; filename=${conversionId}${ext}`)
+				this.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
 				return fs.createReadStream(filePath)
 			}
 			return {
