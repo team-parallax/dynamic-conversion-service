@@ -3,7 +3,8 @@ export interface IRedisConfiguration {
     host: string,
     namespace: string,
     port: number,
-    queue: string
+    queue: string,
+    timeout: number
 }
 export interface ISchedulerConfiguration {
     healthCheckInterval: number,

@@ -81,6 +81,8 @@ export class ConversionQueue {
 			}
 			this.logger.log(`Update status for ${conversionId} to ${status}`)
 			element.status = status
+			this.convLog.set(conversionId, element)
+			this.logger.log(`Actual Status = ${this.convLog.get(conversionId)?.status}`)
 		}
 	}
 	public getNextQueueElement(): IConversionFile | undefined {
@@ -88,24 +90,11 @@ export class ConversionQueue {
 	}
 	public getStatusById(conversionId: string): IConversionStatus {
 		this.logger.log(`Retrieve status for ${conversionId}`)
-		const isInConversionQueue: boolean = this.convLog.get(
-			conversionId
-		)?.status === EConversionStatus.inQueue
-		const isInConvertedQueue: boolean = this.convLog.get(
-			conversionId
-		)?.status === EConversionStatus.converted
-		if (isInConversionQueue) {
-			return this.response(EConversionStatus.inQueue, conversionId)
-		}
-		if (isInConvertedQueue) {
-			return this.response(EConversionStatus.converted, conversionId)
-		}
-		if (this.currentlyConvertingFile?.conversionId === conversionId) {
-			return this.response(EConversionStatus.processing, conversionId)
-		}
-		else {
+		const conversion = this.convLog.get(conversionId)
+		if (!conversion) {
 			throw new NoSuchConversionIdError(`No conversion request found for given conversionId ${conversionId}`)
 		}
+		return this.response(conversion.status, conversionId)
 	}
 	private response(
 		status: EConversionStatus,

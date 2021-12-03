@@ -39,7 +39,7 @@ export class RedisWrapperNotInitializedError extends Error {
 	}
 }
 export class RedisWrapperTimoutError extends Error {
-	constructor() {
-		super("timeout when connecting to redis-server")
+	constructor(timeout: number) {
+		super(`redis-server was not reachable within ${timeout}s`)
 	}
 }

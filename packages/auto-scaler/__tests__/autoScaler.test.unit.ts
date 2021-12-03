@@ -9,6 +9,7 @@ describe("auto-scaler should pass all tests", () => {
 	// Base Config
 	const dockerConfig: IDockerConfiguration = {
 		imageName: "teamparallax/conversion-service",
+		isLocal: true,
 		namePrefix: "conversion-service-worker"
 	}
 	if (process.env.IS_CI) {
@@ -53,7 +54,7 @@ describe("auto-scaler should pass all tests", () => {
 	describe("the state computation should work", () => {
 		let runningContainers = 10
 		let pendingRequests = 0
-		const tasksPerContainer = 5
+		let tasksPerContainer = 5
 		const maxContainers = 50
 		const minContainers = 5
 		it("should report zero|zero with zero pending requests", () => {
@@ -92,6 +93,7 @@ describe("auto-scaler should pass all tests", () => {
 			const testPendingRequests = 10
 			pendingRequests = testPendingRequests
 			runningContainers = 0
+			const expectedStart = 2
 			/* Act */
 			const result = autoScaler.computeContainerScaleAmount(
 				runningContainers,
@@ -100,7 +102,6 @@ describe("auto-scaler should pass all tests", () => {
 				maxContainers,
 				minContainers
 			)
-			const expectedStart = 2
 			/* Assert */
 			expect(result.remove).toEqual(0)
 			expect(result.start).toEqual(expectedStart)
@@ -111,6 +112,7 @@ describe("auto-scaler should pass all tests", () => {
 			pendingRequests = testPendingRequests
 			const testRunningContainers = 10
 			runningContainers = testRunningContainers
+			const expectedStart = 3
 			/* Act */
 			const result = autoScaler.computeContainerScaleAmount(
 				runningContainers,
@@ -119,7 +121,6 @@ describe("auto-scaler should pass all tests", () => {
 				maxContainers,
 				minContainers
 			)
-			const expectedStart = 3
 			/* Assert */
 			expect(result.remove).toEqual(0)
 			expect(result.start).toEqual(expectedStart)
@@ -130,6 +131,8 @@ describe("auto-scaler should pass all tests", () => {
 			pendingRequests = testPendingRequests
 			const testRunningContainers = 10
 			runningContainers = testRunningContainers
+			// We only need 1 container but minimum is 5
+			const expectedRemove = 5
 			/* Act */
 			const result = autoScaler.computeContainerScaleAmount(
 				runningContainers,
@@ -138,11 +141,87 @@ describe("auto-scaler should pass all tests", () => {
 				maxContainers,
 				minContainers
 			)
-			// We only need 1 container but minimum is 5
-			const expectedRemove = 5
 			/* Assert */
 			expect(result.remove).toEqual(expectedRemove)
 			expect(result.start).toEqual(0)
+		})
+		it("should start containers to reach the minimum when idle", () => {
+			/* Arrange */
+			const testPendingRequests = 0
+			pendingRequests = testPendingRequests
+			const testRunningContainers = 1
+			runningContainers = testRunningContainers
+			const expectedStart = 4
+			/* Act */
+			const result = autoScaler.computeContainerScaleAmount(
+				runningContainers,
+				pendingRequests,
+				tasksPerContainer,
+				maxContainers,
+				minContainers
+			)
+			/* Assert */
+			expect(result.start).toEqual(expectedStart)
+			expect(result.remove).toEqual(0)
+		})
+		it("should remove containers to reach the minimum when idle", () => {
+			/* Arrange */
+			const testPendingRequests = 0
+			pendingRequests = testPendingRequests
+			const testRunningContainers = 7
+			runningContainers = testRunningContainers
+			const expectedRemove = 2
+			/* Act */
+			const result = autoScaler.computeContainerScaleAmount(
+				runningContainers,
+				pendingRequests,
+				tasksPerContainer,
+				maxContainers,
+				minContainers
+			)
+			/* Assert */
+			expect(result.start).toEqual(0)
+			expect(result.remove).toEqual(expectedRemove)
+		})
+		it("should start only max amount with higher than max amount of requests", () => {
+			/* Arrange */
+			const testPendingRequests = 100
+			pendingRequests = testPendingRequests
+			const testRunningContainers = 0
+			runningContainers = testRunningContainers
+			const testTasksPerContainer = 1
+			tasksPerContainer = testTasksPerContainer
+			/* Act */
+			const result = autoScaler.computeContainerScaleAmount(
+				runningContainers,
+				pendingRequests,
+				tasksPerContainer,
+				maxContainers,
+				minContainers
+			)
+			/* Assert */
+			expect(result.start).toEqual(maxContainers)
+			expect(result.remove).toEqual(0)
+		})
+		it("should remove containers to reach minimum when idle", () => {
+			/* Arrange */
+			const testPendingRequests = 0
+			pendingRequests = testPendingRequests
+			const testRunningContainers = 7
+			runningContainers = testRunningContainers
+			const testTasksPerContainer = 1
+			tasksPerContainer = testTasksPerContainer
+			/* Act */
+			const result = autoScaler.computeContainerScaleAmount(
+				runningContainers,
+				pendingRequests,
+				tasksPerContainer,
+				maxContainers,
+				minContainers
+			)
+			/* Assert */
+			expect(result.start).toEqual(0)
+			expect(result.remove).toEqual(runningContainers - minContainers)
 		})
 	})
 	describe("docker service should pass all tests", () => {
@@ -160,8 +239,8 @@ describe("auto-scaler should pass all tests", () => {
 				pendingRequests,
 				runningContainers: []
 			}
-			/* Act */
 			const targetContainerCount = 3
+			/* Act */
 			const {
 				removedContainers,
 				startedContainers
@@ -209,7 +288,7 @@ describe("auto-scaler should pass all tests", () => {
 		it(
 			"should report three running containers after starting three containers",
 			async () : Promise<void> => {
-			/* Arrange */
+				/* Arrange */
 				const expectedNumberOfContainers = 3
 				/* Act */
 				const status = await autoScaler.checkContainerStatus(pendingRequests)
@@ -251,8 +330,8 @@ describe("auto-scaler should pass all tests", () => {
 				pendingRequests,
 				runningContainers: []
 			}
-			/* Act */
 			const targetContainerCount = 2
+			/* Act */
 			const {
 				removedContainers,
 				startedContainers
@@ -264,7 +343,7 @@ describe("auto-scaler should pass all tests", () => {
 		it(
 			"should report two running containers after starting two containers",
 			async () : Promise<void> => {
-			/* Arrange */
+				/* Arrange */
 				containerIds = []
 				const expectedNumberOfContainers = 2
 				/* Act */
@@ -397,8 +476,8 @@ describe("auto-scaler should pass all tests", () => {
 				pendingRequests,
 				runningContainers: []
 			}
-			/* Act */
 			const targetContainerCount = 2
+			/* Act */
 			const {
 				removedContainers,
 				startedContainers
