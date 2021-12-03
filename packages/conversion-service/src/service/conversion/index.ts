@@ -85,6 +85,7 @@ export class ConversionService extends ConverterService {
 			}
 			finally {
 				this.isCurrentlyConverting = false
+				this.conversionQueue.currentlyConvertingFile = null
 				void this.update()
 			}
 		}

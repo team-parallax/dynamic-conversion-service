@@ -107,16 +107,33 @@ export class AutoScaler {
 			}
 		}
 		if (pendingRequests === 0) {
-			return {
-				remove: runningContainers - minContainers,
-				start: 0
+			if (runningContainers < minContainers) {
+				return {
+					remove: 0,
+					start: minContainers - runningContainers
+				}
+			}
+			else if (runningContainers > minContainers) {
+				return {
+					remove: runningContainers - minContainers,
+					start: 0
+				}
+			}
+			else {
+				return {
+					remove: 0,
+					start: 0
+				}
 			}
 		}
 		/* Early exit and avoid division by zero */
 		if (runningContainers === 0) {
 			return {
 				remove: 0,
-				start: Math.ceil(pendingRequests / tasksPerContainer)
+				start: Math.min(
+					Math.ceil(pendingRequests / tasksPerContainer),
+					maxContainers
+				)
 			}
 		}
 		let start = 0

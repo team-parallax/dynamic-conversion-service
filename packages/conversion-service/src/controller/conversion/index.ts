@@ -57,6 +57,7 @@ export class ConversionController extends Controller {
 		this.logger.log("Conversion requested")
 		try {
 			const multipartConversionRequest = await handleMultipartFormData(request)
+			this.logger.log(`${multipartConversionRequest.filename} = ${multipartConversionRequest.originalFormat} => ${multipartConversionRequest.targetFormat}`)
 			return await this.conversionService.processConversionRequest(multipartConversionRequest)
 		}
 		catch (error) {
@@ -80,6 +81,7 @@ export class ConversionController extends Controller {
 			if (!requestBody) {
 				throw new InvalidRequestBodyError()
 			}
+			this.logger.log(`${conversionRequest.filename} = ${conversionRequest.originalFormat} => ${conversionRequest.targetFormat}`)
 			return await this.conversionService.processConversionRequest(conversionRequest)
 		}
 		catch (error) {
@@ -93,7 +95,9 @@ export class ConversionController extends Controller {
 	@Get("/")
 	public getConversionQueueStatus(): IConversionQueueStatus {
 		this.logger.log("Conversion queue status requested")
-		return this.conversionService.getConversionQueueStatus()
+		const status = this.conversionService.getConversionQueueStatus()
+		this.logger.log(`${status.conversions.length} conversions, ${status.remainingConversions} remaining`)
+		return status
 	}
 	/**
 	 * Returns the current status for a conversion given a conversionId
@@ -112,6 +116,7 @@ export class ConversionController extends Controller {
 				status,
 				targetFormat
 			} = statusResponse
+			this.logger.log(`${statusResponse.conversionId} = ${status} || ${retries}`)
 			if (status === EConversionStatus.converted) {
 				if (!isV2Request) {
 					const conversionFileProperties = getConvertedFileNameAndPath(
@@ -168,6 +173,7 @@ export class ConversionController extends Controller {
 				* Just serves the file as it is
 				*/
 				this.setHeader("Content-Disposition", `attachment; filename=${fileName}`)
+				this.logger.log(`${fileName} || ${filePath}`)
 				return fs.createReadStream(filePath)
 			}
 			return {

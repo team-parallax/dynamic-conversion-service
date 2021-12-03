@@ -13,6 +13,11 @@ export class FormatRetrievalError extends Error {
 		super(`failed to retrieve formats formats ${workerUrl}`)
 	}
 }
+export class FileRetrievalError extends Error {
+	constructor(workerUrl: string) {
+		super(`failed to retrieve file from ${workerUrl}`)
+	}
+}
 export class StatusUpdateError extends Error {
 	constructor(workerUrl: string) {
 		super(`failed to retrieve status from ${workerUrl}`)

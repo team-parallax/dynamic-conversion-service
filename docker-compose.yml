@@ -4,12 +4,19 @@ services:
   redis-server:
     container_name: dcs-redis-server
     image: redis:6.2.5-alpine
+    networks:
+      - dcs-network
   redis-conversion-manager:
     container_name: redis-conversion-service-manager
-    image: teamparallax/dynamic-conversion-controller:latest
+    # image: teamparallax/dynamic-conversion-controller:latest
+    build:
+      context: .
+      dockerfile: ./Dockerfile
     env_file: ./.env
     depends_on:
       - "redis-server"
+    networks:
+      - dcs-network
     ports:
       - 3000:3000
     volumes:
@@ -21,3 +28,7 @@ services:
       # - ~/moodle-input:/app/packages/redis/input
       # - ~/moodle-output:/app/packages/redis/output
     restart: always
+
+# this is required to connect the workers to the service-manager
+networks:
+  dcs-network:
