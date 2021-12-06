@@ -8,10 +8,7 @@ services:
       - dcs-network
   redis-conversion-manager:
     container_name: redis-conversion-service-manager
-    # image: teamparallax/dynamic-conversion-controller:latest
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+    image: teamparallax/dynamic-conversion-controller:latest
     env_file: ./.env
     depends_on:
       - "redis-server"
