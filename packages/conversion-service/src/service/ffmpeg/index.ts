@@ -50,7 +50,8 @@ export class FFmpegWrapper extends BaseConverter {
 				const inputFile = join(basePath, path)
 				const outPath = join(basePath, "output")
 				const outputFilePath = `${outPath}/${conversionId}.${targetFormat}`
-				const ffmpegCommand: FfmpegCommand = Ffmpeg(inputFile).format(targetFormat)
+				// Const ffmpegCommand: FfmpegCommand = Ffmpeg(inputFile).format(targetFormat)
+				const ffmpegCommand: FfmpegCommand = Ffmpeg(inputFile)
 				if (conversionOptions?.filter) {
 					ffmpegCommand.addOptions(conversionOptions?.filter as string[])
 				}
