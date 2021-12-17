@@ -79,6 +79,9 @@ export const handleMultipartFormData = async (
 					targetFormat
 				})
 			}
+			else {
+				reject(new Error("no file in request"))
+			}
 		})
 	})
 }
