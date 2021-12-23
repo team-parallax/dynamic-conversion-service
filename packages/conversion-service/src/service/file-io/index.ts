@@ -60,11 +60,13 @@ export const writeToFile = async (
 	outputPath: string,
 	data: TArrayBufferView
 ): Promise<string> => {
-	return new Promise((resolve, reject) => {
+	return await new Promise((resolve, reject) => {
 		writeFile(outputPath, data, err => {
-			reject(err)
+			if (err !== null) {
+				reject(err)
+			}
+			resolve(`Created File in ${outputPath}.`)
 		})
-		resolve(`Created File in ${outputPath}.`)
 	})
 }
 export const createDirectoryIfNotPresent = async (
