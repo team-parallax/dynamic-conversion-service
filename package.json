@@ -2,7 +2,7 @@
   "name": "root",
   "private": true,
   "scripts": {
-    "build:docker": "docker build -t teamparallax/redis-conversion-manager -f ./Dockerfile .",
+    "build:docker": "docker build -t teamparallax/dynamic-conversion-controller -f ./Dockerfile .",
     "build:api": "yarn openapi-generator-cli generate --input-spec packages/conversion-service/swagger.json --generator-name typescript-axios --output packages/redis/src/api/conversion --config packages/conversion-service/api-config.json",
     "git:commit": "yarn git-cz",
     "lint": "yarn lerna run lint",
