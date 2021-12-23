@@ -173,6 +173,7 @@ export class RedisService {
 			}
 		}
 		const unhealthyContainerIds = status.runningContainers
+			.filter(container => this.workerHandler.hasWorkerId(container.containerId))
 			.filter(container => !isStartingOrHealthy(container.containerHealthStatus))
 			.map(container => container.containerId)
 		const unhealthyContainerCount = unhealthyContainerIds.length
