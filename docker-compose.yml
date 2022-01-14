@@ -6,6 +6,12 @@ services:
     image: redis:6.2.5-alpine
     networks:
       - dcs-network
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    restart: always
   redis-conversion-manager:
     container_name: redis-conversion-service-manager
     image: teamparallax/dynamic-conversion-controller:latest
