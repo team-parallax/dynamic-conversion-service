@@ -128,12 +128,10 @@ export class RedisWrapper {
 			})
 		})
 	}
-	readonly sendMessage = async (message: string, skipInit :boolean = false): Promise<void> => {
-		if (!skipInit) {
-			if (!this.isInitialized) {
-				this.logger.error(`using 'send' before initializing`)
-				throw new RedisWrapperNotInitializedError()
-			}
+	readonly sendMessage = async (message: string): Promise<void> => {
+		if (!this.isInitialized) {
+			this.logger.error(`using 'send' before initializing`)
+			throw new RedisWrapperNotInitializedError()
 		}
 		return new Promise((resolve, reject) => {
 			this.rsmq.sendMessage({
