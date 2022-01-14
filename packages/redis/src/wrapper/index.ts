@@ -2,6 +2,7 @@ import { IRedisConfiguration } from "../config"
 import { Logger } from "logger"
 import {
 	RedisWrapperNotInitializedError,
+	RedisWrapperOperationTimeoutError,
 	RedisWrapperPopError,
 	RedisWrapperQueueCreateError,
 	RedisWrapperQueueDeleteError,
@@ -10,6 +11,10 @@ import {
 	RedisWrapperSendError,
 	RedisWrapperTimoutError
 } from "./exception"
+import { withTimeout } from "./util"
+const responseFailure = -1
+const queueIsMissing = -2
+const operationTimeout = 2500
 import RedisSMQ, { QueueMessage } from "rsmq"
 export class RedisWrapper {
 	private readonly config: IRedisConfiguration
@@ -34,47 +39,62 @@ export class RedisWrapper {
 			this.logger.error(`using 'getPendingMessagesCount' before initializing`)
 			throw new RedisWrapperNotInitializedError()
 		}
-		return new Promise((resolve, reject) => {
-			this.rsmq.getQueueAttributes({
-				qname: this.config.queue
-			}, (err, resp) => {
-				if (err) {
-					this.logger.error(err)
-					return reject(new RedisWrapperQueueStatError())
-				}
-				return resolve(resp.msgs)
+		const getQueueDepth = async (): Promise<number> =>
+			await new Promise<number>((resolve, reject) => {
+				this.rsmq.getQueueAttributes({
+					qname: this.config.queue
+				}, (err, resp) => {
+					if (err) {
+						this.logger.error(err)
+						if (err.name === "queueNotFound") {
+							return resolve(queueIsMissing)
+						}
+						return reject(new RedisWrapperQueueStatError())
+					}
+					return resolve(resp.msgs)
+				})
 			})
-		})
+		// Const queueDepth = responseFailure
+		const p = await withTimeout(operationTimeout, getQueueDepth()) as number
+		if (p === queueIsMissing) {
+			await this.createQueue(this.config.queue)
+			return 0
+		}
+		else if (p === responseFailure) {
+			throw new RedisWrapperOperationTimeoutError("get-queue-depth")
+		}
+		else {
+			return p
+		}
 	}
 	readonly initialize = async (): Promise<void> => {
 		this.logger.info("initializing redis-wrapper")
-		const millisecondsPerSecond = 1000
-		const timeout = async (seconds: number):Promise<void> => new Promise((resolve, reject) => {
-			global.setTimeout(resolve, seconds * millisecondsPerSecond)
-		})
-		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		global.setTimeout(async ():Promise<void> => {
-			const existingQueues = await this.getQueues()
-			const {
-				queue
-			} = this.config
-			if (existingQueues.includes(queue)) {
-				this.logger.info(`found existing queue with name: ${queue}. Removing...`)
-				await this.deleteQueue(queue)
+		const ensureQueue = async (): Promise<number> => {
+			try {
+				const existingQueues = await this.getQueues()
+				const {
+					queue
+				} = this.config
+				if (existingQueues.includes(queue)) {
+					this.logger.info(`found existing queue with name: ${queue}. Removing...`)
+					await this.deleteQueue(queue)
+				}
+				this.logger.info(`create queue with name: ${queue}.`)
+				await this.createQueue(queue)
+				return 1
 			}
-			this.logger.info(`create queue with name: ${queue}.`)
-			await this.createQueue(queue)
-			this.isInitialized = true
-		})
-		const {
-			timeout: redisTimeout
-		} = this.config
-		this.logger.info(`waiting ${redisTimeout}s for redis connection`)
-		await timeout(redisTimeout)
-		if (!this.isInitialized) {
-			throw new RedisWrapperTimoutError(redisTimeout)
+			catch (error) {
+				return -1
+			}
+		}
+		this.logger.info(`waiting ${operationTimeout}ms for redis connection`)
+		const res = await withTimeout(operationTimeout, ensureQueue()) as number
+		if (res === responseFailure) {
+			throw new RedisWrapperTimoutError(operationTimeout)
 		}
 		this.logger.info("redis-wrapper connected to redis-server")
+		this.isInitialized = true
+		this.logger.info("successfully initialized redis wrapper")
 	}
 	readonly quit = async (): Promise<void> => {
 		const runningQueues = await this.getQueues()
@@ -108,10 +128,12 @@ export class RedisWrapper {
 			})
 		})
 	}
-	readonly sendMessage = async (message: string): Promise<void> => {
-		if (!this.isInitialized) {
-			this.logger.error(`using 'send' before initializing`)
-			throw new RedisWrapperNotInitializedError()
+	readonly sendMessage = async (message: string, skipInit :boolean = false): Promise<void> => {
+		if (!skipInit) {
+			if (!this.isInitialized) {
+				this.logger.error(`using 'send' before initializing`)
+				throw new RedisWrapperNotInitializedError()
+			}
 		}
 		return new Promise((resolve, reject) => {
 			this.rsmq.sendMessage({

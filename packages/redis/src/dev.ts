@@ -73,7 +73,7 @@ import { isStringNumber } from "./config"
 			process.on(eventType, async (e): Promise<void> => {
 				if (e) {
 					// eslint-disable-next-line no-console
-					console.log(e)
+					console.log(`unhandled error : ${e}`)
 				}
 				await cleanUp()
 			})
@@ -81,6 +81,10 @@ import { isStringNumber } from "./config"
 		api.listen()
 	}
 	catch (error) {
+		// eslint-disable-next-line no-console
+		console.log("failed to initialize service")
+		// eslint-disable-next-line no-console
+		console.log("is the redis service running?")
 		// eslint-disable-next-line no-console
 		console.log(error)
 		process.exit(1)

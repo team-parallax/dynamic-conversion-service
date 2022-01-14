@@ -43,3 +43,10 @@ export class RedisWrapperTimoutError extends Error {
 		super(`redis-server was not reachable within ${timeout}s`)
 	}
 }
+export class RedisWrapperOperationTimeoutError extends Error {
+	constructor(
+		operation: "get-queue-depth" | "send" | "receive"
+	) {
+		super(`operation '${operation}' timed out`)
+	}
+}

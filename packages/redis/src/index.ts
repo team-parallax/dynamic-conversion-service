@@ -44,6 +44,10 @@ import { isStringNumber } from "./config"
 	}
 	catch (error) {
 		// eslint-disable-next-line no-console
+		console.log("failed to initialize service")
+		// eslint-disable-next-line no-console
+		console.log("is the redis service running?")
+		// eslint-disable-next-line no-console
 		console.log(error)
 		process.exit(1)
 	}
