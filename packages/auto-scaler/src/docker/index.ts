@@ -62,11 +62,11 @@ export class DockerService {
 		const targetImageString = `${imageId}:${targetTag}`
 		const localImages = await this.docker.image.list({
 			filter: imageId
-		})
+		}) ?? []
 		let isAvailable = false
 		localImages.forEach(localImage => {
 			const imageData = localImage.data as IDockerApiImage
-			const [repoTag] = imageData.RepoTags
+			const [repoTag] = imageData?.RepoTags ?? ""
 			if (repoTag === targetImageString) {
 				isAvailable = true
 				this.logger.info(`found image '${targetImageString}' locally`)
