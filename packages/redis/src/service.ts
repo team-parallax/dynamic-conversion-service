@@ -362,8 +362,14 @@ export class RedisService {
 		*/
 		const probesPerStateApply = Math.ceil(stateApplicationInterval / healthCheckInterval)
 		let probeCount = 1
+		let isRunning = false
 		// eslint-disable-next-line @typescript-eslint/no-misused-promises
 		this.probeInterval = global.setInterval(async (): Promise<void> => {
+			if (isRunning) {
+				this.logger.info(`previous probe still running. waiting...`)
+				return
+			}
+			isRunning = true
 			const shouldApplyState = probeCount % probesPerStateApply === 0
 			const loggerPrefix = shouldApplyState
 				? "[HEALTH + STATE]"
@@ -392,12 +398,13 @@ export class RedisService {
 				await this.checkFileTtl()
 			}
 			catch (error) {
-				this.logger.info(`error during probe: ${error}`)
+				this.logger.info(`error during probe #${probeCount}: ${error}`)
 			}
-			probeCount++
 			const probeDuration = performance.now() - probeStart
-			this.logger.info(`${loggerPrefix}: probe ended (${Number(probeDuration).toFixed(0)}ms)`)
+			this.logger.info(`${loggerPrefix}: probe #${probeCount} ended (${Number(probeDuration).toFixed(0)}ms)`)
 			this.logger.info("====================================================================")
+			probeCount++
+			isRunning = false
 		}, healthCheckInterval * ms)
 	}
 	private readonly forwardRequestsToIdleWorkers = async (): Promise<void> => {

@@ -64,14 +64,27 @@ import { isStringNumber } from "./config"
 			.factory(() => redisService)
 			.scope(Scope.Singleton)
 		const api = new Api(port)
-		// eslint-disable-next-line @typescript-eslint/no-misused-promises
-		process.on("SIGINT", async (): Promise<void> => {
+		const cleanUp = async (): Promise<void> => {
 			await redisService.quit()
 			api.close()
+		}
+		[`exit`, `SIGINT`, `SIGUSR1`, `SIGUSR2`, `uncaughtException`, `SIGTERM`].forEach(eventType => {
+			// eslint-disable-next-line @typescript-eslint/no-misused-promises
+			process.on(eventType, async (e): Promise<void> => {
+				if (e) {
+					// eslint-disable-next-line no-console
+					console.log(`unhandled error : ${e}`)
+				}
+				await cleanUp()
+			})
 		})
 		api.listen()
 	}
 	catch (error) {
+		// eslint-disable-next-line no-console
+		console.log("failed to initialize service")
+		// eslint-disable-next-line no-console
+		console.log("is the redis service running?")
 		// eslint-disable-next-line no-console
 		console.log(error)
 		process.exit(1)
