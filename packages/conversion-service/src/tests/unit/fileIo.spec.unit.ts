@@ -91,7 +91,7 @@ describe("It should pass all tests for File-IO", () => {
 			/* Assert */
 			await expect(createDir).rejects.toBeUndefined()
 		})
-		it("should create a new file named 'test.txt'", async () => {
+		it.skip("should create a new file named 'test.txt'", async () => {
 			/* Arrange */
 			const filepath = "./testing/out/testfile.txt"
 			const data = Buffer.from("Some example text to write to a file")
