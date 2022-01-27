@@ -1,5 +1,4 @@
 import { EHttpResponseCodes } from "conversion-service/src/constants"
-import { Inject } from "typescript-ioc"
 import { Logger } from "logger"
 import { RegisterRoutes } from "../rest/routes"
 import { Server } from "net"
@@ -19,10 +18,9 @@ import express, {
 } from "express"
 import swaggerDocument from "conversion-service/swagger.json"
 export class Api {
-	@Inject
-	private readonly logger!: Logger
 	public readonly app: Application
 	private readonly _port: number = 3000
+	private readonly logger: Logger
 	private server: Server | null
 	constructor(port?: number) {
 		this.app = express()
@@ -30,8 +28,10 @@ export class Api {
 		if (port) {
 			this._port = port
 		}
-		this.logger.changeServiceName("redis-api")
-		this.logger.debug("Changed Loggername for Redis API.")
+		this.logger = new Logger({
+			fileOnly: "api.log",
+			serviceName: "redis-api"
+		})
 		this.configureServer()
 		this.addApi()
 		this.createApplicationDirectiories(["input", "output"])

@@ -60,8 +60,6 @@ export class WorkerHandler {
 			throw new NoWorkerConversionIdError(request.externalConversionId)
 		}
 		this.workers[workerId].requests.push(request)
-		const extId = shortID(request.externalConversionId)
-		this.logger.info(`[${this.getContainerName(workerId)}] => added ${extId}`)
 	}
 	/**
 	 * Add a new worker.
@@ -79,7 +77,6 @@ export class WorkerHandler {
 			requests: [],
 			workerUrl: `http://${addressMode}:3000`
 		}
-		this.logger.info(`added new worker ${containerInfo.containerName}`)
 	}
 	/**
 	 * Fetch files from files that are finished and delete the input file.
@@ -161,7 +158,8 @@ export class WorkerHandler {
 			const {
 				containerId
 			} = worker.containerInfo
-			const logPrefix = `[${this.getContainerName(containerId)}]:`
+			const containerName = this.getContainerName(containerId)
+			const logPrefix = `[FORWARD]::`
 			const extId = shortID(request.externalConversionId)
 			try {
 				// eslint-disable-next-line no-await-in-loop
@@ -176,7 +174,7 @@ export class WorkerHandler {
 						workerConversionId
 					}
 				)
-				this.logger.info(`${logPrefix} ${extId} <=> ${shortID(workerConversionId)}`)
+				this.logger.info(`${logPrefix} dispatched [${extId}] to ${containerName}`)
 			}
 			catch (error) {
 				this.logger.info(`${logPrefix} [${extId}] failed to forward request!`)
@@ -296,7 +294,6 @@ export class WorkerHandler {
 	 * Ask all workers for a status update on their conversions.
 	 */
 	public readonly probeWorkersForStatus = async (): Promise<void> => {
-		this.logger.info("[PROBE]:: asking busy workers for status update...")
 		for (const worker of this._workers()) {
 			for (const request of worker.requests) {
 				const {
@@ -320,7 +317,7 @@ export class WorkerHandler {
 					} = request
 					const extId = shortID(externalConversionId)
 					const workerId = shortID(workerConversionId)
-					this.logger.info(`[PROBE]:: [${containerName}] [${extId}][${workerId}] => ${status} `)
+					this.logger.info(`[PROBE]:: [${containerName}] => [${extId}][${workerId}] => ${status} `)
 				}
 				catch (error) {
 					this.logger.info(`[PROBE]:: [${containerName}]:: ${error}`)
@@ -343,8 +340,6 @@ export class WorkerHandler {
 		this.workers[workerId].requests = this.workers[workerId].requests.filter(
 			request => request.externalConversionId !== externalConversionId
 		)
-		const extId = shortID(externalConversionId)
-		this.logger.info(`[${this.getContainerName(workerId)}] removed ${extId}`)
 	}
 	/**
 	 * Remove a worker.
@@ -358,7 +353,6 @@ export class WorkerHandler {
 			containerName
 		} = this.workers[containerId].containerInfo
 		delete this.workers[containerId]
-		this.logger.info(`removed worker ${containerName}`)
 	}
 	/**
 	 * Update the container info for a worker.
