@@ -1,5 +1,4 @@
 import { DockerService } from "./docker"
-import { ELogLevel } from "logger/src/enum"
 import { IAutoScalerConfiguration } from "./config"
 import {
 	IComputedScalingResult,
@@ -18,7 +17,7 @@ export class AutoScaler {
 			dockerConfig
 		} = this.config
 		this.logger = new Logger({
-			logLevel: ELogLevel.info,
+			fileOnly: "autoscaler.log",
 			serviceName: "auto-scaler"
 		})
 		this.dockerService = new DockerService(dockerConfig, this.logger)

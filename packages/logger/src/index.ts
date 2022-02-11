@@ -31,24 +31,45 @@ export class Logger {
 				return `[${level.toUpperCase()}][${this.loggerServiceName}][${timestamp}] :: ${message}`
 			}
 		)
-		this.logger = createLogger({
-			defaultMeta: {
-				service: this.loggerServiceName
-			},
-			format: combine(
-				timestamp({
-					format: "DD-MM-YYYY - HH:mm:ss"
-				}),
-				customFormat
-			),
-			level: logLevel,
-			transports: [
-				new transports.Console()
-			]
-		})
+		if (loggerOptions?.fileOnly) {
+			this.logger = createLogger({
+				defaultMeta: {
+					service: this.loggerServiceName
+				},
+				format: combine(
+					timestamp({
+						format: "DD-MM-YYYY - HH:mm:ss"
+					}),
+					customFormat
+				),
+				level: logLevel,
+				transports: [
+					new transports.File({
+						filename: loggerOptions.fileOnly
+					})
+				]
+			})
+		}
+		else {
+			this.logger = createLogger({
+				defaultMeta: {
+					service: this.loggerServiceName
+				},
+				format: combine(
+					timestamp({
+						format: "DD-MM-YYYY - HH:mm:ss"
+					}),
+					customFormat
+				),
+				level: logLevel,
+				transports: [
+					new transports.Console()
+				]
+			})
+		}
 	}
 	addLogFile = (logFilename: string, level?: string): void => {
-		this.logger.transports.push(
+		this.logger.add(
 			new transports.File({
 				filename: logFilename,
 				level: level ?? "info"
@@ -81,10 +102,16 @@ export class Logger {
 	info = (message: any): void => {
 		this.logger.info(this.trimQuotes(JSON.stringify(message, null, this.defaultIndentation)))
 	}
+	warn = (message: any): void => {
+		this.logger.warn(this.trimQuotes(JSON.stringify(message, null, this.defaultIndentation)))
+	}
 	get serviceName(): string {
 		return this.loggerServiceName
 	}
 	private readonly trimQuotes = (message: string): string => {
-		return message.slice(1, message.length - 1)
+		if (message.startsWith("\"") && message.endsWith("\"")) {
+			return message.slice(1, message.length - 1)
+		}
+		return message
 	}
 }

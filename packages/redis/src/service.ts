@@ -13,6 +13,7 @@ import {
 import { Logger } from "logger"
 import { RedisWrapper } from "./wrapper"
 import { WorkerHandler } from "./worker"
+import { deleteFile } from "conversion-service/src/service/file-io"
 import {
 	getFormatsFromWorker,
 	isStartingOrHealthy,
@@ -20,7 +21,9 @@ import {
 	removeRequestFile,
 	shortID
 } from "./util"
+import { join } from "path"
 import { performance } from "perf_hooks"
+import { readdir } from "fs/promises"
 export class RedisService {
 	/**
 	 * The auto-scaler component managing the docker containers.
@@ -34,6 +37,7 @@ export class RedisService {
 	 * The configuration of redis-service containing environment variables.
 	 */
 	private readonly config: IRedisServiceConfiguration
+	private readonly fileTtlLogger: Logger
 	/**
 	 * The map of finished requests.
 	 */
@@ -58,6 +62,7 @@ export class RedisService {
 	 * Track requests which are still in queue
 	 */
 	private readonly requestsInQueue: Map<string, IConversionRequest>
+	private totalRequests: number = 0
 	/**
 	 * The state-handler for all workers.
 	 */
@@ -66,6 +71,10 @@ export class RedisService {
 		this.config = getRedisConfigFromEnv()
 		this.logger = new Logger({
 			serviceName: "redis-service"
+		})
+		this.fileTtlLogger = new Logger({
+			fileOnly: "file-ttl.log",
+			serviceName: "file-ttl"
 		})
 		const {
 			autoScalerConfig,
@@ -116,7 +125,6 @@ export class RedisService {
 	 * Check if any finished requests have exceeded the TTL.
 	 */
 	readonly checkFileTtl = async (): Promise<void> => {
-		this.logger.info(`[FILE_TTL]:: commencing TTL check`)
 		const now = new Date().getTime()
 		const promises: Promise<void>[] = []
 		const ms = 1000
@@ -125,10 +133,13 @@ export class RedisService {
 				const request = finishedRequest.request
 				const requestTime = finishedRequest.finishedTime.getTime()
 				if (now - requestTime > this.config.fileTtl * ms) {
-					this.logger.info(`[FILE_TTL]:: ${shortID(request.externalConversionId)} exceeded TTL`)
-					if (request.conversionStatus === EConversionStatus.Converted) {
+					const status = request.conversionStatus
+					if (
+						status === EConversionStatus.Converted
+						|| status === EConversionStatus.Erroneous
+					) {
 						const deletedPath = await removeRequestFile("output", request)
-						this.logger.info(`[FILE_TTL]:: deleted ${deletedPath}`)
+						this.fileTtlLogger.info(`[FILE_TTL]::[EXCEEDED_TTL]:: deleted [${status}] ${deletedPath}`)
 					}
 					this.finishedRequest.delete(request.externalConversionId)
 				}
@@ -137,11 +148,39 @@ export class RedisService {
 		})
 		try {
 			await Promise.all(promises)
+			if (promises.length > 0) {
+				this.logger.info(`[FILE-TTL]:: removed ${promises.length} files`)
+			}
 		}
 		catch (e) {
-			this.logger.info(`error during file_ttl: ${e}`)
+			this.fileTtlLogger.error(`error during file_ttl: ${e}`)
 		}
-		this.logger.info(`[FILE_TTL]:: finished TTL CHECK`)
+		const files = await readdir("./output")
+		if (files.length > 0) {
+			const orphanedPromises: Promise<void>[] = []
+			const allRequests = this.workerHandler.getRequests()
+			for (const file of files) {
+				const id = file.split(".")[0]
+				const matchedRequest = allRequests.find(req => req.externalConversionId === id)
+				// Not dispatched and not finished
+				if (!matchedRequest && !this.finishedRequest.has(id)) {
+					const orphanedFilePromise = async (): Promise<void> => {
+						this.fileTtlLogger.warn(`[FILE_TTL]:: found orphaned file, removing ${file}`)
+						await deleteFile(join("./output", file))
+					}
+					orphanedPromises.push(orphanedFilePromise())
+				}
+			}
+			try {
+				await Promise.all(orphanedPromises)
+				if (orphanedPromises.length > 0) {
+					this.logger.info(`[FILE-TTL]:: removed ${promises.length} orphaned files`)
+				}
+			}
+			catch (e) {
+				this.fileTtlLogger.error(`error during file_ttl: ${e}`)
+			}
+		}
 	}
 	/**
 	 * Check the current container status.
@@ -197,11 +236,10 @@ export class RedisService {
 			}
 		}
 		const inProgressRequestCountAfterHealthCheck = this.workerHandler.getRequestCount()
-		const totalRequestCount = pendingRequests + inProgressRequestCountAfterHealthCheck
 		this.lastStatus = await this.autoScaler.checkContainerStatus(
 			pendingRequests + inProgressRequestCountAfterHealthCheck
 		)
-		this.logger.info(`[HEALTH]:: ${totalRequestCount} requests in total (workers + queue)`)
+		this.logger.info(`[HEALTH]:: Requests = ${inProgressRequestCountAfterHealthCheck}/${pendingRequests} workers/queue`)
 		const {
 			containersToRemove: remove,
 			containersToStart: start
@@ -212,7 +250,7 @@ export class RedisService {
 				container
 			)
 		})
-		this.logger.info(`[HEALTH]:: should start ${start} | remove ${remove} containers`)
+		this.logger.info(`[HEALTH]:: SHOULD START ${start} | SHOULD REMOVE ${remove}`)
 	}
 	/**
 	 * Get the current conversion request for the given conversion id.
@@ -385,13 +423,13 @@ export class RedisService {
 				await this.workerHandler.probeWorkersForStatus()
 				/* Fetch files */
 				const finishedRequests = await this.workerHandler.fetchFiles()
+				this.totalRequests += finishedRequests.length
 				finishedRequests.forEach(request => {
 					this.finishedRequest.set(
 						request.request.externalConversionId,
 						request
 					)
 				})
-				this.logger.info(`[PROBE]:: ${this.finishedRequest.size} finished requests`)
 				if (shouldApplyState) {
 					await this.applyState()
 				}
@@ -400,8 +438,11 @@ export class RedisService {
 			catch (error) {
 				this.logger.info(`error during probe #${probeCount}: ${error}`)
 			}
-			const probeDuration = performance.now() - probeStart
-			this.logger.info(`${loggerPrefix}: probe #${probeCount} ended (${Number(probeDuration).toFixed(0)}ms)`)
+			this.logger.info(`[PROBE]:: ${this.totalRequests} finished requests (converted/error)`)
+			const probeDuration = (performance.now() - probeStart).toFixed(0)
+			const div = 1024
+			const mem = (process.memoryUsage().heapTotal / div / div).toFixed(0)
+			this.logger.info(`${loggerPrefix}: probe #${probeCount} ended (${probeDuration}ms | ${mem}Mb RAM)`)
 			this.logger.info("====================================================================")
 			probeCount++
 			isRunning = false
@@ -409,8 +450,6 @@ export class RedisService {
 	}
 	private readonly forwardRequestsToIdleWorkers = async (): Promise<void> => {
 		const pendingRequests = await this.getPendingRequestCount()
-		this.logger.info(`[FORWARD]:: ${pendingRequests} in queue`)
-		this.logger.info("[FORWARD]:: forwarding requests to free workers")
 		const {
 			tasksPerContainer
 		} = this.config.autoScalerConfig
@@ -430,7 +469,7 @@ export class RedisService {
 		}
 		try {
 			await this.workerHandler.forwardRequests(requests)
-			this.logger.info(`[FORWARD]:: ${await this.getPendingRequestCount()} in queue after forwarding`)
+			this.logger.info(`[FORWARD]:: ${await this.getPendingRequestCount()} in queue`)
 		}
 		catch (error) {
 			this.logger.info(`failed to forward requests: ${error}`)
