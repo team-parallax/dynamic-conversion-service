@@ -34,12 +34,14 @@
   },
   "dependencies": {
     "rsmq": "^0.9.1",
+    "fs-extra": "10.1.0",
     "node-fetch": "^2.6.1",
     "form-data": "^4.0.0",
     "ts-node": "^10.1.0"
   },
   "devDependencies": {
     "@types/node-fetch": "^2.5.12",
-    "@types/form-data": "^2.5.0"
+    "@types/form-data": "^2.5.0",
+    "@types/fs-extra": "9.0.13"
   }
 }

@@ -23,7 +23,7 @@ import {
 } from "./util"
 import { join } from "path"
 import { performance } from "perf_hooks"
-import { readdir } from "fs/promises"
+import fs from "fs-extra"
 export class RedisService {
 	/**
 	 * The auto-scaler component managing the docker containers.
@@ -155,7 +155,7 @@ export class RedisService {
 		catch (e) {
 			this.fileTtlLogger.error(`error during file_ttl: ${e}`)
 		}
-		const files = await readdir("./output")
+		const files = await fs.readdir("./output")
 		if (files.length > 0) {
 			const orphanedPromises: Promise<void>[] = []
 			const allRequests = this.workerHandler.getRequests()
